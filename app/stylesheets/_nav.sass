@@ -1,0 +1,55 @@
+.header-nav
+    // set local grid
+    +container
+    //background: orange
+    line-height: $line-height * 2
+
+    .header_logo
+        +span(6 of 12)
+        font-size: 25px
+        font-weight: 300
+
+    .header_menu
+        +span(5 of 12)
+        //background: #eee
+        padding: 0px
+
+    .header_user-cp
+        +span(1 of 12)
+        line-height: $line-height * 2
+        font-size: 0
+        //background: blue
+
+        .cp
+            display: table-cell
+            vertical-align: middle
+            //background: orange
+            //line-height: 100%
+            float: right
+            color: #fff
+            font-size: 1rem
+            text-decoration: none
+
+        img
+            width: 30px
+            margin: 0px
+            vertical-align: middle
+            display: inline-block
+
+    .primary-nav
+        display: table
+        margin: 0
+        float: right
+
+        li
+            display: table-cell
+            margin: 0
+
+        a
+            font-size: 30px
+            margin: 0
+            color: #fff
+            display: block
+            //background: #ccc
+            width: 80px
+            text-align: center

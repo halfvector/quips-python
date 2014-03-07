@@ -1,0 +1,73 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Quips</title>
+        <link href='//fonts.googleapis.com/css?family=Open+Sans:400,600,300' rel='stylesheet' type='text/css' />
+        <link rel=stylesheet type=text/css href="{{ url_for('static', filename='css/site.css') }}" />
+    </head>
+    <body>
+        <header class="site-header">
+            <nav class="header-nav">
+                <div class="header_logo">Quips</div>
+                <div class="header_menu">
+                    <ul class="primary-nav">
+                        <li><a href="#"><i class="fa fa-home"></i></a></li>
+                        <li><a href="#"><i class="fa fa-globe"></i></a></li>
+                    </ul>
+                </div>
+                {% if user and user.authenticated %}
+                    <div class="header_user-cp">
+                        <div class="cp">
+                            <div class="m-dropdown">
+                                <a href="#" class="dropdown-trigger">
+                                    <img src="/assets/img/avatar-me-1.jpg" />
+                                </a>
+                                <div class="dropdown-content">
+                                    <ul class="dropdown-list">
+                                        <li>
+                                            <a href="/me"><i class="fa fa-star"></i> Profile</a>
+                                        </li>
+                                        <li>
+                                            <a href="/logout"><i class="fa fa-sign-out"></i> Logout</a>
+                                        </li>
+                                    </ul>
+                                    <span class="arrow-up">
+                                        <i class="fa fa-caret-up"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="header_user-cp">
+                        <a href="/auth" class="cp">Login</a>
+                    </div>
+                {% endif %}
+            </nav>
+        </header>
+        <div class="secondary-header">
+            {% block secondary %}{% endblock %}
+        </div>
+        <div class="page">
+            <div class="page-contents">
+                {% block body %}{% endblock %}
+            </div>
+        </div>
+
+{#        <audio controls id="main-player">#}
+{#            <source src="/assets/swf/test1.mp3" type="audio/mp3" />#}
+{#            <source src="/assets/swf/test.ogg" type="audio/ogg" />#}
+{#        </audio>#}
+
+        <script src="/assets/js/jquery.js"></script>
+        <script src="/assets/js/underscore.js"></script>
+        <script src="/assets/js/backbone.js"></script>
+        <script src="/assets/js/backbone-bindings.js"></script>
+        <script src="/assets/js/backbone-localstorage.js"></script>
+        <script src="/assets/js/soundmanager2-nodebug-jsmin.js"></script>
+{#        <script src="https://trigger.io/catalyst/target/target-script-min.js#F303B17B-37F4-496A-8D7A-356B41A2FC59"></script>#}
+        <script src="/assets/js/main.js"></script>
+    </body>
+</html>

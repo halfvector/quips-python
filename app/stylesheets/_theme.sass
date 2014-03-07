@@ -1,0 +1,72 @@
+// the color-scheme
+$colorBlue: #01A9D8
+$colorLightBlue: #45CAF7
+$colorDarkBlue: #07f
+$colorYellow: #F7D929
+$colorOrange: #F75C30
+$colorOrange2: orange
+$colorGreen: #77C926
+$colorGreen2: #7BB850
+$colorGreen3: #75e896
+$colorLightGreen: #a3d96c
+$colorLightGray: #D0D0D0
+$colorDarkGray: #414141
+$colorWhite: #FAFAFA
+$colorPink: #EC225E
+$colorPink1: #FF3D7F
+$colorPink2: #DB3C6E
+$colorRed: #CF2D4E
+$colorOrange1: #E27A3F
+$colorGreen1: #45B29D
+$colorYellow2: #F2EBBF
+
+// relaxed colors
+$colorGreen4: #a7c467
+$colorYellow4: #e6c564
+$colorBlue4: #7bb9d7
+$colorRed4: #d95b67
+$colorPurple4: #9e99be
+$colorSoftWhite: #e8e7e9
+
+// trendy soft colors
+$colorOrange5: #ff5557
+$colorGreen5: #71cd7e
+$colorBlue5: #4099ff
+
+$fontSkinny: 'open-sans', 'Open Sans'
+$fontRegular: 'open-sans', 'Open Sans'
+$fontSemiBold: 'open-sans', 'Open Sans'
+
+@mixin skinnyFont()
+	font-family: $fontSkinny
+	font-weight: 300
+
+@mixin regularFont()
+	font-family: $fontRegular
+	font-weight: normal
+
+@mixin boldFont()
+	font-family: $fontSemiBold
+	font-weight: 500
+
+
+//$featureIndicatorColor: darken(#42dc12, 5%)
+//$suggestionProgressColor: #75e896
+
+$featureIndicatorColor: #F2B33D
+$featureIndicatorColor: $colorOrange1
+$featureProgressColor: lighten($featureIndicatorColor, 10%)
+
+$bugIndicatorColor: #D94D3F
+$bugIndicatorColor: $colorPink2
+$bugProgressColor: lighten($bugIndicatorColor, 0%)
+
+$questionIndicatorColor: #ddd //$colorLightBlue
+$questionProgressColor: lighten($questionIndicatorColor, 25%)
+
+
+//$pageBackgroundColor: #e7e5e3
+$pageBackgroundColor: #ddd
+$pageContentBackgroundColor: #fff
+$pageNavigationActiveTabColor: #fff
+$pageNavigationInactiveTabColor: #999

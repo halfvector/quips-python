@@ -1,0 +1,97 @@
+// basic layout and functionality
+.m-dropdown
+    position: relative
+    overflow: visible
+    display: inline-block
+    text-align: center
+    position: relative
+
+    $dropdown-color: #f7f7f7
+    $border-radius: 4px
+
+    // overlay to capture all input (and hide the dropdown)
+    .capture-overlay
+        position: fixed
+        top: 0px
+        left: 0px
+        right: 0px
+        bottom: 0px
+        z-index: 900
+        background: rgba(#777, 0.3)
+        display: none
+
+    .dropdown-content
+        box-shadow: 0px 3px 6px rgba(#333, 0.3)
+        border-radius: $border-radius
+        //background-color: $dropdown-color
+        position: absolute
+        top: 80%
+        right: -50%
+        margin-top: 7px
+        text-align: center
+        z-index: 1000
+        display: none
+
+    ::focus
+        .dropdown-content
+            display: block
+
+    .arrow-up
+        width: 32px
+        height: 20px
+        font-size: 30px
+        line-height: 30px
+        position: absolute
+        top: -19px
+        right: 17px
+        text-align: center
+        z-index: 1200
+        text-shadow: 0px 0px 6px rgba(#333, 0.3)
+        clip: rect(0px, 32px, 19px, 0px)
+        color: $dropdown-color
+
+        i
+            font-size: inherit
+
+    .dropdown-list
+        list-style-type: none
+        padding: 0px
+        margin: 0px
+        text-align: left
+        z-index: 1500
+        //padding-bottom: 2px
+
+        li
+            padding: 0px
+            margin: 0px
+            display: block
+
+            &:first-child a
+                border-radius: $border-radius $border-radius 0px 0px
+
+            &:last-child a
+                border-radius: 0px 0px $border-radius $border-radius
+
+            &.dropdown-list-divider
+                border-top: 1px solid #dadada
+                //border-bottom: 1px solid #fff
+                height: 1px
+                display: block
+
+            a
+                display: block
+                padding: 0px 20px
+                text-decoration: none
+                font-size: 14px
+                white-space: nowrap
+                color: #333
+                background-color: $dropdown-color
+                line-height: 46px
+
+                i.fa
+                    margin-right: 6px
+                    vertical-align: middle
+
+                &:hover
+                    background-color: $colorBlue
+                    color: #fff

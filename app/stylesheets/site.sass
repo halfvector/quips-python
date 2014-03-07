@@ -1,0 +1,40 @@
+//@import 'reset'
+@import 'libs/susy'
+@import "libs/font-awesome"
+
+// settings
++border-box-sizing
+
+// set global grid
+//$grid960ish: 12 (80px 10px) inside static
++layout(12 (80px 10px) split inside-static)
+
+$base-font-size: 18px
+$line-height: 27px
+
+html
+    padding: 0
+    margin: 0
+    font-family: 'Open Sans'
+    font-size: 18px
+    line-height: 27px
+
+body
+    padding: 0
+    margin: 0
+
+.site-header
+    background: #444
+    color: #fff
+
+.page
+    background: #f7f7f7
+
+    .page-contents
+        +container
+
+// site components
+@import 'theme'
+@import 'nav'
+@import 'homepage'
+@import 'dropdown'
