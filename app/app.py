@@ -43,6 +43,7 @@ def before_request():
         if user is not None:
             # save session data so we don't have to go manually fishing it out of db next time around
             session['username'] = user.username
+            session['aid'] = str(user.id)
             session['oauth'] = (user.oauthToken, user.oauthTokenSecret)
             session['authenticated'] = True
         else:

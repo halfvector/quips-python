@@ -1,0 +1,36 @@
+{% extends "layout.html" %}
+
+{% block secondary %}
+    <div class="m-recording-motivational">
+        I'm listening..
+    </div>
+{% endblock %}
+
+{% block body %}
+
+    <div class="m-recording-container">
+
+        <div class="card">
+
+            <div id="recorder-full" class="m-recording-screen face">
+                <div class="recording-toggle"><i class="fa fa-microphone"></i></div>
+                <div class="recording-time">02:56</div>
+            </div>
+
+            <div id="recorder-done" class="m-recording-upload face back">
+                <audio id="recorded-preview" controls="controls"></audio>
+                <div class="stats">
+                    <i class="fa fa-play-circle"></i>
+                    <span class="duration">00:12</span>
+                </div>
+                <div class="controls">
+                    <a href="#" class="btn btn-success" id="upload-recording">Upload</a>
+                    <a href="#" class="btn btn-link" id="cancel-recording">Cancel</a>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+{% endblock %}

@@ -2,6 +2,8 @@ from flask import Flask, url_for, redirect, render_template, session, g
 from flask.ext.mongoengine import MongoEngine, MongoEngineSessionInterface
 from flask_debugtoolbar import DebugToolbarExtension
 #from flask_oauth import OAuth
+from gunicorn.util import getcwd
+import os
 
 app = Flask(__name__, static_folder = 'assets')
 app.config['MONGODB_SETTINGS'] = {'DB': 'quips'}
@@ -25,7 +27,15 @@ app.config['DEBUG_TB_PROFILER_ENABLED'] = False
 app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 
 app.debug = True
+app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024 # 10MB file size limit
 #app.config.from_object(__name__)
+app.config['RECORDINGS_PATH'] = os.path.realpath(getcwd() + '/../public/recordings/')
+
+if not os.path.isdir(app.config['RECORDINGS_PATH']):
+    app.logger.debug("path does not exist: " + app.config['RECORDINGS_PATH'])
+    exit()
+
+app.logger.debug("Recordings Path: " + app.config['RECORDINGS_PATH'])
 
 db = MongoEngine()
 db.init_app(app)

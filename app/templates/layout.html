@@ -52,6 +52,10 @@
         </div>
         <div class="page">
             <div class="page-contents">
+                {% for message in get_flashed_messages() %}
+                    <div class="flash">{{ message }}</div>
+                {% endfor %}
+
                 {% block body %}{% endblock %}
             </div>
         </div>
@@ -65,6 +69,7 @@
         <script src="/assets/js/underscore.js"></script>
         <script src="/assets/js/backbone.js"></script>
         <script src="/assets/js/backbone-bindings.js"></script>
+{#        <script src="/assets/js/backbone.epoxy.min.js"></script>#}
         <script src="/assets/js/backbone-localstorage.js"></script>
         <script src="/assets/js/soundmanager2-nodebug-jsmin.js"></script>
 {#        <script src="https://trigger.io/catalyst/target/target-script-min.js#F303B17B-37F4-496A-8D7A-356B41A2FC59"></script>#}
