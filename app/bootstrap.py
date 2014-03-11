@@ -1,17 +1,18 @@
 from flask import Flask, url_for, redirect, render_template, session, g
 from flask.ext.mongoengine import MongoEngine, MongoEngineSessionInterface
 from flask_debugtoolbar import DebugToolbarExtension
+from werkzeug.debug import DebuggedApplication
 #from flask_oauth import OAuth
 from gunicorn.util import getcwd
 import os
 
-app = Flask(__name__, static_folder = 'assets')
-app.config['MONGODB_SETTINGS'] = {'DB': 'quips'}
-app.config['SECRET_KEY'] = 'secretness'
+flask_ap = Flask(__name__, static_folder = 'assets')
+flask_ap.config['MONGODB_SETTINGS'] = {'DB': 'quips'}
+flask_ap.config['SECRET_KEY'] = 'secretness'
 
-app.config['TESTING'] = False
-app.config['DEBUG'] = False
-app.config['DEBUG_TB_PANELS'] = (
+flask_ap.config['TESTING'] = False
+flask_ap.config['DEBUG'] = False
+flask_ap.config['DEBUG_TB_PANELS'] = (
     'flask.ext.debugtoolbar.panels.versions.VersionDebugPanel',
     'flask.ext.debugtoolbar.panels.timer.TimerDebugPanel',
     'flask.ext.debugtoolbar.panels.headers.HeaderDebugPanel',
@@ -22,25 +23,27 @@ app.config['DEBUG_TB_PANELS'] = (
 
     #'flask_debugtoolbar_lineprofilerpanel.panels.LineProfilerPanel'
 )
-app.config['DEBUG_TB_PROFILER_ENABLED'] = False
-#app.config['DEBUG_TB_TEMPLATE_EDITOR_ENABLED'] = True
-app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
+flask_ap.config['DEBUG_TB_PROFILER_ENABLED'] = False
+#flask_ap.config['DEBUG_TB_TEMPLATE_EDITOR_ENABLED'] = True
+flask_ap.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 
-app.debug = True
-app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024 # 10MB file size limit
-#app.config.from_object(__name__)
-app.config['RECORDINGS_PATH'] = os.path.realpath(getcwd() + '/../public/recordings/')
+flask_ap.debug = True
+flask_ap.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024 # 10MB file size limit
+#flask_ap.config.from_object(__name__)
+flask_ap.config['RECORDINGS_PATH'] = os.path.realpath(getcwd() + '/../public/recordings/')
 
-if not os.path.isdir(app.config['RECORDINGS_PATH']):
-    app.logger.debug("path does not exist: " + app.config['RECORDINGS_PATH'])
+if not os.path.isdir(flask_ap.config['RECORDINGS_PATH']):
+    flask_ap.logger.debug("path does not exist: " + flask_ap.config['RECORDINGS_PATH'])
     exit()
 
-app.logger.debug("Recordings Path: " + app.config['RECORDINGS_PATH'])
+flask_ap.logger.debug("Recordings Path: " + flask_ap.config['RECORDINGS_PATH'])
 
 db = MongoEngine()
-db.init_app(app)
+db.init_app(flask_ap)
 
-#toolbar = DebugToolbarExtension(app)
+app = DebuggedApplication(flask_ap, evalex=True)
+
+#toolbar = DebugToolbarExtension(flask_ap)
 
 app.session_interface = MongoEngineSessionInterface(db)
 
@@ -55,7 +58,7 @@ app.session_interface = MongoEngineSessionInterface(db)
 #     consumer_key='3v4UIfTkiYRq1xaH6suZKA',
 #     consumer_secret='Ftb9ffIAccJPXULkpNo66c9FGJUohRRO027twv4Oc'
 # )
-# twitter.app = app
+# twitter.flask_ap = flask_ap
 
 #@twitter.tokengetter
 def get_twitter_token():

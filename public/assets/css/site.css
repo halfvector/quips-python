@@ -844,6 +844,7 @@ body { padding: 0; margin: 0; display: table; width: 100%; }
 .header-nav::after { content: " "; display: block; clear: both; }
 .header-nav .header_logo { width: 50%; float: left; padding-left: 5px; padding-right: 5px; font-size: 25px; font-weight: 300; }
 .header-nav .header_menu { width: 41.66667%; float: left; padding-left: 5px; padding-right: 5px; padding: 0px; }
+.header-nav .header_centered { line-height: 1; }
 .header-nav .header_user-cp { width: 8.33333%; float: left; padding-left: 5px; padding-right: 5px; line-height: 54px; font-size: 0; }
 .header-nav .header_user-cp .cp { display: table-cell; vertical-align: middle; float: right; color: white; font-size: 1rem; text-decoration: none; }
 .header-nav .header_user-cp img { width: 30px; margin: 0px; vertical-align: middle; display: inline-block; }
@@ -851,14 +852,16 @@ body { padding: 0; margin: 0; display: table; width: 100%; }
 .header-nav .primary-nav li { display: table-cell; margin: 0; }
 .header-nav .primary-nav a { font-size: 30px; margin: 0; color: white; display: block; width: 80px; text-align: center; }
 
+.m-hero { margin: 20px 0px; padding: 30px; background: #eeeeee; }
+
 .m-search { max-width: 1080px; margin-left: auto; margin-right: auto; display: block; text-align: center; padding: 30px 0px; }
 .m-search::after { content: " "; display: block; clear: both; }
 .m-search .inline-search-form { display: block; margin: 0; position: relative; }
 .m-search .inline-search-form input[type=text] { width: 100%; border: 1px solid #cccccc; line-height: 27px; padding: 8px 50px 8px 15px; box-shadow: inset 0px 0px 6px #dddddd; }
 .m-search .inline-search-form button[type=submit] { position: absolute; top: 0; bottom: 0; right: 0; margin: 0; border: none; background: none; padding: 0px 20px; color: #aaaaaa; transition: all 0.2s ease-in-out; cursor: pointer; font-size: 18px; }
 
-.m-quips { position: relative; padding-top: 100px; }
-.m-quips .divider { position: absolute; margin-top: 80px; top: 0; bottom: 0; width: 1px; width: 23.33333%; float: left; padding-left: 5px; padding-right: 5px; border-right: 1px solid #cccccc; }
+.m-quips { position: relative; padding-top: 20px; }
+.m-quips .divider { position: absolute; margin-top: 0px; top: 0; bottom: 0; width: 1px; width: 23.33333%; float: left; padding-left: 5px; padding-right: 5px; border-right: 1px solid #cccccc; }
 
 .m-quip { max-width: 1080px; margin-left: auto; margin-right: auto; margin-bottom: 15px; }
 .m-quip::after { content: " "; display: block; clear: both; }
@@ -892,9 +895,11 @@ body { padding: 0; margin: 0; display: table; width: 100%; }
 
 .m-recording-motivational { text-align: center; font-size: 72px; line-height: 1.8; display: none; }
 
-.btn { display: inline-block; padding: 7px 21px; cursor: pointer; position: relative; z-index: 100; }
+.btn { display: inline-block; padding: 7px 21px; cursor: pointer; position: relative; z-index: 100; text-decoration: none; }
+.btn i.fa { padding-right: 7px; }
 
 .btn-success { background: #3bc492; color: white; }
+.btn-success:hover { background: #62d0a8; }
 
 .btn-link { text-decoration: underline; }
 
@@ -912,4 +917,6 @@ body { padding: 0; margin: 0; display: table; width: 100%; }
 
 .m-recording-screen { text-align: center; color: #444444; padding: 1em; }
 .m-recording-screen .recording-toggle { font-size: 160px; width: 250px; height: 250px; line-height: 250px; display: inline-block; margin: 0px auto; background: #eeeeee; border-radius: 30px; border: 1px solid white; box-shadow: 0px 2px 3px #cccccc; }
-.m-recording-screen .recording-time { margin-top: 50px; font-size: 72px; }
+.m-recording-screen .recording-time { margin-top: 50px; font-size: 72px; line-height: 80px; }
+.m-recording-screen .description { padding-top: 20px; }
+.m-recording-screen .description textarea { width: 100%; height: 100%; padding: 4px 8px; border: 1px solid #cccccc; border-radius: 3px; }

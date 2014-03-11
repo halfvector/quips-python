@@ -39,7 +39,7 @@ var config = {
     lib_dest_js: 		"public/assets/js",
 
 	// concat scripts
-	src_js: 			["app/javascripts/app.js", "app/javascripts/audio-capture.js", "app/javascripts/recording-control.js"],
+	src_js: 			["app/javascripts/app.js", "app/javascripts/audio-capture.js", "app/javascripts/recording-control.js", "app/javascripts/quip-control.js", "app/javascripts/nav-user-dropdown.js"],
 	dest_js: 			"public/assets/js",
 	js_concat_target: 	"main.js",
 

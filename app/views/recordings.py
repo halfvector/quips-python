@@ -41,7 +41,7 @@ class RecordingsView(FlaskView):
             #user = User.objects.get(id=ObjectId(session['aid']))
 
             recording = Recording()
-            recording.description = ''
+            recording.description = request.form['description']
             recording.isPublic = True
             recording.user = DBRef('user', session['aid'])
             recording.save()

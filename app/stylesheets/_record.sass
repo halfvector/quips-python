@@ -10,10 +10,17 @@
     cursor: pointer
     position: relative
     z-index: 100
+    text-decoration: none
+
+    i.fa
+        padding-right: 7px
 
 .btn-success
     background: #3bc492
     color: #fff
+
+    &:hover
+        background: lighten(#3bc492, 10%)
 
 .btn-link
     text-decoration: underline
@@ -96,3 +103,14 @@
     .recording-time
         margin-top: 50px
         font-size: 72px
+        line-height: 80px
+
+    .description
+        padding-top: 20px
+
+        textarea
+            width: 100%
+            height: 100%
+            padding: 4px 8px
+            border: 1px solid #ccc
+            border-radius: 3px

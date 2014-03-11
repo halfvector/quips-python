@@ -20,7 +20,7 @@
 
         audioCapture: new App.AudioCapture(),
         audioBlob: null,
-        audoPlayer: null,
+        audioPlayer: null,
 
         events: {
             "click .recording-toggle": "toggle",
@@ -33,8 +33,8 @@
         },
 
         initialize: function(options) {
-            this.audoPlayer = document.getElementById("recorded-preview");
-            console.log('this.audoPlayer = ' + this.audoPlayer);
+            this.audioPlayer = document.getElementById("recorded-preview");
+            console.log('this.audioPlayer = ' + this.audioPlayer);
 
             // TODO: a pretty advanced but neat feature may be to store a backup copy of a recording locally in case of a crash or user-error
             /*
@@ -123,14 +123,16 @@
         cancelRecording: function(event) {
             console.log("Recorder::onRecordingCompleted(); canceling recording");
             $(".m-recording-container").removeClass("flipped");
-            this.audoPlayer.src = "";
+            this.audioPlayer.src = "";
         },
 
         uploadRecording: function(event) {
             console.log("Recorder::onRecordingCompleted(); uploading recording");
 
-             var data = new FormData();
-            data.append('description', 'description');
+            var description = $('textarea[name=description]')[0].value;
+
+            var data = new FormData();
+            data.append('description', description);
             data.append('isPublic', 1);
             data.append('audio-blob', this.audioBlob);
 
@@ -189,9 +191,9 @@
             setTimeout(function() {
                 console.log("Recorder::onRecordingCompleted(); changing audioplayer");
 
-                this.audoPlayer = document.getElementById("recorded-preview");
-                this.audoPlayer.src = url;
-                this.audoPlayer.play();
+                this.audioPlayer = document.getElementById("recorded-preview");
+                this.audioPlayer.src = url;
+                this.audioPlayer.play();
 
                 this.render();
             }.bind(this), 200);
@@ -211,4 +213,4 @@
         App.Instances.Recorder.render();
     })(jQuery);
 
-})();
+})(App);
