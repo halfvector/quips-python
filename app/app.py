@@ -1,67 +1,72 @@
-from bson.objectid import ObjectId
-from flask import url_for, render_template, g, session, request
-from models import Recording, User
+from flask import Flask, session
+from flask.ext.mongoengine import MongoEngine, MongoEngineSessionInterface
+#from flask_oauth import OAuth
+from gunicorn.util import getcwd
+import os
+from werkzeug.debug import DebuggedApplication
 
-from bootstrap import app, db
-from views import homepage, recordings, auth
+def create_app():
+    app = Flask(__name__, static_folder = 'assets')
+    app.config['MONGODB_SETTINGS'] = {'DB': 'quips'}
+    app.config['SECRET_KEY'] = 'secretness'
 
-from views.auth import destroy_session
+    app.config['TESTING'] = False
+    app.config['DEBUG'] = False
+    app.config['DEBUG_TB_PANELS'] = (
+        'flask.ext.debugtoolbar.panels.versions.VersionDebugPanel',
+        'flask.ext.debugtoolbar.panels.timer.TimerDebugPanel',
+        'flask.ext.debugtoolbar.panels.headers.HeaderDebugPanel',
+        'flask.ext.debugtoolbar.panels.request_vars.RequestVarsDebugPanel',
+        'flask.ext.debugtoolbar.panels.template.TemplateDebugPanel',
+        'flask.ext.debugtoolbar.panels.logger.LoggingPanel',
+        'flask.ext.mongoengine.panels.MongoDebugPanel'
 
-#with app.test_request_context():
-#    print url_for('HomepageView:index')
-    #print url_for('homepage')
-    #print url_for('my_profile')
-    #print url_for('show_user_profile', username='unbuffered')
+        #'flask_debugtoolbar_lineprofilerpanel.panels.LineProfilerPanel'
+    )
+    app.config['DEBUG_TB_PROFILER_ENABLED'] = False
+    #flask_ap.config['DEBUG_TB_TEMPLATE_EDITOR_ENABLED'] = True
+    app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 
-# before processing a request, try to pull in the user session
-@app.before_request
-def before_request():
-    g.user = None
+    app.debug = True
+    app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024 # 10MB file size limit
+    #flask_ap.config.from_object(__name__)
+    app.config['RECORDINGS_PATH'] = os.path.realpath(getcwd() + '/../public/recordings/')
 
-    # check if session is valid
-    if 'authenticated' in session and 'username' in session and 'aid' in session:
-        app.logger.debug("user has active session and is authenticated: " + session['username'])
-        g.user = {
-            'username': session['username'],
-            'authenticated': session['authenticated'],
-        }
-        return
+    if not os.path.isdir(app.config['RECORDINGS_PATH']):
+        app.logger.debug("path does not exist: " + app.config['RECORDINGS_PATH'])
+        exit()
 
-    # if session doesn't already contain useful data
-    # attempt to use cookie to rebuild session
-    app.logger.debug("attempting session restore from cookie")
+    app.logger.debug("Recordings Path: " + app.config['RECORDINGS_PATH'])
 
-    if 'aid' in request.cookies:
-        try:
-            aid = request.cookies.get('aid')
-            user = User.objects.get(id=ObjectId(aid))
+    db = MongoEngine()
+    db.init_app(app)
 
-        except:
-            user = None
-            destroy_session()
+    #toolbar = DebugToolbarExtension(flask_ap)
 
-        if user is not None:
-            # save session data so we don't have to go manually fishing it out of db next time around
-            session['username'] = user.username
-            session['aid'] = str(user.id)
-            session['oauth'] = (user.oauthToken, user.oauthTokenSecret)
-            session['authenticated'] = True
-        else:
-            session['username'] = ''
-            session['authenticated'] = False
+    app.session_interface = MongoEngineSessionInterface(db)
 
-        g.user = {
-            'username': session['username'],
-            'authenticated': session['authenticated'],
-        }
+    return (app, db)
 
-        app.logger.debug("session['username'] = " + g.user['username'])
+print "spawning webapp and db.."
 
-        app.logger.debug("user session recreated using cookie.aid for user:" + g.user['username'])
-        return
+(webapp, db) = create_app()
 
-    # we don't have any long-term cookies, user is anonymous
-    app.logger.debug("user session is anonymous")
+# init twitter oauth
+# oauth = OAuth()
+# twitter = oauth.remote_app(
+#     'twitter',
+#     base_url='https://api.twitter.com/1/',
+#     request_token_url='https://api.twitter.com/oauth/request_token',
+#     access_token_url='https://api.twitter.com/oauth/access_token',
+#     authorize_url='https://api.twitter.com/oauth/authenticate',
+#     consumer_key='3v4UIfTkiYRq1xaH6suZKA',
+#     consumer_secret='Ftb9ffIAccJPXULkpNo66c9FGJUohRRO027twv4Oc'
+# )
+# twitter.flask_ap = flask_ap
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0')
+#@twitter.tokengetter
+def get_twitter_token():
+    webapp.logger.debug("twitter tokenizer")
+    if 'oauth' in session:
+        return session['oauth']
+

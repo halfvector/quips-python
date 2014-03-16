@@ -1,88 +1,73 @@
+// our globals
 var App = {
     Models: {},
     Collections: {},
     Views: {},
     Converters: {},
-    Instances: {}
+    Instances: {},
+    Loaders: {}
 };
 
+Log = {
+    log: function log(msg) {
+        console.log.apply(console, arguments);
+    },
 
+    debug: function debug(msg) {
+        console.debug.apply(console, arguments);
+    },
 
-(function(){
-    'use strict';
-    //var app = app || {};
+    info: function info(msg) {
+        console.info.apply(console, arguments);
+    },
 
+    warn: function warn(msg) {
+        console.warn.apply(console, arguments);
+    },
 
-    App.Router = Backbone.Router.extend({
-        routes: {
-            ""          : "index",
-            "/q/:id"    : "quip"
-        },
+    error: function error(msg) {
+        console.error.apply(console, arguments);
+    }
+};
 
-        initialize: function() {
-        },
+function domReadyCallback(){
 
-        index: function(page) {
-        },
+    // start backbone
+    Backbone = require('backbone');
+    Backbone.$ = $;
 
-        quip: function(page) {
-        }
+    // start all of our controllers
+    $('[backbone-controller]').each(function(el) {
+
+        controllerName = $(el).attr('backbone-controller');
+
+        if(controllerName in App.Loaders)
+            App.Loaders[controllerName]();
+        else
+            console.log("Controller: " + controllerName + " not found");
+
     });
+}
 
-    Backbone.View.Binders.csswidth = function(model, attr, prop) {
-        return {
-            get: function() {
-                return this.css('width');
-            },
-            set: function(value) {
-                //console.log('setting prop: ' + value);
-                this.css('width', value);
-            }
-        };
-    };
+$.domReady(function(){
 
-    App.Views.Main = Backbone.View.extend({
-        el: '.m-quips',
+    //domReadyCallback();
+    //return;
 
-        initialize: function() {
-            console.log('initializing main view');
+    // setup raven to push messages to our sentry
+    Raven.config('https://d098712cb7064cf08b74d01b6f3be3da@app.getsentry.com/20973', {
+        whitelistUrls: ['www.bugvote.com'] // set for production
+    }).install();
 
-            console.log('spawning audio player..');
+    domReadyCallback();
 
-            soundManager.setup({
-                debugMode: true,
-                url: '/assets/swf/',
-                preferFlash: false,
-                onready: function() {
-                    console.log("soundManager ready");
-                }
-            });
-
-            $('.m-quip').each(function(idx, elem){
-                var view = new App.Views.Quip({
-                    el: elem,
-                    model: new App.Models.Quip({progress: 0})
-                });
-
-                App.Quips.add(view.model);
-
-                view.render();
-            });
-
-            // listen to collection
-            this.listenTo(App.Quips, 'add', this.quipAdded);
-        },
-
-        quipAdded: function(quip) {
-            console.log("quip added!");
-        }
-    });
-
-
-
-    $(function(){
-        new App.Views.Main();
-    });
-
-
-})();
+    /*
+    try {
+        domReadyCallback();
+    } catch(err) {
+        Raven.captureException(err);
+        console.log("[Error] Unhandled Exception was caught and sent via Raven:");
+        console.dir(err);
+    }
+    */
+});

@@ -1,12 +1,5 @@
 from datetime import datetime
-from bootstrap import db
-
-class OldUser(db.Document):
-    meta = {'collection': 'users'}
-    fullName = db.StringField(required=True, max_length=32)
-    nickName = db.StringField(required=True, max_length=16)
-    authProvider = db.StringField()
-    authId = db.StringField()
+from app import db
 
 class User(db.Document):
     username = db.StringField()

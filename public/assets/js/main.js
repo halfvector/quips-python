@@ -1,91 +1,76 @@
+// our globals
 var App = {
     Models: {},
     Collections: {},
     Views: {},
     Converters: {},
-    Instances: {}
+    Instances: {},
+    Loaders: {}
 };
 
+Log = {
+    log: function log(msg) {
+        console.log.apply(console, arguments);
+    },
 
+    debug: function debug(msg) {
+        console.debug.apply(console, arguments);
+    },
 
-(function(){
-    'use strict';
-    //var app = app || {};
+    info: function info(msg) {
+        console.info.apply(console, arguments);
+    },
 
+    warn: function warn(msg) {
+        console.warn.apply(console, arguments);
+    },
 
-    App.Router = Backbone.Router.extend({
-        routes: {
-            ""          : "index",
-            "/q/:id"    : "quip"
-        },
+    error: function error(msg) {
+        console.error.apply(console, arguments);
+    }
+};
 
-        initialize: function() {
-        },
+function domReadyCallback(){
 
-        index: function(page) {
-        },
+    // start backbone
+    Backbone = require('backbone');
+    Backbone.$ = $;
 
-        quip: function(page) {
-        }
+    // start all of our controllers
+    $('[backbone-controller]').each(function(el) {
+
+        controllerName = $(el).attr('backbone-controller');
+
+        if(controllerName in App.Loaders)
+            App.Loaders[controllerName]();
+        else
+            console.log("Controller: " + controllerName + " not found");
+
     });
+}
 
-    Backbone.View.Binders.csswidth = function(model, attr, prop) {
-        return {
-            get: function() {
-                return this.css('width');
-            },
-            set: function(value) {
-                //console.log('setting prop: ' + value);
-                this.css('width', value);
-            }
-        };
-    };
+$.domReady(function(){
 
-    App.Views.Main = Backbone.View.extend({
-        el: '.m-quips',
+    //domReadyCallback();
+    //return;
 
-        initialize: function() {
-            console.log('initializing main view');
+    // setup raven to push messages to our sentry
+    Raven.config('https://d098712cb7064cf08b74d01b6f3be3da@app.getsentry.com/20973', {
+        whitelistUrls: ['www.bugvote.com'] // set for production
+    }).install();
 
-            console.log('spawning audio player..');
+    domReadyCallback();
 
-            soundManager.setup({
-                debugMode: true,
-                url: '/assets/swf/',
-                preferFlash: false,
-                onready: function() {
-                    console.log("soundManager ready");
-                }
-            });
-
-            $('.m-quip').each(function(idx, elem){
-                var view = new App.Views.Quip({
-                    el: elem,
-                    model: new App.Models.Quip({progress: 0})
-                });
-
-                App.Quips.add(view.model);
-
-                view.render();
-            });
-
-            // listen to collection
-            this.listenTo(App.Quips, 'add', this.quipAdded);
-        },
-
-        quipAdded: function(quip) {
-            console.log("quip added!");
-        }
-    });
-
-
-
-    $(function(){
-        new App.Views.Main();
-    });
-
-
-})();
+    /*
+    try {
+        domReadyCallback();
+    } catch(err) {
+        Raven.captureException(err);
+        console.log("[Error] Unhandled Exception was caught and sent via Raven:");
+        console.dir(err);
+    }
+    */
+});
 
 (function(App){
     'use strict';
@@ -444,11 +429,88 @@ var App = {
         _canvasBg.src = "/img/bg6-wide.jpg";
     }
 })(App);
-(function(){
+App.Loaders.RecordingsList = (function(){
+    'use strict';
+
+    // load Quip Views
+    App.Loaders.QuipController();
+
+    App.Router = Backbone.Router.extend({
+        routes: {
+            ""          : "index",
+            "/q/:id"    : "quip"
+        },
+
+        initialize: function() {
+        },
+
+        index: function(page) {
+        },
+
+        quip: function(page) {
+        }
+    });
+
+    App.Views.AudioPlayer = Backbone.View.extend({
+    });
+
+    App.Views.RecordingsList = Backbone.View.extend({
+        el: '.m-quips',
+
+        initialize: function() {
+
+            //Log.debug("RecordingsList initialization");
+            console.log("RecordingsList initialized");
+
+            soundManager.setup({
+                debugMode: true,
+                url: '/assets/swf/',
+                preferFlash: false,
+                onready: function() {
+                    console.log("soundManager ready");
+                }
+            });
+
+            $('.m-quip').each(function spawnQuipController(elem){
+
+                var view = new App.Views.Quip({
+                    el: elem,
+                    model: new App.Models.Quip({progress: 0})
+                });
+
+                App.Quips.add(view.model);
+                view.render();
+            });
+
+            // process all timestamps
+            var vagueTime = require('vague-time');
+            var now = new Date();
+
+            $("time[datetime]").each(function generateVagueDate(ele){
+                ele.textContent = vagueTime.get({from:now, to:new Date(ele.getAttribute('datetime'))});
+            });
+
+            this.listenTo(App.Quips, 'add', this.quipAdded);
+        },
+
+        quipAdded: function(quip) {
+
+        }
+    });
+
+    var view = new App.Views.RecordingsList();
+    view.render();
+
+});
+
+App.Loaders.RecordingController = (function(){
     'use strict';
 
     App.Converters.IntToTime = function(value) {
-        //console.log("value = " + value);
+
+        if(value < 0 )
+            return -value;
+
         var minutes = Math.round(value / 60);
         var seconds = Math.round(value - minutes * 60);
         var str = ("00" + minutes).substr(-2) + ":" + ("00" + seconds).substr(-2);
@@ -460,6 +522,8 @@ var App = {
             recordingTime: 0
         }
     });
+
+    console.log("spawning recorder view");
 
     App.Views.Recorder = Backbone.View.extend({
         el: '.m-recording-container',
@@ -651,21 +715,19 @@ var App = {
         }
     });
 
-    (function(){
-        App.Instances.Recorder = new App.Views.Recorder({
-            model: new App.Models.Recorder({recordingTime: 5})
-        });
+    App.Instances.Recorder = new App.Views.Recorder({
+        model: new App.Models.Recorder({recordingTime: -3})
+    });
 
-        App.Instances.Recorder.render();
-    })(jQuery);
+    App.Instances.Recorder.render();
+});
 
-})(App);
 /**
  * Quip
  * Plays audio clips
  * Manages their state tracking
  */
-(function(){
+App.Loaders.QuipController = (function(){
     'use strict';
 
     App.Models.Quip = Backbone.Model.extend({
@@ -680,11 +742,12 @@ var App = {
         },
 
         save: function(attributes) {
-            console.dir(attributes);
+            console.log("Quip Model saving to localStorage");
             localStorage.setItem(this.id, JSON.stringify(this.toJSON()));
         },
 
         fetch: function() {
+            console.log("Quip Model loading from localStorage");
             this.set(JSON.parse(localStorage.getItem(this.id)));
         },
 
@@ -702,42 +765,44 @@ var App = {
 
     App.Collections.Quips = Backbone.Collection.extend({
         model: App.Models.Quip
-        //localStorage: new Backbone.LocalStorage("quips")
     });
 
     App.Quips = new App.Collections.Quips();
+
     App.CurrentQuipAudio = null;
 
     App.Views.Quip = Backbone.View.extend({
 
         el: '.m-quip',
 
+        quipId: 0,
+
         initialize: function(options) {
-            //console.log("initializing quip");
-            this.el = options.el;
-            this.model.view = this;
+            var $this = this;
 
-            var quipId = $(this.el).data("quipId");
-            this.model.set({'id' : quipId});
-            //this.model.sync();
+            $this.el = options.el;
+            $this.model.view = $this;
+            $this.quipId = $($this.el).data("quipId");
 
-            var value = localStorage.getItem("quip:" + quipId + ":progress");
-            if(value !== null) {
-                this.model.set({'progress':value});
-            }
+            //console.log("Initializing Quip Controller: id=" + quipId);
 
-            value = localStorage.getItem("quip:" + quipId + ":position");
-            if(value !== null)
-                this.model.set({'position':value});
+            var progress = localStorage.getItem("quip:" + $this.quipId + ":progress");
+            var position = localStorage.getItem("quip:" + $this.quipId + ":position");
+
+            this.model.on('change:progress', function(model, progress) {
+                $("div[data-quip-id='" + $this.quipId + "'] .progress-bar").css("width", progress);
+            });
+
+            this.model.set({'id' : $this.quipId, 'progress':progress, 'position':position});
         },
 
         events: {
             "click .description" : "toggle"
         },
 
-        bindings: {
-            "csswidth .progress-bar" : "progress"
-        },
+//        bindings: {
+//            "csswidth .progress-bar" : "progress"
+//        },
 
         toggle: function(event) {
             var quipId = $(this.el).data("quipId");
@@ -813,11 +878,60 @@ var App = {
         }
 
     });
-})(App);
+});
 /**
  * Primary Nav User Dropdown Widget
  */
-(function($, window, document, undefined) {
+
+App.Loaders.DropdownWidget = (function(){
+    'use strict';
+
+    App.Views.DropdownWidget = Backbone.View.extend({
+        el: '.m-dropdown',
+        overlay: null,
+
+        events: {
+            "click" : "toggle"
+        },
+
+        initialize: function() {
+            this.el = $(this.el);
+        },
+
+        toggle: function() {
+            if($(this.el).data("dropdown-state") === "open") {
+                Log.log("close");
+                $(this.el).data("dropdown-state", "closed");
+                $(this.el).removeClass("opened");
+                this.overlay.removeClass("opened");
+
+            } else {
+                Log.log("open");
+                $(this.el).data("dropdown-state", "open");
+                $(this.el).addClass("opened");
+
+                if(!this.overlay) {
+                    // create the overlay for the first time
+                    this.overlay = $('<div class="capture-overlay"></div>');
+                    $(this.el).append(this.overlay);
+                }
+
+                this.overlay.addClass("opened");
+            }
+        },
+
+        render: function() {
+            //$(this.el).html(this.template());
+            return this.bindModel();
+        }
+    });
+
+    var widget = new App.Views.DropdownWidget();
+    widget.render();
+
+});
+
+App.Loaders.DropdownWidgetJquery = (function($, window, document, undefined) {
     'use strict';
 
     if(!$.fn.lexy)
@@ -894,4 +1008,4 @@ var App = {
 
     $(".m-dropdown").dropdown();
 
-}(jQuery));
+});

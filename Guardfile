@@ -25,7 +25,7 @@ UNICORN_PID_FILE='tmp/gunicorn.pid'
 
 # capture .py code changes
 guard :shell do
-	watch /^app\/(.*\.py)$/ do |m|
+	watch %r{app/(.+\.[py|html])$} do |m|
 		#`touch tmp/pychange`
 		msg = "Code-change detected: #{m[1]}"
 		print "-> #{msg}\n"

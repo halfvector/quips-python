@@ -1,8 +1,11 @@
-(function(){
+App.Loaders.RecordingController = (function(){
     'use strict';
 
     App.Converters.IntToTime = function(value) {
-        //console.log("value = " + value);
+
+        if(value < 0 )
+            return -value;
+
         var minutes = Math.round(value / 60);
         var seconds = Math.round(value - minutes * 60);
         var str = ("00" + minutes).substr(-2) + ":" + ("00" + seconds).substr(-2);
@@ -14,6 +17,8 @@
             recordingTime: 0
         }
     });
+
+    console.log("spawning recorder view");
 
     App.Views.Recorder = Backbone.View.extend({
         el: '.m-recording-container',
@@ -205,12 +210,9 @@
         }
     });
 
-    (function(){
-        App.Instances.Recorder = new App.Views.Recorder({
-            model: new App.Models.Recorder({recordingTime: 5})
-        });
+    App.Instances.Recorder = new App.Views.Recorder({
+        model: new App.Models.Recorder({recordingTime: -3})
+    });
 
-        App.Instances.Recorder.render();
-    })(jQuery);
-
-})(App);
+    App.Instances.Recorder.render();
+});

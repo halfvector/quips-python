@@ -1,9 +1,11 @@
-from flask import redirect, url_for, request, flash, session, g
+from flask import redirect, url_for, request, flash, session, g, Blueprint
 import time
 
-from bootstrap import app
 from models import User
 from twython import Twython
+from app import webapp
+
+bp = Blueprint('auth', __name__, template_folder='templates')
 
 def destroy_session():
     session.pop('authenticated', None)
@@ -12,7 +14,7 @@ def destroy_session():
     session.pop('aid', None)
 
 
-@app.route('/auth')
+@bp.route('/auth')
 def auth_login():
     destroy_session()
     #return twitter.authorize(callback=url_for('auth_authorized',next=request.args.get('next') or request.referrer or None))
@@ -20,36 +22,37 @@ def auth_login():
 
     #url = url_for('auth_authorized', _external=True, next=request.args.get('next') or request.referrer or None)
     url = "http://audio.dev.bugvote.com/auth-response"
-    app.logger.debug("url: " + url)
+    webapp.logger.debug("url: " + url)
 
     auth = twitter.get_authentication_tokens(url)
 
-    app.logger.debug(auth['oauth_token'])
-    app.logger.debug(auth['oauth_token_secret'])
-    app.logger.debug(auth['auth_url'])
+    webapp.logger.debug(auth['oauth_token'])
+    webapp.logger.debug(auth['oauth_token_secret'])
+    webapp.logger.debug(auth['auth_url'])
 
     session['oauth_token'] = auth['oauth_token']
     session['oauth_token_secret'] = auth['oauth_token_secret']
 
     return redirect(auth['auth_url'])
 
-@app.route('/logout')
+@bp.route('/logout')
 def auth_logout():
     destroy_session()
-    response = app.make_response(redirect(url_for('HomepageView:index')))
+    response = webapp.make_response(redirect(url_for('homepage.index')))
+
     response.set_cookie('aid', '', expires=0)
     return response
 
 #@twitter.authorized_handler
-@app.route('/auth-response')
+@bp.route('/auth-response')
 def auth_authorized():
-    next_url = request.args.get('next') or url_for('HomepageView:index')
+    next_url = request.args.get('next') or url_for('homepage.index')
 
     try:
-        app.logger.debug("oauth_verifier: " + request.args.get('oauth_verifier'))
+        webapp.logger.debug("oauth_verifier: " + request.args.get('oauth_verifier'))
         twitter = Twython('3v4UIfTkiYRq1xaH6suZKA', 'Ftb9ffIAccJPXULkpNo66c9FGJUohRRO027twv4Oc', session['oauth_token'], session['oauth_token_secret'])
         final = twitter.get_authorized_tokens(request.args.get('oauth_verifier'))
-        app.logger.debug('final oauth: ' + final['oauth_token'] + ' ' + final['oauth_token_secret'])
+        webapp.logger.debug('final oauth: ' + final['oauth_token'] + ' ' + final['oauth_token_secret'])
     except:
         final = None
 
@@ -75,10 +78,10 @@ def auth_authorized():
     user.oauthTokenSecret = final['oauth_token_secret']
     user.save()
 
-    flash('You signed in as %s' % final['screen_name'])
+    flash('You signed in as %s' % final['screen_name'], 'info')
 
     # set a cookie client-side with which we can locate this session
-    response = app.make_response(redirect(next_url))
+    response = webapp.make_response(redirect(next_url))
 
     rawId = str(user.id)
     session['aid'] = rawId

@@ -1,3 +1,9 @@
++keyframes(revealDropdownMenu)
+    0%
+        opacity: 0
+    100%
+        opacity: 1
+
 // basic layout and functionality
 .m-dropdown
     position: relative
@@ -20,17 +26,28 @@
         background: rgba(#777, 0.3)
         display: none
 
+        &.opened
+            display: block
+
+    &.opened
+        .dropdown-content
+            top: 80%
+            //display: block
+            //box-shadow: 0px 4px 10px rgba(#333,0.5)
+            opacity: 1
+            //+animation(revealDropdownMenu 0.5s ease-in)
+
     .dropdown-content
         box-shadow: 0px 3px 6px rgba(#333, 0.3)
         border-radius: $border-radius
-        //background-color: $dropdown-color
         position: absolute
-        top: 80%
+        top: -300px
         right: -50%
         margin-top: 7px
         text-align: center
         z-index: 1000
-        display: none
+        opacity: 0
+        +transition(opacity .5s)
 
     ::focus
         .dropdown-content
@@ -87,6 +104,7 @@
                 color: #333
                 background-color: $dropdown-color
                 line-height: 46px
+                +transition(background-color, 0.2s, ease-in)
 
                 i.fa
                     margin-right: 6px

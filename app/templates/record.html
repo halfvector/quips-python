@@ -8,7 +8,7 @@
 
 {% block body %}
 
-    <div class="m-recording-container">
+    <div backbone-controller="RecordingController" class="m-recording-container">
 
         <div class="card">
 
@@ -24,7 +24,7 @@
                 <audio id="recorded-preview" controls="controls"></audio>
                 <div class="stats">
                     <i class="fa fa-play-circle"></i>
-                    <span class="duration">00:12</span>
+                    <span class="duration"></span>
                 </div>
                 <div class="controls">
                     <a href="#" class="btn btn-success" id="upload-recording">Upload</a>

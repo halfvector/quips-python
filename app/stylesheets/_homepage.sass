@@ -46,35 +46,50 @@
         top: 0
         bottom: 0
         width: 1px
-        +span(2.8)
+        width: 23%
         border-right: 1px solid #ccc
+        z-index: -1
         //margin-left: 240px
 
 .m-quip
     +container
     margin-bottom: 15px
-    +susy-clearfix
+    +clearfix
 
     .meta
-        +span(2.3)
-        +susy-clearfix
-        //background: #eee
+        width: 21%
+
+        a
+            display: block
+
+        .specs
+            font-size: 16px
+            text-align: right
+            line-height: 25px
+            +span(8)
+            padding-right: 10px
+
+            //.name
+
+            time
+                color: #888
+
 
         .avatar
-            float: right
+            +span(4)
+            text-align: right
             img
-                width:  50px
+                width: 50px
     .details
-        +span(last 9)
+        width: 75%
+        float: right
 
         .description
-            +span(9)
-            +container
             border: 1px solid #ddd
             box-shadow: 0px 2px 4px #e7e7e7
             background: #fff
             padding: 10px 14px
-            +susy-clearfix
+            +clearfix
             position: relative
             z-index: 100
             cursor: pointer

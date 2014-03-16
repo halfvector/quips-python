@@ -39,7 +39,7 @@ var config = {
     lib_dest_js: 		"public/assets/js",
 
 	// concat scripts
-	src_js: 			["app/javascripts/app.js", "app/javascripts/audio-capture.js", "app/javascripts/recording-control.js", "app/javascripts/quip-control.js", "app/javascripts/nav-user-dropdown.js"],
+	src_js: 			["app/javascripts/app.js", "app/javascripts/audio-capture.js", "app/javascripts/homepage.js", "app/javascripts/recording-control.js", "app/javascripts/quip-control.js", "app/javascripts/nav-user-dropdown.js"],
 	dest_js: 			"public/assets/js",
 	js_concat_target: 	"main.js",
 
@@ -58,6 +58,7 @@ var config = {
 gulp.task('styles', function() {
 	return gulp.src(config.src_sass)
 		.pipe(sass({style:"compact", sourcemap: false, cacheLocation: "tmp/sass-cache"}))
+            .on('error', gutil.log)
 		//.pipe(autoprefixer("last 2 version", "safari 5", "ie 7", "ie 8", "ie 9", "opera 12.1", "ios 6", "android 4"))
 		//.pipe(gulp.dest(config.dest_css))
 		//.pipe(rename({ suffix: ".min" }))

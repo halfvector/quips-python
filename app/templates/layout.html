@@ -6,59 +6,85 @@
         <title>Quips</title>
         <link href='//fonts.googleapis.com/css?family=Open+Sans:400,600,300' rel='stylesheet' type='text/css' />
         <link rel=stylesheet type=text/css href="{{ url_for('static', filename='css/site.css') }}" />
+
+        <script src="//cdn.ravenjs.com/1.1.11/console,native/raven.min.js"></script>
+        <script type="text/javascript">
+          var heap=heap||[];heap.load=function(a){window._heapid=a;var b=document.createElement("script");b.type="text/javascript",b.async=!0,b.src=("https:"===document.location.protocol?"https:":"http:")+"//cdn.heapanalytics.com/js/heap.js";var c=document.getElementsByTagName("script")[0];c.parentNode.insertBefore(b,c);var d=function(a){return function(){heap.push([a].concat(Array.prototype.slice.call(arguments,0)))}},e=["identify","track"];for(var f=0;f<e.length;f++)heap[e[f]]=d(e[f])};
+          heap.load("2084706587");
+        </script>
     </head>
+
+
+<!--
+
+    )     )                        (        )
+ ( /(  ( /(   *   )   (     (      )\ )  ( /(       (  (
+ )\()) )\())` )  /(   )\    )\    (()/(  )\()) (    )\))(   '
+((_)\ ((_)\  ( )(_))(((_)((((_)(   /(_))((_)\  )\  ((_)()\ )
+ _((_)  ((_)(_(_()) )\___ )\ _ )\ (_))   _((_)((_) _(())\_)()
+| || | / _ \|_   _|((/ __|(_)_\(_)/ __| | || || __|\ \((_)/ /
+| __ || (_) | | |   | (__  / _ \  \__ \ | __ || _|  \ \/\/ /
+|_||_| \___/  |_|    \___|/_/ \_\ |___/ |_||_||___|  \_/\_/
+
+
+
+-->
+
     <body>
         <header class="site-header">
-            <nav class="header-nav">
-                <div class="header_logo">Quips</div>
-                <div class="header_menu">
-                    <span class="header_centered">
-                        <a class="btn btn-success" href="/record"><i class="fa fa-plus"></i> POST</a>
-                    </span>
-                    <ul class="primary-nav">
-                        <li><a href="#"><i class="fa fa-home"></i></a></li>
-                        <li><a href="#"><i class="fa fa-globe"></i></a></li>
-                    </ul>
-                </div>
-                {% if user and user.authenticated %}
-                    <div class="header_user-cp">
-                        <div class="cp">
-                            <div class="m-dropdown">
-                                <a href="#" class="dropdown-trigger">
-                                    <img src="/assets/img/avatar-me-1.jpg" />
-                                </a>
-                                <div class="dropdown-content">
-                                    <ul class="dropdown-list">
-                                        <li>
-                                            <a href="/me"><i class="fa fa-star"></i> Profile</a>
-                                        </li>
-                                        <li>
-                                            <a href="/logout"><i class="fa fa-sign-out"></i> Logout</a>
-                                        </li>
-                                    </ul>
-                                    <span class="arrow-up">
-                                        <i class="fa fa-caret-up"></i>
-                                    </span>
+            <div class="center-grid">
+                <nav class="header-nav">
+                    <div class="header_logo"><a href="/">Quips</a></div>
+                    <div class="header_menu">
+                        <ul class="primary-nav">
+{#                            <li><a href="/"><i class="fa fa-home"></i></a></li>#}
+                            <li><a href="/"><i class="fa fa-globe"></i></a></li>
+                        </ul>
+                    </div>
+                    {% if user and user.authenticated %}
+                        <div class="header_user-cp">
+                            <div class="cp">
+                                <div backbone-controller="DropdownWidget" class="m-dropdown">
+                                    <a href="#" class="dropdown-trigger">
+                                        <img class="cp-avatar" src="/assets/img/avatar-me-1.jpg" />
+                                    </a>
+                                    <div class="dropdown-content">
+                                        <ul class="dropdown-list">
+                                            <li>
+                                                <a href="/me"><i class="fa fa-star"></i> Profile</a>
+                                            </li>
+                                            <li>
+                                                <a href="/logout"><i class="fa fa-sign-out"></i> Logout</a>
+                                            </li>
+                                        </ul>
+                                        <span class="arrow-up">
+                                            <i class="fa fa-caret-up"></i>
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                {% else %}
-                    <div class="header_user-cp">
-                        <a href="/auth" class="cp">Login</a>
-                    </div>
-                {% endif %}
-            </nav>
+                        <div class="header_shortcuts">
+                            <a class="btn btn-success" href="/record"><i class="fa fa-plus"></i> POST</a>
+                        </div>
+                    {% else %}
+                        <div class="header_anon-cp">
+                            <a href="/auth" class="btn btn-link"><i class="fa fa-sign-in"></i> Login</a>
+                        </div>
+                    {% endif %}
+                </nav>
+            </div>
         </header>
         <div class="secondary-header">
             {% block secondary %}{% endblock %}
         </div>
         <div class="page">
+        {% for message in get_flashed_messages() %}
+            <div class="flash">
+                {{ message }}
+            </div>
+        {% endfor %}
             <div class="page-contents">
-                {% for message in get_flashed_messages() %}
-                    <div class="flash">{{ message }}</div>
-                {% endfor %}
-
                 {% block body %}{% endblock %}
             </div>
         </div>
@@ -68,12 +94,15 @@
 {#            <source src="/assets/swf/test.ogg" type="audio/ogg" />#}
 {#        </audio>#}
 
-        <script src="/assets/js/jquery.js"></script>
-        <script src="/assets/js/underscore.js"></script>
-        <script src="/assets/js/backbone.js"></script>
-        <script src="/assets/js/backbone-bindings.js"></script>
+{#        <script src="/assets/js/jquery.js"></script>#}
+{#        <script src="/assets/js/underscore.js"></script>#}
+{#        <script src="/assets/js/backbone.js"></script>#}
+{#        <script src="/assets/js/backbone-bindings.js"></script>#}
 {#        <script src="/assets/js/backbone.epoxy.min.js"></script>#}
-        <script src="/assets/js/backbone-localstorage.js"></script>
+{#        <script src="/assets/js/backbone-localstorage.js"></script>#}
+{#        <script src="//cdn.ravenjs.com/1.1.11/native/raven.min.js"></script>#}
+
+        <script src="/assets/js/ender.js"></script>
         <script src="/assets/js/soundmanager2-nodebug-jsmin.js"></script>
 {#        <script src="https://trigger.io/catalyst/target/target-script-min.js#F303B17B-37F4-496A-8D7A-356B41A2FC59"></script>#}
         <script src="/assets/js/main.js"></script>
