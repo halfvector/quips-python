@@ -142,16 +142,38 @@ App.Loaders.RecordingController = (function(){
             data.append('audio-blob', this.audioBlob);
 
             // send raw blob and metadata
-            $.ajax({
-                url: '/recording/create',
-                data: data,
-                processData: false,
-                contentType: false,
-                type: 'POST',
-                success: function(result) {
-                    console.log("Main::post(); posted");
+//            $.ajax({
+//                url: '/recording/create',
+//                method: 'post',
+//                data: data,
+//                success: function(result) {
+//                    console.log("Main::post(); posted");
+//                }
+//            });
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('post', '/recording/create', true);
+            xhr.setRequestHeader('Accept', 'application/json');
+            xhr.onload = function(result) {
+                if(xhr.status == 200) {
+                    console.log("Recorder::onRecordingCompleted(); manual xhr successful");
+                } else {
+                    console.log("Recorder::onRecordingCompleted(); manual xhr error", xhr);
                 }
-            });
+            };
+            xhr.send(data);
+
+
+//            $.ajax({
+//                url: '/recording/create',
+//                data: data,
+//                processData: false,
+//                contentType: false,
+//                type: 'POST',
+//                success: function(result) {
+//                    console.log("Main::post(); posted");
+//                }
+//            });
 
             $(".m-recording-container").removeClass("flipped");
         },
@@ -205,7 +227,7 @@ App.Loaders.RecordingController = (function(){
         },
 
         render: function() {
-            console.log("Recorder::render(); binding model..");
+            //console.log("Recorder::render(); binding model..");
             //return this.bindModel();
         }
     });

@@ -12,6 +12,6 @@ class Recording(db.Document):
     description = db.StringField(required=True)
     isPublic = db.BooleanField(required=True)
     postedAt = db.DateTimeField(default=datetime.now, required=True)
-    user = db.ReferenceField(User, required=True)
+    user = db.ReferenceField(User, required=True, dbref=False)
 
 

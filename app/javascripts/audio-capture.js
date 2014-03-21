@@ -23,6 +23,9 @@
         var _fftSize = 256;
         var _fftSmoothing = 0.8;
 
+        // spawn background worker
+        _encodingWorker = new Worker("/assets/js/worker-encoder.min.js");
+
         // TODO: firefox's built-in ogg-creation route
         // Firefox 27's manual recording doesn't work. something funny with their sampling rates or buffer sizes
         // the data is fairly garbled, like they are serving 22khz as 44khz or something like that
@@ -82,8 +85,7 @@
                 _audioAnalyzer.smoothingTimeConstant = _fftSmoothing;
             }
 
-            // spawn background worker
-            _encodingWorker = new Worker("/assets/js/worker-encoder.js");
+
 
             // listen to worker messages
             _encodingWorker.onmessage = function(e) {

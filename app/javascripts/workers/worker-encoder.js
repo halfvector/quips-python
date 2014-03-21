@@ -72,4 +72,4 @@ onmessage = function(e) {
 
 };
 
-importScripts('/assets/js/ogg-vorbis-encoder.js');
+importScripts('/assets/js/ogg-vorbis-encoder.min.js');

@@ -101,6 +101,9 @@ $.domReady(function(){
         var _fftSize = 256;
         var _fftSmoothing = 0.8;
 
+        // spawn background worker
+        _encodingWorker = new Worker("/assets/js/worker-encoder.min.js");
+
         // TODO: firefox's built-in ogg-creation route
         // Firefox 27's manual recording doesn't work. something funny with their sampling rates or buffer sizes
         // the data is fairly garbled, like they are serving 22khz as 44khz or something like that
@@ -160,8 +163,7 @@ $.domReady(function(){
                 _audioAnalyzer.smoothingTimeConstant = _fftSmoothing;
             }
 
-            // spawn background worker
-            _encodingWorker = new Worker("/assets/js/worker-encoder.js");
+
 
             // listen to worker messages
             _encodingWorker.onmessage = function(e) {
@@ -653,14 +655,36 @@ App.Loaders.RecordingController = (function(){
             // send raw blob and metadata
             $.ajax({
                 url: '/recording/create',
+                method: 'post',
                 data: data,
-                processData: false,
-                contentType: false,
-                type: 'POST',
                 success: function(result) {
                     console.log("Main::post(); posted");
                 }
             });
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('post', '/recording/create', true);
+            xhr.setRequestHeader('Accept', 'application/json');
+            xhr.onload = function(result) {
+                if(xhr.status == 200) {
+                    console.log("Recorder::onRecordingCompleted(); manual xhr successful");
+                } else {
+                    console.log("Recorder::onRecordingCompleted(); manual xhr error", xhr);
+                }
+            };
+            xhr.send(data);
+
+
+//            $.ajax({
+//                url: '/recording/create',
+//                data: data,
+//                processData: false,
+//                contentType: false,
+//                type: 'POST',
+//                success: function(result) {
+//                    console.log("Main::post(); posted");
+//                }
+//            });
 
             $(".m-recording-container").removeClass("flipped");
         },
@@ -714,7 +738,7 @@ App.Loaders.RecordingController = (function(){
         },
 
         render: function() {
-            console.log("Recorder::render(); binding model..");
+            //console.log("Recorder::render(); binding model..");
             //return this.bindModel();
         }
     });
