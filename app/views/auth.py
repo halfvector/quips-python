@@ -20,8 +20,8 @@ def auth_login():
     #return twitter.authorize(callback=url_for('auth_authorized',next=request.args.get('next') or request.referrer or None))
     twitter = Twython('3v4UIfTkiYRq1xaH6suZKA','Ftb9ffIAccJPXULkpNo66c9FGJUohRRO027twv4Oc')
 
-    #url = url_for('auth_authorized', _external=True, next=request.args.get('next') or request.referrer or None)
-    url = "http://audio.dev.bugvote.com/auth-response"
+    #url = url_for('auth.auth_authorized', _external=True, next=request.args.get('next') or request.referrer or None)
+    url = url_for('auth.auth_authorized', _external=True)
     webapp.logger.debug("url: " + url)
 
     auth = twitter.get_authentication_tokens(url)

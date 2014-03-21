@@ -69,6 +69,3 @@ debugapp = DebuggedApplication(webapp, evalex=True)
 # standalone server
 if __name__ == '__main__':
     webapp.run(host='0.0.0.0')
-    #print "spawning werkzeug run_simple server"
-    #from werkzeug.serving import run_simple
-    #run_simple('0.0.0.0', 5000, webapp, use_debugger=True, use_reloader=True)
