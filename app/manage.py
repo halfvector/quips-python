@@ -1,6 +1,7 @@
 from mongoengine import *
 from datetime import datetime
 from bson.dbref import DBRef
+from models import *
 import optparse
 
 def process_args(option, opt, value, parser):
@@ -10,22 +11,9 @@ def update_db():
 
     connect("quips")
 
-    class User(Document):
-        username = StringField()
-        createdAt = DateTimeField(default=datetime.now)
-        oauthToken = StringField()
-        oauthTokenSecret = StringField()
-
-    class Recording(Document):
-        meta = {'collection': 'recordings'}
-        description = StringField(required=False)
-        isPublic = BooleanField(required=True)
-        postedAt = DateTimeField(default=datetime.now, required=True)
-        user = ReferenceField(User, required=True)
-
     recording = Recording.objects()
 
-    user = User.objects(username='unbuffered')[0]
+    #user = User.objects(username='unbuffered')[0]
 
     for record in recording:
         record.user = DBRef('user', user.id)
@@ -33,8 +21,8 @@ def update_db():
             print "> found record with no description: [%s]" % record.description
             record.description = ""
 
-        record.user = user
-        record.save()
+        #record.user = user
+        #record.save()
 
 if __name__ == '__main__':
     parser = optparse.OptionParser(usage='usage: %prog [options]')
