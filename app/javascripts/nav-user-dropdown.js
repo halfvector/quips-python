@@ -41,7 +41,7 @@ App.Loaders.DropdownWidget = (function(){
 
         render: function() {
             //$(this.el).html(this.template());
-            return this.bindModel();
+            //return this.bindModel();
         }
     });
 

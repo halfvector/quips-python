@@ -206,7 +206,7 @@ App.Loaders.RecordingController = (function(){
 
         render: function() {
             console.log("Recorder::render(); binding model..");
-            return this.bindModel();
+            //return this.bindModel();
         }
     });
 
