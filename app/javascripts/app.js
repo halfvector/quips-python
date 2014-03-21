@@ -1,3 +1,5 @@
+'use strict';
+
 // our globals
 var App = {
     Models: {},
@@ -8,7 +10,7 @@ var App = {
     Loaders: {}
 };
 
-Log = {
+var Log = {
     log: function log(msg) {
         console.log.apply(console, arguments);
     },
@@ -30,6 +32,8 @@ Log = {
     }
 };
 
+var Backbone = null;
+
 function domReadyCallback(){
 
     // start backbone
@@ -39,7 +43,7 @@ function domReadyCallback(){
     // start all of our controllers
     $('[backbone-controller]').each(function(el) {
 
-        controllerName = $(el).attr('backbone-controller');
+        var controllerName = $(el).attr('backbone-controller');
 
         if(controllerName in App.Loaders)
             App.Loaders[controllerName]();

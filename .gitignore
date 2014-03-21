@@ -1,7 +1,1 @@
 *.pyc
-venv
-Gemfile.lock
-node_modues
-node_modules
-bower_components/
-.idea

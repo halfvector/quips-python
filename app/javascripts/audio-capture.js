@@ -89,7 +89,7 @@
             _encodingWorker.onmessage = function(e) {
 
                 // worker finished and has the final encoded audio buffer for us
-                if(e.data.action == "encoded") {
+                if(e.data.action === "encoded") {
                     var encoded_blob = new Blob([e.data.buffer], {type: 'audio/ogg'});
 
                     console.log("got encoded blob: size=" + encoded_blob.size + " type=" + encoded_blob.type);
@@ -132,7 +132,7 @@
 
             // we got a media-stream
             // see if we can let the browser capture it, or if we have to manually captuer it
-            if(false && typeof(MediaRecorder) != "undefined") {
+            if(false && typeof(MediaRecorder) !== "undefined") {
                 startAutomaticEncoding(mediaStream);
             } else {
                 // no media recorder available, got to do it manually
@@ -175,7 +175,7 @@
             if(_audioEncoder) {
                 // stop the automatic encoder
 
-                if(_audioEncoder.state != 'recording') {
+                if(_audioEncoder.state !== 'recording') {
                     console.warn("AudioCapture::stop(); _audioEncoder.state != 'recording'");
                 }
 

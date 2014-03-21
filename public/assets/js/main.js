@@ -1,3 +1,5 @@
+'use strict';
+
 // our globals
 var App = {
     Models: {},
@@ -8,7 +10,7 @@ var App = {
     Loaders: {}
 };
 
-Log = {
+var Log = {
     log: function log(msg) {
         console.log.apply(console, arguments);
     },
@@ -30,6 +32,8 @@ Log = {
     }
 };
 
+var Backbone = null;
+
 function domReadyCallback(){
 
     // start backbone
@@ -39,7 +43,7 @@ function domReadyCallback(){
     // start all of our controllers
     $('[backbone-controller]').each(function(el) {
 
-        controllerName = $(el).attr('backbone-controller');
+        var controllerName = $(el).attr('backbone-controller');
 
         if(controllerName in App.Loaders)
             App.Loaders[controllerName]();
@@ -163,7 +167,7 @@ $.domReady(function(){
             _encodingWorker.onmessage = function(e) {
 
                 // worker finished and has the final encoded audio buffer for us
-                if(e.data.action == "encoded") {
+                if(e.data.action === "encoded") {
                     var encoded_blob = new Blob([e.data.buffer], {type: 'audio/ogg'});
 
                     console.log("got encoded blob: size=" + encoded_blob.size + " type=" + encoded_blob.type);
@@ -206,7 +210,7 @@ $.domReady(function(){
 
             // we got a media-stream
             // see if we can let the browser capture it, or if we have to manually captuer it
-            if(false && typeof(MediaRecorder) != "undefined") {
+            if(false && typeof(MediaRecorder) !== "undefined") {
                 startAutomaticEncoding(mediaStream);
             } else {
                 // no media recorder available, got to do it manually
@@ -249,7 +253,7 @@ $.domReady(function(){
             if(_audioEncoder) {
                 // stop the automatic encoder
 
-                if(_audioEncoder.state != 'recording') {
+                if(_audioEncoder.state !== 'recording') {
                     console.warn("AudioCapture::stop(); _audioEncoder.state != 'recording'");
                 }
 
@@ -812,7 +816,7 @@ App.Loaders.QuipController = (function(){
             var that = this;
 
             var resumePosition = that.model.get('position');
-            if(typeof resumePosition == "undefined")
+            if(typeof resumePosition === "undefined")
                 resumePosition = 0;
             console.log('resumePosition = ' + resumePosition);
 
@@ -874,7 +878,7 @@ App.Loaders.QuipController = (function(){
 
         render: function() {
             //$(this.el).html(this.template());
-            return this.bindModel();
+            //return this.bindModel();
         }
 
     });

@@ -11,7 +11,7 @@ def index():
     now = datetime.now()
 
     for record in recordings:
-        print now - record.postedAt
+        #print now - record.postedAt
         record.age = now - record.postedAt
         record.timestamp = record.postedAt.isoformat()
         if not record.description:

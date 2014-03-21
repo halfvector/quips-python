@@ -88,7 +88,7 @@ App.Loaders.QuipController = (function(){
             var that = this;
 
             var resumePosition = that.model.get('position');
-            if(typeof resumePosition == "undefined")
+            if(typeof resumePosition === "undefined")
                 resumePosition = 0;
             console.log('resumePosition = ' + resumePosition);
 
@@ -150,7 +150,7 @@ App.Loaders.QuipController = (function(){
 
         render: function() {
             //$(this.el).html(this.template());
-            return this.bindModel();
+            //return this.bindModel();
         }
 
     });

@@ -1,7 +1,7 @@
 from flask import Flask, session
 from flask.ext.mongoengine import MongoEngine, MongoEngineSessionInterface
 #from flask_oauth import OAuth
-from gunicorn.util import getcwd
+#from gunicorn.util import getcwd
 import os
 from werkzeug.debug import DebuggedApplication
 
@@ -30,7 +30,7 @@ def create_app():
     app.debug = True
     app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024 # 10MB file size limit
     #flask_ap.config.from_object(__name__)
-    app.config['RECORDINGS_PATH'] = os.path.realpath(getcwd() + '/../public/recordings/')
+    app.config['RECORDINGS_PATH'] = os.path.realpath(os.path.dirname(os.path.realpath(__file__)) + '/../public/recordings/')
 
     if not os.path.isdir(app.config['RECORDINGS_PATH']):
         app.logger.debug("path does not exist: " + app.config['RECORDINGS_PATH'])
