@@ -6,8 +6,8 @@ import ConfigParser
 # this is the entry-point, and all bootstrapping should happen here before the flask/db initialization
 def load_configuration():
 
-    general_config_path = os.path.realpath('../conf/app.ini')
-    flask_config_path = os.path.realpath('../conf/flask.ini')
+    general_config_path = os.path.realpath('conf/app.ini')
+    flask_config_path = os.path.realpath('conf/flask.ini')
 
     if not os.path.isfile(general_config_path):
         print "Sanity Failure: General App config does not exist: [%s]" % general_config_path
