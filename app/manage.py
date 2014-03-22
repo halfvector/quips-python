@@ -5,8 +5,10 @@ from mongoengine import *
 from datetime import datetime
 from bson.dbref import DBRef
 import os
+import bson
 from twython import Twython
 import urllib
+from __builtin__ import type
 
 from app import webapp, TWITTER_KEY, TWITTER_SECRET
 from models import *
@@ -16,7 +18,20 @@ def process_args(option, opt, value, parser):
     return
 
 def update_db():
-    #connect("quips")
+    user = User.objects()[0]
+    print 'user: ' + user.username
+    recordings = Recording.objects() #.filter(Q(user=user))
+
+    for record in recordings:
+        user = record.user
+        print record.description
+        userref = User.objects(id = bson.objectid.ObjectId(user.id))[0]
+        print userref
+        record.user = None
+        record.user = userref
+        record.save()
+
+def update_profile_images():
     users = User.objects()
 
     for user in users:

@@ -13,7 +13,7 @@ def user_recordings(username):
         return
 
     # there has to be a cleaner way to do this
-    recordings = Recording.objects(__raw__={'user':str(user.id)}).order_by('-postedAt')
+    recordings = Recording.objects(user = user).order_by('-postedAt')
 
     now = datetime.now()
 
