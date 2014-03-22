@@ -1,1 +1,4 @@
 *.pyc
+public/profile_images
+venv
+public/recordings

@@ -6,6 +6,7 @@ class User(db.Document):
     createdAt = db.DateTimeField(default=datetime.now)
     oauthToken = db.StringField()
     oauthTokenSecret = db.StringField()
+    profileImage = db.StringField()
 
 class Recording(db.Document):
     meta = {'collection': 'recordings'}
@@ -13,5 +14,3 @@ class Recording(db.Document):
     isPublic = db.BooleanField(required=True)
     postedAt = db.DateTimeField(default=datetime.now, required=True)
     user = db.ReferenceField(User, required=True, dbref=False)
-
-

@@ -142,15 +142,8 @@ App.Loaders.RecordingController = (function(){
             data.append('audio-blob', this.audioBlob);
 
             // send raw blob and metadata
-//            $.ajax({
-//                url: '/recording/create',
-//                method: 'post',
-//                data: data,
-//                success: function(result) {
-//                    console.log("Main::post(); posted");
-//                }
-//            });
 
+            // TODO: get a replacement ajax library (maybe patch reqwest to support binary?)
             var xhr = new XMLHttpRequest();
             xhr.open('post', '/recording/create', true);
             xhr.setRequestHeader('Accept', 'application/json');
@@ -163,7 +156,7 @@ App.Loaders.RecordingController = (function(){
             };
             xhr.send(data);
 
-
+            // not using jquery any more, $.ajax is gone
 //            $.ajax({
 //                url: '/recording/create',
 //                data: data,
@@ -200,8 +193,8 @@ App.Loaders.RecordingController = (function(){
             clearInterval(this.timerId);
             this.audioCapture.stop(this.onRecordingCompleted.bind(this));
 
-            // animate recorder out
-            // animate uploader in
+            // TODO: animate recorder out
+            // TODO: animate uploader in
         },
 
         onRecordingCompleted: function(blob) {
@@ -215,21 +208,16 @@ App.Loaders.RecordingController = (function(){
             var url = URL.createObjectURL(this.audioBlob);
             $(".m-recording-container").addClass("flipped");
 
+            // TODO: get a chainable animations library that supports delays
             setTimeout(function() {
                 console.log("Recorder::onRecordingCompleted(); changing audioplayer");
 
                 this.audioPlayer = document.getElementById("recorded-preview");
                 this.audioPlayer.src = url;
                 this.audioPlayer.play();
-
-                this.render();
             }.bind(this), 200);
-        },
-
-        render: function() {
-            //console.log("Recorder::render(); binding model..");
-            //return this.bindModel();
         }
+
     });
 
     App.Instances.Recorder = new App.Views.Recorder({

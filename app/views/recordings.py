@@ -37,12 +37,12 @@ def create():
     webapp.logger.debug("file: '%s' type: '%s'" % (file.filename, file.content_type))
 
     if file and file.content_type == 'audio/ogg':
-        #user = User.objects.get(id=ObjectId(session['aid']))
+        user = User.objects.get(id=ObjectId(session['aid']))
 
         recording = Recording()
         recording.description = request.form['description']
         recording.isPublic = True
-        recording.user = DBRef('user', session['aid'])
+        recording.user = user # DBRef('user', session['aid'])
         recording.save()
 
         recordingId = str(recording.id)

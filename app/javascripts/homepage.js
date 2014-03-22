@@ -1,34 +1,14 @@
 App.Loaders.RecordingsList = (function(){
     'use strict';
 
-    // load Quip Views
+    // load our Quip MVC
     App.Loaders.QuipController();
-
-    App.Router = Backbone.Router.extend({
-        routes: {
-            ""          : "index",
-            "/q/:id"    : "quip"
-        },
-
-        initialize: function() {
-        },
-
-        index: function(page) {
-        },
-
-        quip: function(page) {
-        }
-    });
-
-    App.Views.AudioPlayer = Backbone.View.extend({
-    });
 
     App.Views.RecordingsList = Backbone.View.extend({
         el: '.m-quips',
 
         initialize: function() {
 
-            //Log.debug("RecordingsList initialization");
             console.log("RecordingsList initialized");
 
             soundManager.setup({

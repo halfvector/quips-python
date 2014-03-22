@@ -31,42 +31,28 @@ function shutdownEncoder() {
     self.close();
 }
 
-function getAverageVolume(array) {
-    var values = 0;
-    var average;
-
-    var length = array.length;
-
-    // get all the frequency amplitudes
-    for (var i = 0; i < length; i++) {
-        values += array[i];
-    }
-
-    average = values / length;
-    return average;
-}
-
 onmessage = function(e) {
 
-    if(e.data.action == "initialize") {
+    if(e.data.action == "initialize")
         initializeEncoder(e.data.sample_rate, e.data.buffer_size);
-    }
 
-    if(e.data.action == "finish") {
+    if(e.data.action == "finish")
         shutdownEncoder();
-    }
 
     if(e.data.action == "process") {
 
         // copy PCM data into Emscripten's linear heap memory
         // so that our transcompiled vorbis-encoder can read and process the data
+        // fun idea: optimize emscripten's heap to avoid changing the underlying data-structure when diff data is written across it
+        //           fork off separate heaps, optimized for bytes, floats, etc. this *might* be a huge win for slow machines.
+        //           also check on how data is being passed to this worker, need to make sure chrome is doing it by-reference and not doing extra copies
+
         for( var i = 0; i < e.data.left.length; i ++) {
             g_AudioBufferLeft[i] = e.data.left[i];
             g_AudioBufferRight[i] = e.data.right[i];
         }
 
-        // 1 second of audio takes 60-200ms to encode, faster than realtime. background worker needs to work on a queue in low-priority
-        // or this needs to be done after PCM data was recorded
+        // one 2.7ghz core encodes 1 second of audio within 60-200ms, a lot faster than realtime!
         Module._lexy_encoder_write(g_EncoderState, g_AudioBufferLeft.byteOffset, g_AudioBufferRight.byteOffset, g_BufferSamples);
     }
 

@@ -14,23 +14,23 @@
     <div backbone-controller="RecordingsList" class="m-quips">
         <div class="divider"></div>
 
-    {% for recording in recordings %}
-        <div class="m-quip" data-quip-id="{{ recording.id }}">
+    {% for post in recordings %}
+        <div class="m-quip" data-quip-id="{{ post.id }}">
             <div class="meta">
                 <div class="specs">
-                    <div class="name">{{ recording.user.username }}</div>
-                    <time datetime="{{ recording.timestamp }}"></time>
+                    <div class="name">{{ post.user.username }}</div>
+                    <time datetime="{{ post.timestamp }}"></time>
                 </div>
                 <div class="avatar">
-                    <a href="/u/{{ recording.user.username }}">
-                        <img src="/assets/img/avatar-placeholder.jpg" />
+                    <a href="/u/{{ post.user.username }}">
+                        <img src="/profile_images/{{ post.user.profileImage }}" />
                     </a>
                 </div>
             </div>
             <div class="details">
                 <div class="description">
                     <div class="progress-bar"></div>
-                    <div class="text">{{ recording.description }}</div>
+                    <div class="text">{{ post.description }}</div>
                 </div>
             </div>
         </div>

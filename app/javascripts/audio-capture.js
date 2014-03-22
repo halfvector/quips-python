@@ -1,7 +1,7 @@
 (function(App){
     'use strict';
 
-    App.AudioCapture = function() {
+    App.AudioCapture = function AudioCapture() {
 
         var _audioContext,
             _audioInput,
@@ -18,7 +18,6 @@
             _latestAudioBuffer = [],
             _cachedGainValue = 1
             ;
-
 
         var _fftSize = 256;
         var _fftSmoothing = 0.8;
@@ -67,15 +66,6 @@
 
                 // create a listener node to grab microphone samples and feed it to our background worker
                 _audioListener = (_audioContext.createScriptProcessor || _audioContext.createJavaScriptNode).call(_audioContext, 8192, 2, 2);
-                _audioListener.onaudioprocess = function(e) {
-                    if(!_isRecording) return;
-
-                    _encodingWorker.postMessage({
-                        action: "process",
-                        left: e.inputBuffer.getChannelData(0),
-                        right: e.inputBuffer.getChannelData(1)
-                    });
-                };
 
                 _audioGain = _audioContext.createGain();
                 _audioGain.gain.value = _cachedGainValue;
@@ -85,10 +75,22 @@
                 _audioAnalyzer.smoothingTimeConstant = _fftSmoothing;
             }
 
+            if(!_encodingWorker)
+                _encodingWorker = new Worker("/assets/js/worker-encoder.min.js");
 
+            // re-hook audio listener node every time we start, because _encodingWorker reference will change
+            _audioListener.onaudioprocess = function(e) {
+                if(!_isRecording) return;
 
-            // listen to worker messages
-            _encodingWorker.onmessage = function(e) {
+                _encodingWorker.postMessage({
+                    action: "process",
+                    left: e.inputBuffer.getChannelData(0),
+                    right: e.inputBuffer.getChannelData(1)
+                });
+            };
+
+            // handle messages from the encoding-worker
+            _encodingWorker.onmessage = function workerMessageHandler(e) {
 
                 // worker finished and has the final encoded audio buffer for us
                 if(e.data.action === "encoded") {
@@ -98,13 +100,17 @@
 
                     if(_onCaptureCompleteCallback)
                         _onCaptureCompleteCallback(encoded_blob);
+
+                    // worker has exited, unreference it
+                    _encodingWorker = null;
                 }
             };
 
-            // configure encoding sample-rate
-            //_encodingWorker.postMessage({action: "initialize", sample_rate: _audioContext.sampleRate});
+            // configure worker with a sampling rate and buffer-size
             _encodingWorker.postMessage({action: "initialize", sample_rate: _audioContext.sampleRate, buffer_size: _audioListener.bufferSize });
 
+            // TODO: it might be better to listen for a message back from the background worker before considering that recording has began
+            // it's easier to trim audio than capture a missing word at the start of a sentence
             _isRecording = true;
 
             // connect audio nodes
@@ -112,36 +118,48 @@
 
             console.log("AudioCapture::startManualEncoding(); Connecting Audio Nodes..");
 
+            console.log("input->gain");
             _audioInput.connect(_audioGain);
+            console.log("gain->analyzer");
             _audioGain.connect(_audioAnalyzer);
+            console.log("analyzer->listesner");
             _audioAnalyzer.connect(_audioListener);
+            console.log("listener->destination");
             _audioListener.connect(_audioContext.destination);
+
+            return true;
         }
 
         function shutdownManualEncoding() {
-            console.log("AudioCapture::shutdownManualEncoding(); Tearing up Audio Node connections..");
+            console.log("AudioCapture::shutdownManualEncoding(); Tearing down AudioAPI connections..");
 
-            _audioInput.disconnect(_audioGain);
-            _audioGain.disconnect(_audioAnalyzer);
-            _audioAnalyzer.disconnect(_audioListener);
+            console.log("listener->destination");
             _audioListener.disconnect(_audioContext.destination);
+            console.log("analyzer->listesner");
+            _audioAnalyzer.disconnect(_audioListener);
+            console.log("gain->analyzer");
+            _audioGain.disconnect(_audioAnalyzer);
+            console.log("input->gain");
+            _audioInput.disconnect(_audioGain);
         }
 
-        // manual ogg-creation for Firefox and Chrome
+        // called when user allows us use of their microphone
         function onMicrophoneProvided(mediaStream) {
 
             _cachedMediaStream = mediaStream;
 
-            // we got a media-stream
-            // see if we can let the browser capture it, or if we have to manually captuer it
+            // we could check if the browser can perform its own encoding and use it
+            // Firefox can provide us ogg+speex? files, but unforunately that codec isn't what we need
+            // so instead we perform manual encoding everywhere right now
+
             if(false && typeof(MediaRecorder) !== "undefined") {
                 startAutomaticEncoding(mediaStream);
             } else {
-                // no media recorder available, got to do it manually
+                // no media recorder available, do it manually
                 startManualEncoding(mediaStream);
             }
 
-            // start analyzer
+            // TODO: might be a good time to start a spectral analyzer
         }
 
         this.setGain = function(gain) {
@@ -162,6 +180,8 @@
             getUserMedia.call(navigator, { audio: true }, onMicrophoneProvided, function(err) {
                 console.log("AudioCapture::start(); could not grab microphone. perhaps user didn't give us permission?");
             });
+
+            return true;
         };
 
         this.stop = function(captureCompleteCallback) {
@@ -185,10 +205,11 @@
                 _audioEncoder.stop();
             }
 
-            //this.stopAnalyzerUpdates();
+            // TODO: stop any active spectral analysis
         };
     };
 
+    // unused at the moment
     function Analyzer() {
 
         var _audioCanvasAnimationId,
@@ -216,8 +237,7 @@
             _audioAnalyzer.getByteFrequencyData(freqData);
 
             var numBars = _audioAnalyzer.frequencyBinCount;
-            var barSpacing = _fftBarSpacing;
-            var barWidth = Math.floor(_canvasWidth / numBars) - barSpacing;
+            var barWidth = Math.floor(_canvasWidth / numBars) - _fftBarSpacing;
 
 
             _audioSpectrumCanvas.globalCompositeOperation = "source-over";
@@ -233,7 +253,7 @@
                 var value = freqData[i];
                 var scaled_value = (value / 256) * _canvasHeight;
 
-                x = i * (barWidth+barSpacing);
+                x = i * (barWidth+_fftBarSpacing);
                 y = _canvasHeight - scaled_value;
                 w = barWidth;
                 h = scaled_value;
@@ -267,7 +287,7 @@
 
             for(i = 0; i < numBars; i ++)
             {
-                x = i * (barWidth+barSpacing);
+                x = i * (barWidth+_fftBarSpacing);
                 y = _canvasHeight - Math.round(_hitHeights[i]) - 2;
                 w = barWidth;
                 h = barWidth;

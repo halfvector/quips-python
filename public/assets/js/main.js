@@ -10,28 +10,6 @@ var App = {
     Loaders: {}
 };
 
-var Log = {
-    log: function log(msg) {
-        console.log.apply(console, arguments);
-    },
-
-    debug: function debug(msg) {
-        console.debug.apply(console, arguments);
-    },
-
-    info: function info(msg) {
-        console.info.apply(console, arguments);
-    },
-
-    warn: function warn(msg) {
-        console.warn.apply(console, arguments);
-    },
-
-    error: function error(msg) {
-        console.error.apply(console, arguments);
-    }
-};
-
 var Backbone = null;
 
 function domReadyCallback(){
@@ -40,30 +18,28 @@ function domReadyCallback(){
     Backbone = require('backbone');
     Backbone.$ = $;
 
-    // start all of our controllers
+    // locate any controllers on the page and load their requirements
+    // this is a part of Angular i really liked, the custom directives
     $('[backbone-controller]').each(function(el) {
 
         var controllerName = $(el).attr('backbone-controller');
-
         if(controllerName in App.Loaders)
             App.Loaders[controllerName]();
         else
-            console.log("Controller: " + controllerName + " not found");
-
+            console.error("Controller: '" + controllerName + "' not found");
     });
 }
 
 $.domReady(function(){
 
-    //domReadyCallback();
-    //return;
-
     // setup raven to push messages to our sentry
     Raven.config('https://d098712cb7064cf08b74d01b6f3be3da@app.getsentry.com/20973', {
-        whitelistUrls: ['www.bugvote.com'] // set for production
+        whitelistUrls: ['icanhaserror.com'] // production only
     }).install();
 
     domReadyCallback();
+
+    // for production, could wrap domReadyCallback and let raven handle any exceptions
 
     /*
     try {
@@ -79,7 +55,7 @@ $.domReady(function(){
 (function(App){
     'use strict';
 
-    App.AudioCapture = function() {
+    App.AudioCapture = function AudioCapture() {
 
         var _audioContext,
             _audioInput,
@@ -96,7 +72,6 @@ $.domReady(function(){
             _latestAudioBuffer = [],
             _cachedGainValue = 1
             ;
-
 
         var _fftSize = 256;
         var _fftSmoothing = 0.8;
@@ -145,15 +120,6 @@ $.domReady(function(){
 
                 // create a listener node to grab microphone samples and feed it to our background worker
                 _audioListener = (_audioContext.createScriptProcessor || _audioContext.createJavaScriptNode).call(_audioContext, 8192, 2, 2);
-                _audioListener.onaudioprocess = function(e) {
-                    if(!_isRecording) return;
-
-                    _encodingWorker.postMessage({
-                        action: "process",
-                        left: e.inputBuffer.getChannelData(0),
-                        right: e.inputBuffer.getChannelData(1)
-                    });
-                };
 
                 _audioGain = _audioContext.createGain();
                 _audioGain.gain.value = _cachedGainValue;
@@ -163,10 +129,22 @@ $.domReady(function(){
                 _audioAnalyzer.smoothingTimeConstant = _fftSmoothing;
             }
 
+            if(!_encodingWorker)
+                _encodingWorker = new Worker("/assets/js/worker-encoder.min.js");
 
+            // re-hook audio listener node every time we start, because _encodingWorker reference will change
+            _audioListener.onaudioprocess = function(e) {
+                if(!_isRecording) return;
 
-            // listen to worker messages
-            _encodingWorker.onmessage = function(e) {
+                _encodingWorker.postMessage({
+                    action: "process",
+                    left: e.inputBuffer.getChannelData(0),
+                    right: e.inputBuffer.getChannelData(1)
+                });
+            };
+
+            // handle messages from the encoding-worker
+            _encodingWorker.onmessage = function workerMessageHandler(e) {
 
                 // worker finished and has the final encoded audio buffer for us
                 if(e.data.action === "encoded") {
@@ -176,13 +154,17 @@ $.domReady(function(){
 
                     if(_onCaptureCompleteCallback)
                         _onCaptureCompleteCallback(encoded_blob);
+
+                    // worker has exited, unreference it
+                    _encodingWorker = null;
                 }
             };
 
-            // configure encoding sample-rate
-            //_encodingWorker.postMessage({action: "initialize", sample_rate: _audioContext.sampleRate});
+            // configure worker with a sampling rate and buffer-size
             _encodingWorker.postMessage({action: "initialize", sample_rate: _audioContext.sampleRate, buffer_size: _audioListener.bufferSize });
 
+            // TODO: it might be better to listen for a message back from the background worker before considering that recording has began
+            // it's easier to trim audio than capture a missing word at the start of a sentence
             _isRecording = true;
 
             // connect audio nodes
@@ -190,36 +172,48 @@ $.domReady(function(){
 
             console.log("AudioCapture::startManualEncoding(); Connecting Audio Nodes..");
 
+            console.log("input->gain");
             _audioInput.connect(_audioGain);
+            console.log("gain->analyzer");
             _audioGain.connect(_audioAnalyzer);
+            console.log("analyzer->listesner");
             _audioAnalyzer.connect(_audioListener);
+            console.log("listener->destination");
             _audioListener.connect(_audioContext.destination);
+
+            return true;
         }
 
         function shutdownManualEncoding() {
-            console.log("AudioCapture::shutdownManualEncoding(); Tearing up Audio Node connections..");
+            console.log("AudioCapture::shutdownManualEncoding(); Tearing down AudioAPI connections..");
 
-            _audioInput.disconnect(_audioGain);
-            _audioGain.disconnect(_audioAnalyzer);
-            _audioAnalyzer.disconnect(_audioListener);
+            console.log("listener->destination");
             _audioListener.disconnect(_audioContext.destination);
+            console.log("analyzer->listesner");
+            _audioAnalyzer.disconnect(_audioListener);
+            console.log("gain->analyzer");
+            _audioGain.disconnect(_audioAnalyzer);
+            console.log("input->gain");
+            _audioInput.disconnect(_audioGain);
         }
 
-        // manual ogg-creation for Firefox and Chrome
+        // called when user allows us use of their microphone
         function onMicrophoneProvided(mediaStream) {
 
             _cachedMediaStream = mediaStream;
 
-            // we got a media-stream
-            // see if we can let the browser capture it, or if we have to manually captuer it
+            // we could check if the browser can perform its own encoding and use it
+            // Firefox can provide us ogg+speex? files, but unforunately that codec isn't what we need
+            // so instead we perform manual encoding everywhere right now
+
             if(false && typeof(MediaRecorder) !== "undefined") {
                 startAutomaticEncoding(mediaStream);
             } else {
-                // no media recorder available, got to do it manually
+                // no media recorder available, do it manually
                 startManualEncoding(mediaStream);
             }
 
-            // start analyzer
+            // TODO: might be a good time to start a spectral analyzer
         }
 
         this.setGain = function(gain) {
@@ -240,6 +234,8 @@ $.domReady(function(){
             getUserMedia.call(navigator, { audio: true }, onMicrophoneProvided, function(err) {
                 console.log("AudioCapture::start(); could not grab microphone. perhaps user didn't give us permission?");
             });
+
+            return true;
         };
 
         this.stop = function(captureCompleteCallback) {
@@ -263,10 +259,11 @@ $.domReady(function(){
                 _audioEncoder.stop();
             }
 
-            //this.stopAnalyzerUpdates();
+            // TODO: stop any active spectral analysis
         };
     };
 
+    // unused at the moment
     function Analyzer() {
 
         var _audioCanvasAnimationId,
@@ -294,8 +291,7 @@ $.domReady(function(){
             _audioAnalyzer.getByteFrequencyData(freqData);
 
             var numBars = _audioAnalyzer.frequencyBinCount;
-            var barSpacing = _fftBarSpacing;
-            var barWidth = Math.floor(_canvasWidth / numBars) - barSpacing;
+            var barWidth = Math.floor(_canvasWidth / numBars) - _fftBarSpacing;
 
 
             _audioSpectrumCanvas.globalCompositeOperation = "source-over";
@@ -311,7 +307,7 @@ $.domReady(function(){
                 var value = freqData[i];
                 var scaled_value = (value / 256) * _canvasHeight;
 
-                x = i * (barWidth+barSpacing);
+                x = i * (barWidth+_fftBarSpacing);
                 y = _canvasHeight - scaled_value;
                 w = barWidth;
                 h = scaled_value;
@@ -345,7 +341,7 @@ $.domReady(function(){
 
             for(i = 0; i < numBars; i ++)
             {
-                x = i * (barWidth+barSpacing);
+                x = i * (barWidth+_fftBarSpacing);
                 y = _canvasHeight - Math.round(_hitHeights[i]) - 2;
                 w = barWidth;
                 h = barWidth;
@@ -438,34 +434,14 @@ $.domReady(function(){
 App.Loaders.RecordingsList = (function(){
     'use strict';
 
-    // load Quip Views
+    // load our Quip MVC
     App.Loaders.QuipController();
-
-    App.Router = Backbone.Router.extend({
-        routes: {
-            ""          : "index",
-            "/q/:id"    : "quip"
-        },
-
-        initialize: function() {
-        },
-
-        index: function(page) {
-        },
-
-        quip: function(page) {
-        }
-    });
-
-    App.Views.AudioPlayer = Backbone.View.extend({
-    });
 
     App.Views.RecordingsList = Backbone.View.extend({
         el: '.m-quips',
 
         initialize: function() {
 
-            //Log.debug("RecordingsList initialization");
             console.log("RecordingsList initialized");
 
             soundManager.setup({
@@ -653,15 +629,8 @@ App.Loaders.RecordingController = (function(){
             data.append('audio-blob', this.audioBlob);
 
             // send raw blob and metadata
-            $.ajax({
-                url: '/recording/create',
-                method: 'post',
-                data: data,
-                success: function(result) {
-                    console.log("Main::post(); posted");
-                }
-            });
 
+            // TODO: get a replacement ajax library (maybe patch reqwest to support binary?)
             var xhr = new XMLHttpRequest();
             xhr.open('post', '/recording/create', true);
             xhr.setRequestHeader('Accept', 'application/json');
@@ -674,7 +643,7 @@ App.Loaders.RecordingController = (function(){
             };
             xhr.send(data);
 
-
+            // not using jquery any more, $.ajax is gone
 //            $.ajax({
 //                url: '/recording/create',
 //                data: data,
@@ -711,8 +680,8 @@ App.Loaders.RecordingController = (function(){
             clearInterval(this.timerId);
             this.audioCapture.stop(this.onRecordingCompleted.bind(this));
 
-            // animate recorder out
-            // animate uploader in
+            // TODO: animate recorder out
+            // TODO: animate uploader in
         },
 
         onRecordingCompleted: function(blob) {
@@ -726,21 +695,16 @@ App.Loaders.RecordingController = (function(){
             var url = URL.createObjectURL(this.audioBlob);
             $(".m-recording-container").addClass("flipped");
 
+            // TODO: get a chainable animations library that supports delays
             setTimeout(function() {
                 console.log("Recorder::onRecordingCompleted(); changing audioplayer");
 
                 this.audioPlayer = document.getElementById("recorded-preview");
                 this.audioPlayer.src = url;
                 this.audioPlayer.play();
-
-                this.render();
             }.bind(this), 200);
-        },
-
-        render: function() {
-            //console.log("Recorder::render(); binding model..");
-            //return this.bindModel();
         }
+
     });
 
     App.Instances.Recorder = new App.Views.Recorder({
@@ -755,15 +719,15 @@ App.Loaders.RecordingController = (function(){
  * Plays audio clips
  * Manages their state tracking
  */
-App.Loaders.QuipController = (function(){
+App.Loaders.QuipController = (function QuipControlLoader(){
     'use strict';
 
     App.Models.Quip = Backbone.Model.extend({
         default: {
-            title: '',
+            id: 0,
+            progress: 0,
             position: 0,
-            duration: 0,
-            progress: 0
+            duration: 0
         },
 
         initialize: function() {
@@ -817,6 +781,7 @@ App.Loaders.QuipController = (function(){
             var progress = localStorage.getItem("quip:" + $this.quipId + ":progress");
             var position = localStorage.getItem("quip:" + $this.quipId + ":position");
 
+            // update visuals to indicate playback progress
             this.model.on('change:progress', function(model, progress) {
                 $("div[data-quip-id='" + $this.quipId + "'] .progress-bar").css("width", progress);
             });
@@ -828,26 +793,20 @@ App.Loaders.QuipController = (function(){
             "click .description" : "toggle"
         },
 
-//        bindings: {
-//            "csswidth .progress-bar" : "progress"
-//        },
 
         toggle: function(event) {
             var quipId = $(this.el).data("quipId");
             var url = '/recordings/' + quipId + '.ogg';
-            console.log("toggling recording: " + url);
+            console.log("toggling recording playback: " + url);
 
             var that = this;
 
-            var resumePosition = that.model.get('position');
-            if(typeof resumePosition === "undefined")
-                resumePosition = 0;
+            var resumePosition = parseInt(that.model.get('position') || 0);
             console.log('resumePosition = ' + resumePosition);
 
             // check if sound is already buffered
             var existingQuip = soundManager.getSoundById(quipId);
             if( existingQuip ) {
-
                 // resume existing audio clip
                 if(!existingQuip.paused && existingQuip.playState) {
                     soundManager.pauseAll();
@@ -869,6 +828,7 @@ App.Loaders.QuipController = (function(){
 
             soundManager.pauseAll();
 
+            // would be better if this was a completely single-page ajax app and there was a persistent audio player
             App.CurrentQuipAudio = soundManager.createSound({
                 id: quipId,
                 url: url,
@@ -876,41 +836,58 @@ App.Loaders.QuipController = (function(){
                 autoLoad: true,
                 autoPlay: false,
                 from: resumePosition,
-                onload: function() {
-                    //console.log("loaded: " + url);
-                    console.log('starting playback at@ ' + resumePosition);
-                    this.setPosition(resumePosition);
-                    this.play();
-                },
-                onfinish: function() {
-                    console.log("finished playing: " + this.id);
-                    // TODO: perfect place to fire a hook to a playback manager to move onto the next song
-                },
                 whileloading: function() {
                     //console.log("loaded: " + this.bytesLoaded + " of " + this.bytesTotal);
                 },
+                onload: function() {
+                    console.log('App.CurrentQuipAudio(); starting playback at position = ' + resumePosition + '/' + this.duration);
+
+                    if((resumePosition + 10) > this.duration) {
+                        // the track is pretty much complete, loop it
+                        // FIXME: this should actually happen earlier, we should know that the action will cause a rewind
+                        //        and indicate the rewind visually so there is no surprise
+                        resumePosition = 0;
+                        console.log('App.CurrentQuipAudio(); track needed a rewind');
+                    }
+
+                    // FIXME: resume compatibility with various browsers
+                    // FIXME: sometimes you resume a file all the way at the end, should loop them around
+                    this.setPosition(resumePosition);
+                    this.play();
+                },
                 whileplaying: function() {
-                    //console.log("playing: " + this.position + " of " + this.duration);
-                    var progress = this.duration > 0 ? 100 * this.position / this.duration : 0;
-                    progress = progress.toFixed(0) + "%";
-                    that.model.set({'progress' : progress});
+                    var progress = (this.duration > 0 ? 100 * this.position / this.duration : 0).toFixed(0) + '%';
                     localStorage.setItem("quip:" + this.id + ":progress", progress);
                     localStorage.setItem("quip:" + this.id + ":position", this.position.toFixed(0));
+                    that.model.set({'progress' : progress});
+                },
+                onpause: function() {
+                    console.log("App.CurrentQuipAudio(); paused: " + this.id);
+                    var progress = (this.duration > 0 ? 100 * this.position / this.duration : 0).toFixed(0) + '%';
+                    localStorage.setItem("quip:" + this.id + ":progress", '100%');
+                    localStorage.setItem("quip:" + this.id + ":position", this.duration);
+                    that.model.set({'progress' : progress});
+                },
+                onfinish: function() {
+                    console.log("App.CurrentQuipAudio(); finished playing: " + this.id);
+
+                    // store completion in browser
+                    localStorage.setItem("quip:" + this.id + ":progress", '100%');
+                    localStorage.setItem("quip:" + this.id + ":position", this.duration);
+                    that.model.set({'progress' : '100%'});
+
+                    // TODO: unlock some sort of achievement for finishing this track, mark it a diff color, etc
+                    // TODO: this is a good place to fire a hook to a playback manager to move onto the next audio clip
                 }
             });
-        },
-
-        render: function() {
-            //$(this.el).html(this.template());
-            //return this.bindModel();
         }
-
     });
 });
 /**
  * Primary Nav User Dropdown Widget
  */
 
+// the backbone variant
 App.Loaders.DropdownWidget = (function(){
     'use strict';
 
@@ -926,15 +903,13 @@ App.Loaders.DropdownWidget = (function(){
             this.el = $(this.el);
         },
 
+        // toggle dropdown and shade
         toggle: function() {
             if($(this.el).data("dropdown-state") === "open") {
-                Log.log("close");
                 $(this.el).data("dropdown-state", "closed");
                 $(this.el).removeClass("opened");
                 this.overlay.removeClass("opened");
-
             } else {
-                Log.log("open");
                 $(this.el).data("dropdown-state", "open");
                 $(this.el).addClass("opened");
 
@@ -946,11 +921,6 @@ App.Loaders.DropdownWidget = (function(){
 
                 this.overlay.addClass("opened");
             }
-        },
-
-        render: function() {
-            //$(this.el).html(this.template());
-            //return this.bindModel();
         }
     });
 
@@ -959,6 +929,7 @@ App.Loaders.DropdownWidget = (function(){
 
 });
 
+// this was the jquery variant
 App.Loaders.DropdownWidgetJquery = (function($, window, document, undefined) {
     'use strict';
 
@@ -976,18 +947,13 @@ App.Loaders.DropdownWidgetJquery = (function($, window, document, undefined) {
                 e.stopPropagation();
                 that.toggle();
             });
-
-            //this.toggle();
         };
 
         this.toggle = function() {
             if(element.data("dropdown-state") === "open")
-            {
                 this.hideMenu();
-            } else
-            {
+            else
                 this.showMenu();
-            }
         };
 
         this.hideMenu = function() {

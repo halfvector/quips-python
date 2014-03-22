@@ -1,17 +1,17 @@
 from datetime import datetime
-from flask import render_template, g, Blueprint
-from models import Recording
+from flask import render_template, g, Blueprint, session
+
+from models import Recording, User
 
 bp = Blueprint('homepage', __name__, template_folder='templates')
 
 @bp.route('/')
 def index():
-    recordings = Recording.objects(description__contains='').order_by('-postedAt')
+    recordings = Recording.objects().order_by('-postedAt')
 
     now = datetime.now()
 
     for record in recordings:
-        #print now - record.postedAt
         record.age = now - record.postedAt
         record.timestamp = record.postedAt.isoformat()
         if not record.description:

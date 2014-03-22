@@ -3,15 +3,15 @@
  * Plays audio clips
  * Manages their state tracking
  */
-App.Loaders.QuipController = (function(){
+App.Loaders.QuipController = (function QuipControlLoader(){
     'use strict';
 
     App.Models.Quip = Backbone.Model.extend({
         default: {
-            title: '',
+            id: 0,
+            progress: 0,
             position: 0,
-            duration: 0,
-            progress: 0
+            duration: 0
         },
 
         initialize: function() {
@@ -65,6 +65,7 @@ App.Loaders.QuipController = (function(){
             var progress = localStorage.getItem("quip:" + $this.quipId + ":progress");
             var position = localStorage.getItem("quip:" + $this.quipId + ":position");
 
+            // update visuals to indicate playback progress
             this.model.on('change:progress', function(model, progress) {
                 $("div[data-quip-id='" + $this.quipId + "'] .progress-bar").css("width", progress);
             });
@@ -76,26 +77,20 @@ App.Loaders.QuipController = (function(){
             "click .description" : "toggle"
         },
 
-//        bindings: {
-//            "csswidth .progress-bar" : "progress"
-//        },
 
         toggle: function(event) {
             var quipId = $(this.el).data("quipId");
             var url = '/recordings/' + quipId + '.ogg';
-            console.log("toggling recording: " + url);
+            console.log("toggling recording playback: " + url);
 
             var that = this;
 
-            var resumePosition = that.model.get('position');
-            if(typeof resumePosition === "undefined")
-                resumePosition = 0;
+            var resumePosition = parseInt(that.model.get('position') || 0);
             console.log('resumePosition = ' + resumePosition);
 
             // check if sound is already buffered
             var existingQuip = soundManager.getSoundById(quipId);
             if( existingQuip ) {
-
                 // resume existing audio clip
                 if(!existingQuip.paused && existingQuip.playState) {
                     soundManager.pauseAll();
@@ -117,6 +112,7 @@ App.Loaders.QuipController = (function(){
 
             soundManager.pauseAll();
 
+            // would be better if this was a completely single-page ajax app and there was a persistent audio player
             App.CurrentQuipAudio = soundManager.createSound({
                 id: quipId,
                 url: url,
@@ -124,34 +120,50 @@ App.Loaders.QuipController = (function(){
                 autoLoad: true,
                 autoPlay: false,
                 from: resumePosition,
-                onload: function() {
-                    //console.log("loaded: " + url);
-                    console.log('starting playback at@ ' + resumePosition);
-                    this.setPosition(resumePosition);
-                    this.play();
-                },
-                onfinish: function() {
-                    console.log("finished playing: " + this.id);
-                    // TODO: perfect place to fire a hook to a playback manager to move onto the next song
-                },
                 whileloading: function() {
                     //console.log("loaded: " + this.bytesLoaded + " of " + this.bytesTotal);
                 },
+                onload: function() {
+                    console.log('App.CurrentQuipAudio(); starting playback at position = ' + resumePosition + '/' + this.duration);
+
+                    if((resumePosition + 10) > this.duration) {
+                        // the track is pretty much complete, loop it
+                        // FIXME: this should actually happen earlier, we should know that the action will cause a rewind
+                        //        and indicate the rewind visually so there is no surprise
+                        resumePosition = 0;
+                        console.log('App.CurrentQuipAudio(); track needed a rewind');
+                    }
+
+                    // FIXME: resume compatibility with various browsers
+                    // FIXME: sometimes you resume a file all the way at the end, should loop them around
+                    this.setPosition(resumePosition);
+                    this.play();
+                },
                 whileplaying: function() {
-                    //console.log("playing: " + this.position + " of " + this.duration);
-                    var progress = this.duration > 0 ? 100 * this.position / this.duration : 0;
-                    progress = progress.toFixed(0) + "%";
-                    that.model.set({'progress' : progress});
+                    var progress = (this.duration > 0 ? 100 * this.position / this.duration : 0).toFixed(0) + '%';
                     localStorage.setItem("quip:" + this.id + ":progress", progress);
                     localStorage.setItem("quip:" + this.id + ":position", this.position.toFixed(0));
+                    that.model.set({'progress' : progress});
+                },
+                onpause: function() {
+                    console.log("App.CurrentQuipAudio(); paused: " + this.id);
+                    var progress = (this.duration > 0 ? 100 * this.position / this.duration : 0).toFixed(0) + '%';
+                    localStorage.setItem("quip:" + this.id + ":progress", '100%');
+                    localStorage.setItem("quip:" + this.id + ":position", this.duration);
+                    that.model.set({'progress' : progress});
+                },
+                onfinish: function() {
+                    console.log("App.CurrentQuipAudio(); finished playing: " + this.id);
+
+                    // store completion in browser
+                    localStorage.setItem("quip:" + this.id + ":progress", '100%');
+                    localStorage.setItem("quip:" + this.id + ":position", this.duration);
+                    that.model.set({'progress' : '100%'});
+
+                    // TODO: unlock some sort of achievement for finishing this track, mark it a diff color, etc
+                    // TODO: this is a good place to fire a hook to a playback manager to move onto the next audio clip
                 }
             });
-        },
-
-        render: function() {
-            //$(this.el).html(this.template());
-            //return this.bindModel();
         }
-
     });
 });

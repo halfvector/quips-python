@@ -2,6 +2,7 @@
  * Primary Nav User Dropdown Widget
  */
 
+// the backbone variant
 App.Loaders.DropdownWidget = (function(){
     'use strict';
 
@@ -17,15 +18,13 @@ App.Loaders.DropdownWidget = (function(){
             this.el = $(this.el);
         },
 
+        // toggle dropdown and shade
         toggle: function() {
             if($(this.el).data("dropdown-state") === "open") {
-                Log.log("close");
                 $(this.el).data("dropdown-state", "closed");
                 $(this.el).removeClass("opened");
                 this.overlay.removeClass("opened");
-
             } else {
-                Log.log("open");
                 $(this.el).data("dropdown-state", "open");
                 $(this.el).addClass("opened");
 
@@ -37,11 +36,6 @@ App.Loaders.DropdownWidget = (function(){
 
                 this.overlay.addClass("opened");
             }
-        },
-
-        render: function() {
-            //$(this.el).html(this.template());
-            //return this.bindModel();
         }
     });
 
@@ -50,6 +44,7 @@ App.Loaders.DropdownWidget = (function(){
 
 });
 
+// this was the jquery variant
 App.Loaders.DropdownWidgetJquery = (function($, window, document, undefined) {
     'use strict';
 
@@ -67,18 +62,13 @@ App.Loaders.DropdownWidgetJquery = (function($, window, document, undefined) {
                 e.stopPropagation();
                 that.toggle();
             });
-
-            //this.toggle();
         };
 
         this.toggle = function() {
             if(element.data("dropdown-state") === "open")
-            {
                 this.hideMenu();
-            } else
-            {
+            else
                 this.showMenu();
-            }
         };
 
         this.hideMenu = function() {

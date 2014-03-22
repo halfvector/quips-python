@@ -1,71 +1,64 @@
 from bson.objectid import ObjectId
 from flask import url_for, render_template, g, session, request
-from werkzeug.debug import DebuggedApplication
 
 from app import webapp, db   # start server
 import views                 # import views
 
-#webapp.register_blueprint(views.homepage.bp)
-#webapp.register_blueprint(views.recordings.bp)
-#webapp.register_blueprint(views.auth.bp)
-#webapp.register_blueprint(views.user.bp)
+#from app import webapp, db
+from views import homepage, recordings, auth, user
+
+webapp.register_blueprint(homepage.bp)
+webapp.register_blueprint(recordings.bp)
+webapp.register_blueprint(auth.bp)
+webapp.register_blueprint(user.bp)
 
 from models import Recording, User
 
-# before processing a request, try to pull in the user session
-@webapp.before_request
-def before_request():
-    g.user = None
-    global webapp
-
-    # check if session is valid
-    if 'authenticated' in session and 'username' in session and 'aid' in session:
-        webapp.logger.debug("user has active session and is authenticated: " + session['username'])
-        g.user = {
-            'username': session['username'],
-            'authenticated': session['authenticated'],
-        }
-        return
-
-    # if session doesn't already contain useful data
-    # attempt to use cookie to rebuild session
-    webapp.logger.debug("attempting session restore from cookie")
-
+def load_user_commons():
+    user = None
     if 'aid' in request.cookies:
         try:
             aid = request.cookies.get('aid')
-            user = User.objects.get(id=ObjectId(aid))
+            user = User.objects.get(id=aid)
+
+            if not 'aid' in session:
+                session['aid'] = aid
 
         except:
             user = None
             views.auth.destroy_session()
 
-        if user is not None:
-            # save session data so we don't have to go manually fishing it out of db next time around
-            session['username'] = user.username
-            session['aid'] = str(user.id)
-            session['oauth'] = (user.oauthToken, user.oauthTokenSecret)
-            session['authenticated'] = True
-        else:
-            session['username'] = ''
-            session['authenticated'] = False
-
+    if user is not None:
+        # save session data so we don't have to go manually fishing it out of db next time around
         g.user = {
-            'username': session['username'],
-            'authenticated': session['authenticated'],
+            'username': user.username,
+            'authenticated': True,
+            'profileImage': user.profileImage,
+            'oauth': (user.oauthToken, user.oauthTokenSecret)
         }
 
-        webapp.logger.debug("session['username'] = " + g.user['username'])
-
         webapp.logger.debug("user session recreated using cookie.aid for user:" + g.user['username'])
-        return
+    else:
+        g.user = {
+            'username': '',
+            'authenticated': False,
+            'profileImage': '',
+        }
 
-    # we don't have any long-term cookies, user is anonymous
-    webapp.logger.debug("user session is anonymous")
+        webapp.logger.debug("user session is anonymous")
 
-# wrap flask wsgi entry-point with a browser-based debugger
-debugapp = DebuggedApplication(webapp, evalex=True)
+# before processing a request, try to pull in the user session data
+@webapp.before_request
+def before_request():
+    g.user = None
+    load_user_commons()
+
 
 # standalone server
 if __name__ == '__main__':
+    from werkzeug.debug import DebuggedApplication
+    from flask.ext.debugtoolbar import DebugToolbarExtension
+
+    #toolbar = DebugToolbarExtension(webapp)
+    debugapp = DebuggedApplication(webapp, evalex=True) # wrap flask wsgi entry-point with a browser-based debugger
     webapp.run(host='0.0.0.0')

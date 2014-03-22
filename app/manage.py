@@ -1,3 +1,6 @@
+# helper script for production boxes
+# for doing repairs, backups, etc
+
 from mongoengine import *
 from datetime import datetime
 from bson.dbref import DBRef
@@ -16,7 +19,7 @@ def update_db():
     #user = User.objects(username='unbuffered')[0]
 
     for record in recording:
-        record.user = DBRef('user', user.id)
+        #record.user = user
         if not record.description:
             print "> found record with no description: [%s]" % record.description
             record.description = ""

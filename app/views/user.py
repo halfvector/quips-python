@@ -17,12 +17,10 @@ def user_recordings(username):
     now = datetime.now()
 
     for record in recordings:
-        print now - record.postedAt
         record.age = now - record.postedAt
         record.timestamp = record.postedAt.isoformat()
         if not record.description:
             record.description = "N/A"
-
 
     return render_template(
         'user_recordings.html',
