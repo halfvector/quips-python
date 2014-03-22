@@ -16,7 +16,7 @@ def process_args(option, opt, value, parser):
     return
 
 def update_db():
-    connect("quips")
+    #connect("quips")
     users = User.objects()
 
     for user in users:

@@ -6,13 +6,14 @@ bp = Blueprint('user', __name__, template_folder='templates')
 
 @bp.route('/u/<username>')
 def user_recordings(username):
-    user, user_not_found = User.objects.get_or_create(username=g.user['username'])
+    user, user_not_found = User.objects.get_or_create(username=username)
     if user_not_found:
         # user not found
-        print "user not found"
+        print "warning: user not found!"
         return
 
-    recordings = Recording.objects(user=user).order_by('-postedAt')
+    # there has to be a cleaner way to do this
+    recordings = Recording.objects(__raw__={'user':str(user.id)}).order_by('-postedAt')
 
     now = datetime.now()
 

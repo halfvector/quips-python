@@ -48,23 +48,21 @@ def auth_logout():
 def auth_authorized():
     next_url = request.args.get('next') or url_for('homepage.index')
 
-    webapp.logger.debug('oauth_token: ' + session['oauth_token'])
-    webapp.logger.debug('oauth_token_secret: ' + session['oauth_token_secret'])
-    webapp.logger.debug('oauth_verifier: ' + request.args.get('oauth_verifier'))
+    #webapp.logger.debug('oauth_token: ' + session['oauth_token'])
+    #webapp.logger.debug('oauth_token_secret: ' + session['oauth_token_secret'])
+    #webapp.logger.debug('oauth_verifier: ' + request.args.get('oauth_verifier'))
 
     # use temporarily stored oauth keys from session to finish authentication
     try:
-        #webapp.logger.debug("oauth_verifier: " + request.args.get('oauth_verifier'))
         twitter = Twython(TWITTER_KEY, TWITTER_SECRET, session['oauth_token'], session['oauth_token_secret'])
         final = twitter.get_authorized_tokens(request.args.get('oauth_verifier'))
-        #webapp.logger.debug('final oauth: ' + final['oauth_token'] + ' ' + final['oauth_token_secret'])
 
     except Exception as exception:
         webapp.logger.exception(exception)
         final = None
 
     if final is None:
-        flash(u'Did not sign in')
+        flash('Could not sign in')
         destroy_session() # destroy session, getting rid of all temp oauth keys
         return redirect(next_url)
 
@@ -72,12 +70,12 @@ def auth_authorized():
     twitter = Twython(TWITTER_KEY, TWITTER_SECRET, final['oauth_token'], final['oauth_token_secret'])
     user_info = twitter.show_user(screen_name = final['screen_name'])
 
-    webapp.logger.debug("user profile image: %s" % user_info['profile_image_url'])
-
-    webapp.logger.debug("webapp.config['PATH_USER_PROFILE_IMAGE'] = " + webapp.config['PATH_USER_PROFILE_IMAGE'])
+    # shouldn't happen, but a sanity-check anyway
     if not os.path.exists(webapp.config['PATH_USER_PROFILE_IMAGE']):
-        webapp.logger.debug('oh noes path dont exist')
-        return
+        webapp.logger.debug('WARNING: user profile image path is missing')
+        flash('Sign in error')
+        destroy_session()
+        return redirect(next_url)
 
     # override and save the final oauth keys
     session['oauth'] = (final['oauth_token'], final['oauth_token_secret'])
@@ -102,16 +100,16 @@ def auth_authorized():
     user.save()
 
     user_profile_image_path = webapp.config['PATH_USER_PROFILE_IMAGE'] + '/%s/' % rawId
-    webapp.logger.debug('user_profile_image_path = %s (makedirs)' % user_profile_image_path)
-    os.makedirs(user_profile_image_path)
+    if not os.path.isdir(user_profile_image_path):
+        os.makedirs(user_profile_image_path, mode=775)
 
     user_profile_image_path = webapp.config['PATH_USER_PROFILE_IMAGE'] + user.profileImage
-    webapp.logger.debug('user_profile_image_path = %s' % user_profile_image_path)
-
     webapp.logger.debug("downloading %s to %s" % (user_info['profile_image_url'], user_profile_image_path))
+    #if os.path.isfile(user_profile_image_path):
+    #    os.unlink(user_profile_image_path)
     urllib.urlretrieve(user_info['profile_image_url'], user_profile_image_path)
 
-    flash('You signed in as %s' % final['screen_name'], 'info')
+    flash('Signed in as %s' % final['screen_name'], 'info')
 
     # set a cookie client-side with which we can locate this session
     response = webapp.make_response(redirect(next_url))

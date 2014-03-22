@@ -843,6 +843,8 @@ body { padding: 0; margin: 0; display: table; width: 100%; }
 .page .page-contents::after { content: " "; display: block; clear: both; }
 
 .header-nav { display: table; line-height: 54px; width: 100%; vertical-align: middle; }
+.header-nav .header-btn { padding: 0px; cursor: pointer; position: relative; z-index: 100; text-decoration: none; font-size: 30px; margin: 0; display: inline-block; text-align: center; }
+.header-nav .header-btn i.fa { padding: 0px; }
 .header-nav .header_logo { font-size: 25px; font-weight: 300; display: table-cell; vertical-align: inherit; width: 21%; text-align: right; }
 .header-nav .header_logo a { color: inherit; text-decoration: none; }
 .header-nav .header_menu { padding: 0px; display: table-cell; vertical-align: inherit; }
@@ -854,8 +856,8 @@ body { padding: 0; margin: 0; display: table; width: 100%; }
 .header-nav .header_user-cp .cp .m-dropdown { margin: 0px auto; font-size: 1rem; text-decoration: none; background: green; line-height: 1; display: block; width: 30px; }
 .header-nav .header_user-cp .cp .dropdown-trigger { background: orange; line-height: 1; display: block; }
 .header-nav .header_user-cp img.cp-avatar { width: 30px; margin: 0px; display: block; }
-.header-nav .header_shortcuts { display: table-cell; line-height: 1; width: 120px; text-align: right; vertical-align: inherit; }
-.header-nav .header_shortcuts .btn { font-size: 1rem; }
+.header-nav .header_shortcuts { display: table-cell; text-align: right; vertical-align: inherit; }
+.header-nav .header_shortcuts .header-btn { font-size: 1rem; width: 54px; }
 .header-nav .primary-nav { display: table; margin: 0; padding: 0; margin-left: 4%; }
 .header-nav .primary-nav li { display: table-cell; line-height: inherit; margin: 0; }
 .header-nav .primary-nav a { font-size: 30px; margin: 0; color: #cccccc; display: block; width: 75px; text-align: center; }

@@ -41,6 +41,9 @@
                         </ul>
                     </div>
                     {% if user and user.authenticated %}
+                        <div class="header_shortcuts">
+                            <a class="header-btn btn-success" href="/record"><i class="fa fa-plus"></i></a>
+                        </div>
                         <div class="header_user-cp">
                             <div class="cp">
                                 <div backbone-controller="DropdownWidget" class="m-dropdown">
@@ -62,9 +65,6 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="header_shortcuts">
-                            <a class="btn btn-success" href="/record"><i class="fa fa-plus"></i> POST</a>
                         </div>
                     {% else %}
                         <div class="header_anon-cp">

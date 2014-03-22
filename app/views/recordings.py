@@ -15,14 +15,6 @@ def show_recorder():
         user=g.user
     )
 
-@bp.route('/q/<id>')
-def view(id):
-    webapp.logger.debug('id: ' + id)
-
-def allowed_file(filename):
-    extensions = {'ogg'}
-    return '.' in filename and filename.rsplit('.',1)[1] in extensions
-
 @bp.route('/recording/create', methods=['POST'])
 def create():
     if 'audio-blob' not in request.files:
@@ -42,7 +34,7 @@ def create():
         recording = Recording()
         recording.description = request.form['description']
         recording.isPublic = True
-        recording.user = user # DBRef('user', session['aid'])
+        recording.user = user
         recording.save()
 
         recordingId = str(recording.id)
@@ -58,6 +50,7 @@ def create():
 
 @bp.route('/recording/delete', methods=['POST'])
 def remove():
+    # TODO: implement deleting recordings
     recording=1
     return redirect(url_for('show_recording', recording=recording), code=302)
 
