@@ -6,8 +6,12 @@ import ConfigParser
 # this is the entry-point, and all bootstrapping should happen here before the flask/db initialization
 def load_configuration():
 
-    general_config_path = os.path.realpath('conf/app.ini')
-    flask_config_path = os.path.realpath('conf/flask.ini')
+    app_path = os.path.dirname(__file__)
+
+    print "app_path = " + app_path
+
+    general_config_path = os.path.realpath(app_path + '/../conf/app.ini')
+    flask_config_path = os.path.realpath(app_path + '/../conf/flask.ini')
 
     if not os.path.isfile(general_config_path):
         print "Sanity Failure: General App config does not exist: [%s]" % general_config_path
@@ -33,8 +37,9 @@ def create_app():
     format = Formatter("[%(levelname)s] [%(asctime)s] %(pathname)s:%(lineno)d - %(message)s")
     app.logger.handlers[0].setFormatter(format)
 
-    app.config['RECORDINGS_PATH'] = os.path.realpath('public/recordings/')
-    app.config['PATH_USER_PROFILE_IMAGE'] = os.path.realpath('public/profile_images/')
+    app_path = os.path.dirname(__file__)
+    app.config['RECORDINGS_PATH'] = os.path.realpath(app_path + '/../public/recordings/')
+    app.config['PATH_USER_PROFILE_IMAGE'] = os.path.realpath(app_path + '/../public/profile_images/')
 
     if not os.path.isdir(app.config['RECORDINGS_PATH']):
         app.logger.error("Recordings path does not exist: " + app.config['RECORDINGS_PATH'])
