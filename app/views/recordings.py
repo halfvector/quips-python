@@ -21,7 +21,7 @@ def create():
         webapp.logger.warning('upload attempted without correct file-key')
         return jsonify(status='failed')
 
-    if 'aid' not in session:
+    if 'userId' not in session:
         webapp.logger.warning('upload attempted with session without aid')
         return jsonify(status='failed')
 
@@ -29,7 +29,7 @@ def create():
     webapp.logger.debug("file: '%s' type: '%s'" % (file.filename, file.content_type))
 
     if file and file.content_type == 'audio/ogg':
-        user = User.objects.get(id=ObjectId(session['aid']))
+        user = User.objects.get(id=ObjectId(session['userId']))
 
         recording = Recording()
         recording.description = request.form['description']
