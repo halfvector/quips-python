@@ -1,12 +1,12 @@
 from bson.objectid import ObjectId
 from flask import url_for, render_template, g, session, request
+import hashlib
+import uuid
 
 from app import webapp, db   # start server
-import views                 # import views
+from views import homepage, recordings, auth, user  # import views
 
-#from app import webapp, db
-from views import homepage, recordings, auth, user
-
+# register individual pages
 webapp.register_blueprint(homepage.bp)
 webapp.register_blueprint(recordings.bp)
 webapp.register_blueprint(auth.bp)
@@ -14,22 +14,33 @@ webapp.register_blueprint(user.bp)
 
 from models import Recording, User
 
-def load_user_commons():
+# before processing a request, try to pull in the user session data
+@webapp.before_request
+def before_request():
+    # load user data
+    load_current_user()
+
+    # TODO: generate csrf
+    #
+
+def generate_csrf(input):
+    salt = uuid.uuid4().hex
+    return (hashlib.sha256(salt.encode() + input.encode()).hexdigest(), salt)
+
+def load_current_user():
     user = None
-    if 'aid' in request.cookies:
-        try:
-            aid = request.cookies.get('aid')
-            user = User.objects.get(id=aid)
+    session.permanent = True
 
-            if not 'aid' in session:
-                session['aid'] = aid
+    # load User from raw User.id
+    if 'userId' in session and ObjectId.is_valid(session.get('userId')):
+        user, user_not_found = User.objects.get_or_create(id = ObjectId(session.get('userId')), auto_save=False)
 
-        except:
-            user = None
-            views.auth.destroy_session()
+        if user_not_found:
+            # user not found, clear out session, possibly destroy cookie (user was deleted? user guessing ids?)
+            auth.destroy_session()
 
+    # create user-data that can be seen by any module/page on the site
     if user is not None:
-        # save session data so we don't have to go manually fishing it out of db next time around
         g.user = {
             'username': user.username,
             'authenticated': True,
@@ -37,8 +48,9 @@ def load_user_commons():
             'oauth': (user.oauthToken, user.oauthTokenSecret)
         }
 
-        webapp.logger.debug("user session recreated using cookie.aid for user:" + g.user['username'])
+        webapp.logger.debug("user session: " + g.user['username'])
     else:
+        # anonymous user!
         g.user = {
             'username': '',
             'authenticated': False,
@@ -47,18 +59,12 @@ def load_user_commons():
 
         webapp.logger.debug("user session is anonymous")
 
-# before processing a request, try to pull in the user session data
-@webapp.before_request
-def before_request():
-    g.user = None
-    load_user_commons()
-
-
-# standalone server
+# after app.py configures everything, we can spawn a standalone (non-wsgi) server here
+# handy for quick debugging
 if __name__ == '__main__':
     from werkzeug.debug import DebuggedApplication
     from flask.ext.debugtoolbar import DebugToolbarExtension
 
-    #toolbar = DebugToolbarExtension(webapp)
+    #toolbar = DebugToolbarExtension(webapp) # a little toolbar which exposes sensitive information
     debugapp = DebuggedApplication(webapp, evalex=True) # wrap flask wsgi entry-point with a browser-based debugger
     webapp.run(host='0.0.0.0')

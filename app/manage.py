@@ -1,32 +1,29 @@
 # helper script for production boxes
 # for doing repairs, backups, etc
 
-from mongoengine import *
-from datetime import datetime
-from bson.dbref import DBRef
 import os
 import bson
 from twython import Twython
 import urllib
-from __builtin__ import type
+import optparse
 
 from app import webapp, TWITTER_KEY, TWITTER_SECRET
 from models import *
-import optparse
+
 
 def process_args(option, opt, value, parser):
     return
 
-def update_db():
+def repair_user_references():
     user = User.objects()[0]
     print 'user: ' + user.username
-    recordings = Recording.objects() #.filter(Q(user=user))
+    recordings = Recording.objects()
 
     for record in recordings:
         user = record.user
-        print record.description
+        webapp.logger.debug('user: %s' % user.username)
         userref = User.objects(id = bson.objectid.ObjectId(user.id))[0]
-        print userref
+        webapp.logger.debug('  ref: %s', userref)
         record.user = None
         record.user = userref
         record.save()
@@ -35,31 +32,34 @@ def update_profile_images():
     users = User.objects()
 
     for user in users:
+        webapp.logger.debug('looking up user: %s' % user.username)
         twitter = Twython(TWITTER_KEY, TWITTER_SECRET, user.oauthToken, user.oauthTokenSecret)
         user_info = twitter.show_user(screen_name=user.username)
-        print 'user "%s" profile img: %s' % (user.username, user_info['profile_image_url'])
+        webapp.logger.debug('  user "%s" profile img: %s' % (user.username, user_info['profile_image_url']))
 
+        # figure out paths to store the image, using the filename and extension provided by twitter
         rawId = str(user.id)
-        user_profile_image_filename = user_info['profile_image_url'].split('/')[-1]
+        img_filename = user_info['profile_image_url'].split('/')[-1]
+        img_path_relative = '/%s/%s' % (rawId, img_filename)
+        img_path_absolute = webapp.config['PATH_USER_PROFILE_IMAGE'] + img_path_relative
 
-        user.profileImage = '/%s/%s' % (rawId, user_profile_image_filename)
+        # ensure parent folder exists
+        img_parent_dir = os.path.dirname(img_path_absolute)
+        if not os.path.isdir(img_parent_dir): os.makedirs(img_parent_dir)
+
+        # download image
+        webapp.logger.debug('  downloading profile image to %s' % img_path_absolute)
+        urllib.urlretrieve(user_info['profile_image_url'], img_path_absolute)
+
+        # save changes to user
+        user.profileImage = img_path_relative
         user.save()
-
-        user_profile_image_path = webapp.config['PATH_USER_PROFILE_IMAGE'] + '/%s/' % rawId
-        if not os.path.isdir(user_profile_image_path):
-            os.makedirs(user_profile_image_path)
-        user_profile_image_path = webapp.config['PATH_USER_PROFILE_IMAGE'] + user.profileImage
-        webapp.logger.debug("downloading %s to %s" % (user_info['profile_image_url'], user_profile_image_path))
-        urllib.urlretrieve(user_info['profile_image_url'], user_profile_image_path)
 
 if __name__ == '__main__':
     parser = optparse.OptionParser(usage='usage: %prog [options]')
-
-    # callback action is for argument filtering
-    #parser.add_option('-u', '--update', action='callback', callback=process_args, help='update database')
     parser.add_option('-u', '--update', action='store_true', dest='update', help='update database')
 
     opts, args = parser.parse_args()
 
     if opts.update == True:
-        update_db()
+        update_profile_images()

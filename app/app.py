@@ -1,26 +1,26 @@
 from flask import Flask, session
 from flask.ext.mongoengine import MongoEngine, MongoEngineSessionInterface
-import os
+from os import path
 import ConfigParser
 
-# this is the entry-point, and all bootstrapping should happen here before the flask/db initialization
+# this is the entry-point. all bootstrapping happens in this file.
+
+
 def load_configuration():
 
-    app_path = os.path.dirname(__file__)
+    # resolve paths relative to this file
+    app_path = path.dirname(__file__)
+    general_config_path = path.realpath(app_path + '/../conf/app.ini')
+    flask_config_path = path.realpath(app_path + '/../conf/flask.ini')
 
-    print "app_path = " + app_path
+    # sanity checks
+    if not path.isfile(general_config_path):
+        raise Exception("Sanity Failure: General App config does not exist: [%s]" % general_config_path)
 
-    general_config_path = os.path.realpath(app_path + '/../conf/app.ini')
-    flask_config_path = os.path.realpath(app_path + '/../conf/flask.ini')
+    if not path.isfile(flask_config_path):
+        raise Exception("Sanity Failure: Flask config does not exist: [%s]" % flask_config_path)
 
-    if not os.path.isfile(general_config_path):
-        print "Sanity Failure: General App config does not exist: [%s]" % general_config_path
-        exit()
-
-    if not os.path.isfile(flask_config_path):
-        print "Sanity Failure: Flask config does not exist: [%s]" % flask_config_path
-        exit()
-
+    # import twitter secrets and other stuff we don't want to advertise too much
     general_config = ConfigParser.RawConfigParser()
     general_config.read(general_config_path)
 
@@ -33,30 +33,39 @@ def create_app():
     app = Flask(__name__, static_folder = 'assets')
     app.config.from_pyfile(FLASK_CONFIG_PATH)
 
+    # change debug output formatter to a pretty one-liner
     from logging import Formatter
-    format = Formatter("[%(levelname)s] [%(asctime)s] %(pathname)s:%(lineno)d - %(message)s")
+    format = Formatter("[%(levelname)s] %(asctime)s | %(pathname)s:%(lineno)d | %(message)s")
     app.logger.handlers[0].setFormatter(format)
 
-    app_path = os.path.dirname(__file__)
-    app.config['RECORDINGS_PATH'] = os.path.realpath(app_path + '/../public/recordings/')
-    app.config['PATH_USER_PROFILE_IMAGE'] = os.path.realpath(app_path + '/../public/profile_images/')
+    # resolve paths relative to this file
+    app_path = path.dirname(__file__)
+    app.config.update({
+        'RECORDINGS_PATH': path.realpath(app_path + '/../public/recordings/'),
+        'PATH_USER_PROFILE_IMAGE': path.realpath(app_path + '/../public/profile_images/')
+    })
 
-    if not os.path.isdir(app.config['RECORDINGS_PATH']):
-        app.logger.error("Recordings path does not exist: " + app.config['RECORDINGS_PATH'])
-        exit()
+    # sanity checks
+    if not path.isdir(app.config['RECORDINGS_PATH']):
+        raise Exception("Recordings path does not exist: " + app.config['RECORDINGS_PATH'])
+
+    if not path.isdir(app.config['PATH_USER_PROFILE_IMAGE']):
+        raise Exception("User profile images path does not exist: " + app.config['PATH_USER_PROFILE_IMAGE'])
+
+    # setup database and session storage
+    # db settings come from flask.ini
+    # and same engine is used for storing sessions
+    db = MongoEngine()
+    db.init_app(app)
+    app.session_interface = MongoEngineSessionInterface(db)
 
     app.logger.info("> Recordings path: " + app.config['RECORDINGS_PATH'])
     app.logger.info("> User profile images path: " + app.config['PATH_USER_PROFILE_IMAGE'])
 
-    db = MongoEngine()
-    db.init_app(app)
-
-    app.session_interface = MongoEngineSessionInterface(db)
-
     return (app, db)
 
-print "Analyzing configuration.."
+print "Loading configuration"
 (GENERAL_CONFIG_PATH, FLASK_CONFIG_PATH, TWITTER_KEY, TWITTER_SECRET) = load_configuration()
 
-print "Spawning Web App and ODM.."
+print "Spawning Web App and ODM"
 (webapp, db) = create_app()

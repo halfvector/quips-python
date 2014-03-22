@@ -7,12 +7,11 @@ bp = Blueprint('homepage', __name__, template_folder='templates')
 
 @bp.route('/')
 def index():
-    recordings = Recording.objects().order_by('-postedAt')
+    recordings = Recording.objects[:50].order_by('-postedAt')
 
     now = datetime.now()
 
     for record in recordings:
-        record.age = now - record.postedAt
         record.timestamp = record.postedAt.isoformat()
         if not record.description:
             record.description = "N/A"

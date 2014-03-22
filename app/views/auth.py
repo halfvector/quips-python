@@ -1,6 +1,8 @@
 from flask import redirect, url_for, request, flash, session, g, Blueprint
+import hashlib
 from twython import Twython
 import time, os, urllib
+import uuid
 
 from models import User
 from app import webapp,TWITTER_KEY, TWITTER_SECRET
@@ -8,10 +10,18 @@ from app import webapp,TWITTER_KEY, TWITTER_SECRET
 bp = Blueprint('auth', __name__, template_folder='templates')
 
 def destroy_session():
-    session.pop('authenticated', None)
-    session.pop('oauth', None)
-    session.pop('username', None)
+    session.pop('oauth_token', None)
+    session.pop('oauth_token_secret', None)
     session.pop('aid', None)
+
+@bp.route('/logout')
+def auth_logout():
+    destroy_session()
+
+    # TODO: is there a better way to unset cookies in Flask?
+    response = webapp.make_response(redirect(url_for('homepage.index')))
+    response.set_cookie('aid', '', expires=0)
+    return response
 
 @bp.route('/auth')
 def auth_login():
@@ -19,40 +29,44 @@ def auth_login():
 
     twitter = Twython(TWITTER_KEY, TWITTER_SECRET)
 
-    #url = url_for('auth.auth_authorized', _external=True, next=request.args.get('next') or request.referrer or None)
+    #callback_url = url_for('auth.auth_authorized', _external=True, next=request.args.get('next') or request.referrer or None)
     callback_url = url_for('auth.auth_authorized', _external=True)
-    webapp.logger.debug("twitter auth callback url: " + callback_url)
 
     auth = twitter.get_authentication_tokens(callback_url)
 
-    webapp.logger.debug(auth['oauth_token'])
-    webapp.logger.debug(auth['oauth_token_secret'])
-    #webapp.logger.debug(auth['auth_url'])
-
+    # store temporary oauth-tokens, until twitter redirects back to our callback_url
     session['oauth_token'] = auth['oauth_token']
     session['oauth_token_secret'] = auth['oauth_token_secret']
 
-
     return redirect(auth['auth_url'])
 
-@bp.route('/logout')
-def auth_logout():
-    destroy_session()
-    response = webapp.make_response(redirect(url_for('homepage.index')))
 
-    response.set_cookie('aid', '', expires=0)
-    return response
+def download_user_profile_image(twitter, user):
+    user_info = twitter.show_user(screen_name=user.username)
+    webapp.logger.debug('user "%s" profile img: %s' % (user.username, user_info['profile_image_url']))
 
-#@twitter.authorized_handler
+    # figure out paths to store the image, using the filename and extension provided by twitter
+    rawId = str(user.id)
+    img_filename = user_info['profile_image_url'].split('/')[-1]
+    img_path_relative = '/%s/%s' % (rawId, img_filename)
+    img_path_absolute = webapp.config['PATH_USER_PROFILE_IMAGE'] + img_path_relative
+
+    # ensure parent folder exists
+    img_parent_dir = os.path.dirname(img_path_absolute)
+    if not os.path.isdir(img_parent_dir): os.makedirs(img_parent_dir)
+
+    # download image
+    webapp.logger.debug('downloading profile image to %s' % img_path_absolute)
+    urllib.urlretrieve(user_info['profile_image_url'], img_path_absolute)
+
+    # update user data, do not save yet
+    user.profileImage = img_path_relative
+
 @bp.route('/auth-response')
 def auth_authorized():
     next_url = request.args.get('next') or url_for('homepage.index')
 
-    #webapp.logger.debug('oauth_token: ' + session['oauth_token'])
-    #webapp.logger.debug('oauth_token_secret: ' + session['oauth_token_secret'])
-    #webapp.logger.debug('oauth_verifier: ' + request.args.get('oauth_verifier'))
-
-    # use temporarily stored oauth keys from session to finish authentication
+    # use temporarily oauth-tokens from session to finish authentication
     try:
         twitter = Twython(TWITTER_KEY, TWITTER_SECRET, session['oauth_token'], session['oauth_token_secret'])
         final = twitter.get_authorized_tokens(request.args.get('oauth_verifier'))
@@ -66,56 +80,43 @@ def auth_authorized():
         destroy_session() # destroy session, getting rid of all temp oauth keys
         return redirect(next_url)
 
-    # recreate twitter lib with final oauth keys
-    twitter = Twython(TWITTER_KEY, TWITTER_SECRET, final['oauth_token'], final['oauth_token_secret'])
-    user_info = twitter.show_user(screen_name = final['screen_name'])
+    # erase temp oauth-tokens
+    session.pop('oauth_token', None)
+    session.pop('oauth_token_secret', None)
 
-    # shouldn't happen, but a sanity-check anyway
-    if not os.path.exists(webapp.config['PATH_USER_PROFILE_IMAGE']):
-        webapp.logger.debug('WARNING: user profile image path is missing')
-        flash('Sign in error')
-        destroy_session()
-        return redirect(next_url)
+    user, user_not_found = User.objects.get_or_create(username = final['screen_name'], auto_save=False)
 
-    # override and save the final oauth keys
-    session['oauth'] = (final['oauth_token'], final['oauth_token_secret'])
-    session['username'] = final['screen_name']
-    session['authenticated'] = True
-
-    try:
-        # grab user from db if possible
-        user = User.objects.get(username = final['screen_name'])
-    except:
-        # else create a new one
-        user = User()
+    # if we have a new user, populate the basic info
+    if user_not_found:
         user.username = final['screen_name']
 
-    rawId = str(user.id)
-    user_profile_image_filename = user_info['profile_image_url'].split('/')[-1]
+    # recreate twitter-api interface using final oauth-tokens
+    twitter = Twython(TWITTER_KEY, TWITTER_SECRET, final['oauth_token'], final['oauth_token_secret'])
 
-    # update tokens and save to db
+    # whenever user performs a full login, we refresh their profile-image
+    # grab twitter avatar image, updates user but doesn't save
+    download_user_profile_image(twitter, user)
+
+    # update oauth-tokens and save to db
     user.oauthToken = final['oauth_token']
     user.oauthTokenSecret = final['oauth_token_secret']
-    user.profileImage = '/%s/%s' % (rawId, user_profile_image_filename)
     user.save()
 
-    user_profile_image_path = webapp.config['PATH_USER_PROFILE_IMAGE'] + '/%s/' % rawId
-    if not os.path.isdir(user_profile_image_path):
-        os.makedirs(user_profile_image_path, mode=775)
-
-    user_profile_image_path = webapp.config['PATH_USER_PROFILE_IMAGE'] + user.profileImage
-    webapp.logger.debug("downloading %s to %s" % (user_info['profile_image_url'], user_profile_image_path))
-    #if os.path.isfile(user_profile_image_path):
-    #    os.unlink(user_profile_image_path)
-    urllib.urlretrieve(user_info['profile_image_url'], user_profile_image_path)
-
-    flash('Signed in as %s' % final['screen_name'], 'info')
+    # show an annoying alert :)
+    flash('%s is in the house!' % final['screen_name'], 'info')
 
     # set a cookie client-side with which we can locate this session
     response = webapp.make_response(redirect(next_url))
 
+    # 'save this browser' for the user
+    # for now this makes a permanent 1-year old cookie for everyone
+    # TODO: facebook style per-browser identification - allow user to manage sessions from other devices (eg: accidentally left open at the library)
+    # SECURITY: change permanent session to 'opt-in'
     rawId = str(user.id)
-    session['aid'] = rawId
-    response.set_cookie('aid', rawId, expires=time.time() + 360 * 24 * 3600, httponly=True)
+    session['userId'] = rawId
+    session.permanent = True
+
+    # expire in a year, don't expose to javascript
+    #response.set_cookie('aid', cookieId, expires=time.time() + 360 * 24 * 3600, httponly=True)
 
     return response

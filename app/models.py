@@ -2,7 +2,7 @@ from datetime import datetime
 from app import db
 
 class User(db.Document):
-    username = db.StringField()
+    username = db.StringField(required=True)
     createdAt = db.DateTimeField(default=datetime.now)
     oauthToken = db.StringField()
     oauthTokenSecret = db.StringField()

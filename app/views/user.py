@@ -6,26 +6,26 @@ bp = Blueprint('user', __name__, template_folder='templates')
 
 @bp.route('/u/<username>')
 def user_recordings(username):
-    user, user_not_found = User.objects.get_or_create(username=username)
+    # TODO: boo, get_or_create() is deprecated. need another one-liner
+    user, user_not_found = User.objects.get_or_create(username=username, auto_save=False)
+
     if user_not_found:
-        # user not found
+        # TODO: create a user-not-found page
         print "warning: user not found!"
         return
 
-    # there has to be a cleaner way to do this
     recordings = Recording.objects(user = user).order_by('-postedAt')
 
-    now = datetime.now()
-
     for record in recordings:
-        record.age = now - record.postedAt
+        # create timestamp for javascript's vague-time lib
         record.timestamp = record.postedAt.isoformat()
+
+        # replace empty descriptions with something
+        # TODO: do this client-side
         if not record.description:
             record.description = "N/A"
 
     return render_template(
-        'user_recordings.html',
-        recordings=recordings,
-        user=g.user
+        'user_recordings.html', recordings=recordings, user=g.user
     )
 
