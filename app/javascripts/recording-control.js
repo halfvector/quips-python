@@ -3,13 +3,9 @@ App.Loaders.RecordingController = (function(){
 
     App.Converters.IntToTime = function(value) {
 
-        if(value < 0 )
-            return -value;
-
         var minutes = Math.round(value / 60);
         var seconds = Math.round(value - minutes * 60);
-        var str = ("00" + minutes).substr(-2) + ":" + ("00" + seconds).substr(-2);
-        return str;
+        return ("00" + minutes).substr(-2) + ":" + ("00" + seconds).substr(-2);
     };
 
     App.Models.Recorder = Backbone.Model.extend({
@@ -33,13 +29,14 @@ App.Loaders.RecordingController = (function(){
             "click #upload-recording": "uploadRecording"
         },
 
-        bindings: {
-            "text .recording-time": ["recordingTime", App.Converters.IntToTime]
-        },
 
         initialize: function(options) {
             this.audioPlayer = document.getElementById("recorded-preview");
             console.log('this.audioPlayer = ' + this.audioPlayer);
+            
+            this.model.on('change:recordingTime', function(model, time) {
+                $(".recording-time").text(time);
+            });
 
             // TODO: a pretty advanced but neat feature may be to store a backup copy of a recording locally in case of a crash or user-error
             /*
@@ -127,12 +124,20 @@ App.Loaders.RecordingController = (function(){
 
         cancelRecording: function(event) {
             console.log("Recorder::onRecordingCompleted(); canceling recording");
+            $("#recorder-full").removeClass("disabled");
+            $("#recorder-uploader").addClass("disabled");
             $(".m-recording-container").removeClass("flipped");
             this.audioPlayer.src = "";
+            this.model.set('recordingTime', 3);
         },
 
         uploadRecording: function(event) {
             console.log("Recorder::onRecordingCompleted(); uploading recording");
+            this.audioPlayer.src = "";
+            
+            $("#recorder-full").addClass("disabled");
+            $("#recorder-uploader").removeClass("disabled");
+            $(".m-recording-container").removeClass("flipped");
 
             var description = $('textarea[name=description]')[0].value;
 
@@ -147,51 +152,86 @@ App.Loaders.RecordingController = (function(){
             var xhr = new XMLHttpRequest();
             xhr.open('post', '/recording/create', true);
             xhr.setRequestHeader('Accept', 'application/json');
-            xhr.onload = function(result) {
+            xhr.upload.onprogress = function(e) {
+                var percent = ((e.loaded / e.total) * 100).toFixed(0) + '%';
+                console.log("percentage: " + percent);
+                $("#recorder-uploader").find(".bar").css('width', percent);
+            };
+            xhr.onload = function(e) {
+                $("#recorder-uploader").find(".bar").css('width', '100%');
                 if(xhr.status == 200) {
                     console.log("Recorder::onRecordingCompleted(); manual xhr successful");
                 } else {
                     console.log("Recorder::onRecordingCompleted(); manual xhr error", xhr);
                 }
+                var result = JSON.parse(xhr.response);
+                console.dir(result);
+                
+                if(result.status == "success") {
+                    window.location.href = result.url;
+                }
             };
             xhr.send(data);
-
-            // not using jquery any more, $.ajax is gone
-//            $.ajax({
-//                url: '/recording/create',
-//                data: data,
-//                processData: false,
-//                contentType: false,
-//                type: 'POST',
-//                success: function(result) {
-//                    console.log("Main::post(); posted");
-//                }
-//            });
-
-            $(".m-recording-container").removeClass("flipped");
         },
 
         isRecording: false,
         timerId: 0,
-        timerStart: 0,
+        timerStart: 3,
 
-        onTimerTick: function() {
+        onRecordingTick: function() {
             var timeSpan = parseInt(((new Date().getTime() - this.timerStart) / 1000).toFixed());
-            this.model.set('recordingTime', timeSpan);
+            var timeStr = App.Converters.IntToTime(timeSpan);
+            this.model.set('recordingTime', timeStr);
+        },
+        
+        onCountdownTick: function() {
+            if( --this.timerStart > 0 ) {
+                this.model.set('recordingTime', this.timerStart);
+            } else {
+                console.log("countdown hit zero. begin recording.");
+                clearInterval(this.timerId);
+                this.model.set('recordingTime', App.Converters.IntToTime(0));
+                this.onMicRecording();
+            }
         },
 
         startRecording: function() {
             console.log("starting recording");
-            this.timerStart = new Date().getTime();
-            this.timerId = setInterval(this.onTimerTick.bind(this), 1000);
+            this.audioCapture.start(this.onMicReady.bind(this));
+        },
 
-            this.audioCapture.start();
+        /**
+         * Microphone is ready to record. Do a count-down, then signal for input-signal to begin recording
+         */
+        onMicReady: function() {
+            console.log("mic ready to record. do countdown.");
+            this.timerStart = 3;
+            this.timerId = setInterval(this.onCountdownTick.bind(this), 1000);
+            $(".recording-time").addClass("is-visible");
+        },
+        
+        onMicRecording: function() {
+            this.timerStart = new Date().getTime();
+            this.timerId = setInterval(this.onRecordingTick.bind(this), 1000);
+            $(".m-recording-screen").addClass("is-recording");
+            
+            // TODO: the mic capture is already active, so audio buffers are getting built up
+            // when toggling this on, we may already be capturing a buffer that has audio prior to the countdown
+            // hitting zero. we can do a few things here:
+            // 1) figure out how much audio was already captured, and cut it out
+            // 2) use a fade-in to cover up that split-second of audio
+            // 3) allow the user to edit post-record and clip as they wish (better but more complex option!)
+            var that = this;
+            setTimeout(function() { that.audioCapture.toggleMicrophoneRecording(true); }, 500);
         },
 
         stopRecording: function() {
             console.log("stopping recording");
             clearInterval(this.timerId);
             this.audioCapture.stop(this.onRecordingCompleted.bind(this));
+            
+            $(".recording-time").removeClass("is-visible");
+            $(".m-recording-screen").removeClass("is-recording");
 
             // TODO: animate recorder out
             // TODO: animate uploader in

@@ -60,11 +60,42 @@
             z-index: 5
             +transform(rotateY(180deg))
 
+.m-recording-uploading
+    //background: #eee
+    vertical-align: middle
+    display: table-cell
+    
+    &.disabled
+        display: none
+    
+    .upload-progress
+        width: 80%
+        margin: auto
+        margin-top: 150px
+        
+        h4
+            padding: 0px
+            margin: 0px
+            line-height: $line-height * 1.5
+    
+    .progress-bar
+        background: #ccc
+        
+        .bar
+            width: 0%
+            background: #aaa
+            height: 27px
+            +transition(all, 0.3s, ease-out)
+        
+            
 .m-recording-upload
     text-align: center
     color: #444
     padding: 1em
     padding-top: 100px
+    
+    &.disabled
+        display: none
 
     .fa
         font-size: 60px
@@ -79,17 +110,45 @@
         display: none
 
     .controls
-        padding-top: 20px
+        width: 450px
+        margin: 0px auto
+        margin-top: 20px
         //background: #eee
-        display: block
+        display: inline-block
 
-        .btn-success
-            margin-right: 20px
+        #upload-recording
+            float: left
+            
+        #cancel-recording
+            float: right
+            
+        
+    #recorded-preview
+        width: 450px
+        
+    .description
+        margin: 0px auto
+        padding-top: 20px
+        width: 450px
+
+        textarea
+            width: 100%
+            height: 100%
+            padding: 4px 8px
+            border: 1px solid #ccc
+            border-radius: 3px
+            font-size: 18px
+            line-height: 27px
+            font-family: 'Open Sans'
 
 .m-recording-screen
     text-align: center
     color: #444
-    padding: 1em
+    padding-top: 70px
+    //background: #ccc
+    
+    &.disabled
+        display: none
 
     .recording-toggle
         font-size: 160px
@@ -102,11 +161,21 @@
         border-radius: 30px
         border: 1px solid #fff
         box-shadow: 0px 2px 3px #ccc
+        cursor: pointer
 
+    &.is-recording
+        .fa-microphone, .recording-time
+            color: $colorRed4
+        
     .recording-time
         margin-top: 50px
         font-size: 72px
         line-height: 80px
+        opacity: 0
+        +transition(background-color, 0.2s, ease-in)
+        
+        &.is-visible
+            opacity: 1
 
     .description
         padding-top: 20px

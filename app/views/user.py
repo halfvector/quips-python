@@ -29,3 +29,19 @@ def user_recordings(username):
         'user_recordings.html', recordings=recordings, user=g.user
     )
 
+@bp.route('/u/<username>/<recordingId>')
+def user_one_recording(username, recordingId):
+    
+    record = Recording.objects.get(id=recordingId)
+
+    # create timestamp for javascript's vague-time lib
+    record.timestamp = record.postedAt.isoformat()
+
+    # replace empty descriptions with something
+    # TODO: do this client-side
+    if not record.description:
+        record.description = "N/A"
+    
+    return render_template(
+        'user_one_recording.html', post=record, user=g.user
+    )
