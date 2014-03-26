@@ -17,7 +17,8 @@ def show_recorder():
 
 @bp.route('/recording/publish/<recording_id>', methods=['POST'])
 def toggle_public(recording_id):
-
+    """Toggle private/public bit on recording. Must only work on a recording caller owns"""
+    
     try:
         is_public = request.form['isPublic']
         print "Making recording: %s public: %s" % (recording_id, is_public)

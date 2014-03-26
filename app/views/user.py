@@ -1,5 +1,6 @@
 from datetime import datetime
 from flask import render_template, g, Blueprint
+from mongoengine import Q
 from models import Recording, User
 
 bp = Blueprint('user', __name__, template_folder='templates')
@@ -14,7 +15,12 @@ def user_recordings(username):
         print "warning: user not found!"
         return
 
-    recordings = Recording.objects(user = user).order_by('-postedAt')
+    if user.id == g.user['id']:
+        # looking at our own feed
+        recordings = Recording.objects(Q(user = user)).order_by('-postedAt')
+    else:
+        # looking at someone else's feed
+        recordings = Recording.objects(Q(isPublic=True, user=user)).order_by('-postedAt')
 
     for record in recordings:
         # create timestamp for javascript's vague-time lib
