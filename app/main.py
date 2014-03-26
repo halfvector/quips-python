@@ -45,7 +45,8 @@ def load_current_user():
             'username': user.username,
             'authenticated': True,
             'profileImage': user.profileImage,
-            'oauth': (user.oauthToken, user.oauthTokenSecret)
+            'oauth': (user.oauthToken, user.oauthTokenSecret),
+            'id': user.id
         }
 
         webapp.logger.debug("user session: " + g.user['username'])
@@ -55,6 +56,7 @@ def load_current_user():
             'username': '',
             'authenticated': False,
             'profileImage': '',
+            'userId': False
         }
 
         webapp.logger.debug("user session is anonymous")

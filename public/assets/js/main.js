@@ -774,13 +774,14 @@ App.Loaders.RecordingController = (function(){
  */
 App.Loaders.QuipController = (function QuipControlLoader(){
     'use strict';
-
+    
     App.Models.Quip = Backbone.Model.extend({
         default: {
             id: 0,
             progress: 0,
             position: 0,
-            duration: 0
+            duration: 0,
+            isPublic: false
         },
 
         initialize: function() {
@@ -800,6 +801,7 @@ App.Loaders.QuipController = (function QuipControlLoader(){
         progress: 0, // percentage
         position: 0, // msec
         duration: 0, // msec
+        isPublic: false,
 
         updateProgress: function() {
             this.set({
@@ -825,11 +827,9 @@ App.Loaders.QuipController = (function QuipControlLoader(){
         initialize: function(options) {
             var $this = this;
 
-            $this.el = options.el;
-            $this.model.view = $this;
-            $this.quipId = $($this.el).data("quipId");
-
-            //console.log("Initializing Quip Controller: id=" + quipId);
+            this.el = options.el;
+            this.model.view = this;
+            this.quipId = this.$el.data("quipId");
 
             var progress = localStorage.getItem("quip:" + $this.quipId + ":progress");
             var position = localStorage.getItem("quip:" + $this.quipId + ":position");
@@ -838,14 +838,65 @@ App.Loaders.QuipController = (function QuipControlLoader(){
             this.model.on('change:progress', function(model, progress) {
                 $("div[data-quip-id='" + $this.quipId + "'] .progress-bar").css("width", progress);
             });
+            
+            //var desc = $($this.el).find('.description')[0];
+            //Hammer(desc).on("swipeleft", this.onRevealControls.bind(this));
+            //Hammer(desc).on("swiperight", this.onHideControls.bind(this));
 
-            this.model.set({'id' : $this.quipId, 'progress':progress, 'position':position});
+            this.model.set({
+                'id' : $this.quipId,
+                'progress':progress,
+                'position':position,
+                'isPublic':  this.$el.data("isPublic") == 'True',
+                'isMine':  this.$el.data("isMine") == 'True'
+            });
+            
+            this.model.on('change', this.render, this);
         },
 
         events: {
+            "click .description .lock-indicator" : "togglePublic",
             "click .description" : "toggle"
         },
+        
+        togglePublic: function(ev) {
 
+            var newState = !this.model.get('isPublic');
+            this.model.set({'isPublic': newState});
+            
+            console.log("toggling new published state: " + newState);
+            
+            $.ajax({
+                url: '/recording/publish/' + this.quipId,
+                method: 'post',
+                data: { isPublic: newState },
+                complete: function(resp) {
+                    if(resp && resp.status == 'success') {
+                        // change successful
+                    } else
+                    {   // change failed
+                        // TODO: add visual to indicate change-failure
+                        console.warn("Toggling recording publication state failed:");
+                        console.dir(resp);
+                    }
+                }
+            });
+            
+            return false;
+        },
+        
+        onRevealControls: function(ev) {
+            ev.gesture.preventDefault();
+            $(this.el).find(".controls").css("right", "100px");
+            console.log("swiped left");
+            
+        },
+        
+        onHideControls: function(ev) {
+            ev.gesture.preventDefault();
+            $(this.el).find(".controls").css("right", "0px");
+            console.log("swiped right");
+        },
 
         toggle: function(event) {
             var quipId = $(this.el).data("quipId");
@@ -933,6 +984,15 @@ App.Loaders.QuipController = (function QuipControlLoader(){
                     // TODO: this is a good place to fire a hook to a playback manager to move onto the next audio clip
                 }
             });
+        },
+        
+        render: function() {
+            var _ = require('underscore');
+            
+            if(this.model.get('isMine')) {
+                var html = _.template($("#quip-control-privacy").html());
+                $(this.el).find(".controls").html(html({ isPublic: this.model.get('isPublic') }));
+            }
         }
     });
 });

@@ -15,6 +15,22 @@ def show_recorder():
         user=g.user
     )
 
+@bp.route('/recording/publish/<recording_id>', methods=['POST'])
+def toggle_public(recording_id):
+
+    try:
+        is_public = request.form['isPublic']
+        print "Making recording: %s public: %s" % (recording_id, is_public)
+        recording = Recording.objects.get(id = recording_id, user = g.user['id'])
+        recording.isPublic = is_public == 'true'
+        recording.save()
+        return jsonify(status='success')
+    except Exception as err:
+        print "Error while toggling isPublic:"
+        print err
+        return jsonify(status='failed', error=err.message)    
+    
+
 @bp.route('/recording/create', methods=['POST'])
 def create():
     

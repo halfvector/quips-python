@@ -19,6 +19,7 @@ def user_recordings(username):
     for record in recordings:
         # create timestamp for javascript's vague-time lib
         record.timestamp = record.postedAt.isoformat()
+        record.isMine = record.user.id == g.user['id']
 
         # replace empty descriptions with something
         # TODO: do this client-side

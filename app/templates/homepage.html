@@ -15,7 +15,7 @@
         <div class="divider"></div>
 
     {% for post in recordings %}
-        <div class="m-quip" data-quip-id="{{ post.id }}">
+        <div class="m-quip" data-quip-id="{{ post.id }}" data-is-mine="{{ post.isMine }}" data-is-public="{{ post.isPublic }}">
             <div class="meta">
                 <div class="specs">
                     <div class="name">{{ post.user.username }}</div>
@@ -31,11 +31,24 @@
                 <div class="description">
                     <div class="progress-bar"></div>
                     <div class="text">{{ post.description }}</div>
+                    <div class="controls">
+                    </div>
                 </div>
             </div>
         </div>
     {% endfor %}
 
     </div>
+    
+    <script type="text/html" id="quip-control-privacy">
+        <a class="btn btn-no-text lock-indicator">
+            <% if (isPublic) { %>
+            <i class="fa fa-unlock"></i>
+            <% } else { %>
+            <i class="fa fa-lock"></i>
+            <% } %>
+        </a>
+    </script>
+
 
 {% endblock %}

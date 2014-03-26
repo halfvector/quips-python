@@ -88,11 +88,13 @@
             border: 1px solid #ddd
             box-shadow: 0px 2px 4px #e7e7e7
             background: #fff
-            padding: 10px 14px
-            +clearfix
             position: relative
             z-index: 100
-            cursor: pointer
+            +clearfix
+            +flexbox
+            +justify-content(stretch)
+            +align-items(stretch)
+            +align-content(stretch)
 
             .progress-bar
                 background: #eee
@@ -104,6 +106,28 @@
                 z-index: -30
 
             .text
-                +span(10)
-                +susy-clearfix
+                cursor: pointer
                 z-index: 200
+                padding: 10px 14px
+                +flex(1 1 auto)
+                
+            .controls
+                padding-left: 20px
+                transition: all 0.2s ease-in-out
+                
+                +flex(0 0 auto)
+                +flexbox
+                +justify-content(center)
+                +align-items(center)
+                
+                .btn
+                    //+align-self(flex-start)
+
+        .lock-indicator
+            color: #eee
+            
+            .fa-lock
+                color: $colorRed4
+            
+            .fa-unlock
+                color: #ddd
