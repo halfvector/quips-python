@@ -56,7 +56,7 @@ def load_current_user():
             'username': '',
             'authenticated': False,
             'profileImage': '',
-            'userId': False
+            'id': False
         }
 
         webapp.logger.debug("user session is anonymous")
