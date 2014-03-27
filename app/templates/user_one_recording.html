@@ -1,0 +1,51 @@
+{% extends "layout.html" %}
+
+{% block body %}
+
+    <div backbone-controller="RecordingsList" class="m-quips">
+        <div class="divider"></div>
+
+        <div class="m-quip" data-quip-id="{{ post.id }}" data-is-mine="{{ post.isMine }}" data-is-public="{{ post.isPublic }}">
+            <div class="meta">
+                <div class="specs">
+                    <div class="name">{{ post.user.username }}</div>
+                    <time datetime="{{ post.timestamp }}"></time>
+                </div>
+                <div class="avatar">
+                    <a href="/u/{{ post.user.username }}">
+                        <img src="/profile_images/{{ post.user.profileImage }}" />
+                    </a>
+                </div>
+            </div>
+            <div class="details">
+                <div class="description">
+                    <div class="progress-bar"></div>
+                    <div class="text">{{ post.description }}</div>
+                    <div class="controls">
+                        <a class="btn btn-no-text public-link" href="{{ post.publicUrl }}">
+                            <i class="fa fa-link"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    
+    <script type="text/html" id="quip-control-link">
+        <a class="btn btn-no-text public-link" href="<%= publicLink %>">
+            <i class="fa fa-link"></i>
+        </a>
+    </script>
+    
+    <script type="text/html" id="quip-control-privacy">
+        <a class="btn btn-no-text lock-indicator">
+            <% if (isPublic) { %>
+            <i class="fa fa-unlock"></i>
+            <% } else { %>
+            <i class="fa fa-lock"></i>
+            <% } %>
+        </a>
+    </script>
+
+{% endblock %}
