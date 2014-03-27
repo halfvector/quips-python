@@ -853,13 +853,16 @@ App.Loaders.QuipController = (function QuipControlLoader(){
                 'isMine':  this.$el.data("isMine") == 'True'
             });
             
-            this.model.on('change', this.render, this);
+            // only redraw template on data change 
+            this.model.on('change:isPublic', this.render, this);
+            this.model.on('change:isMine', this.render, this);
         },
 
         events: {
             "click .description .lock-indicator" : "togglePublic",
-            "click .description" : "toggle"
+            "click .description .text" : "toggle"
         },
+        
         
         togglePublic: function(ev) {
 
@@ -970,8 +973,8 @@ App.Loaders.QuipController = (function QuipControlLoader(){
                 onpause: function() {
                     console.log("App.CurrentQuipAudio(); paused: " + this.id);
                     var progress = (this.duration > 0 ? 100 * this.position / this.duration : 0).toFixed(0) + '%';
-                    localStorage.setItem("quip:" + this.id + ":progress", '100%');
-                    localStorage.setItem("quip:" + this.id + ":position", this.duration);
+                    localStorage.setItem("quip:" + this.id + ":progress", progress);
+                    localStorage.setItem("quip:" + this.id + ":position", this.duration.toFixed(0));
                     that.model.set({'progress' : progress});
                 },
                 onfinish: function() {
@@ -979,7 +982,7 @@ App.Loaders.QuipController = (function QuipControlLoader(){
 
                     // store completion in browser
                     localStorage.setItem("quip:" + this.id + ":progress", '100%');
-                    localStorage.setItem("quip:" + this.id + ":position", this.duration);
+                    localStorage.setItem("quip:" + this.id + ":position", this.duration.toFixed(0));
                     that.model.set({'progress' : '100%'});
 
                     // TODO: unlock some sort of achievement for finishing this track, mark it a diff color, etc
@@ -1003,14 +1006,13 @@ App.Loaders.QuipController = (function QuipControlLoader(){
         
         render: function() {
             
+            console.log("quip-control redraw");
             
             var result = $(this.el).find('.controls').find('.lock-indicator');
-            console.dir(result);
             if(result)
                 result.remove();
             
             if(this.model.get('isMine')) {
-                
                 var _ = require('underscore');
                 var html = _.template($("#quip-control-privacy").html());
                 
