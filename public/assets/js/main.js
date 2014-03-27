@@ -781,7 +781,7 @@ App.Loaders.QuipController = (function QuipControlLoader(){
             progress: 0,
             position: 0,
             duration: 0,
-            isPublic: false
+            isPublic: false,
         },
 
         initialize: function() {
@@ -842,7 +842,9 @@ App.Loaders.QuipController = (function QuipControlLoader(){
             //var desc = $($this.el).find('.description')[0];
             //Hammer(desc).on("swipeleft", this.onRevealControls.bind(this));
             //Hammer(desc).on("swiperight", this.onHideControls.bind(this));
-
+            
+            this.publicLink = '/u/' + this.quipId;
+            
             this.model.set({
                 'id' : $this.quipId,
                 'progress':progress,
@@ -986,12 +988,36 @@ App.Loaders.QuipController = (function QuipControlLoader(){
             });
         },
         
-        render: function() {
+        _fullyRendered: false,
+        renderOnce: function() {
             var _ = require('underscore');
             
             if(this.model.get('isMine')) {
                 var html = _.template($("#quip-control-privacy").html());
-                $(this.el).find(".controls").html(html({ isPublic: this.model.get('isPublic') }));
+                $(this.el).find(".controls").prepend(html({
+                    isPublic: this.model.get('isPublic'),
+                    publicLink: this.publicLink
+                }));
+            }
+        },
+        
+        render: function() {
+            
+            
+            var result = $(this.el).find('.controls').find('.lock-indicator');
+            console.dir(result);
+            if(result)
+                result.remove();
+            
+            if(this.model.get('isMine')) {
+                
+                var _ = require('underscore');
+                var html = _.template($("#quip-control-privacy").html());
+                
+                $(this.el).find(".controls").prepend(html({
+                    isPublic: this.model.get('isPublic'),
+                    publicLink: this.publicLink
+                }));
             }
         }
     });

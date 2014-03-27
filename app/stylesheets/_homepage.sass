@@ -45,11 +45,9 @@
         margin-top: 0px
         top: 0
         bottom: 0
-        width: 1px
         width: 23%
         border-right: 1px solid #ccc
         z-index: -1
-        //margin-left: 240px
 
 .m-quip
     +container
@@ -68,8 +66,6 @@
             line-height: 25px
             +span(8)
             padding-right: 10px
-
-            //.name
 
             time
                 color: #888
@@ -120,11 +116,18 @@
                 +justify-content(center)
                 +align-items(center)
                 
-                .btn
-                    //+align-self(flex-start)
+        .public-link
+            color: #ddd
+            
+            i.fa
+                color: inherit
 
         .lock-indicator
             color: #eee
+            text-align: center
+            
+            .fa
+                min-width: 18px
             
             .fa-lock
                 color: $colorRed4

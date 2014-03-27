@@ -60,14 +60,8 @@ def create():
         webapp.logger.debug('saving recording to: ' + filePath)
         file.save(filePath)
 
-        #return redirect(url_for('RecordingsView:view', id=recordingId), code=302)
-        #return jsonify(status='success', id=recordingId)
-        
-        #url = url_for('user.user_one_recording', username=g.user['username'], id=recordingId)
         url = url_for('user.user_recordings', username=g.user['username'])
         return jsonify(status='success', url=url)
-        
-        #return jsonify(status='success', id=7777777, url='/%s/%s' % (g.user['username'], 7777))
 
     # else file upload failed, show an error page
     return jsonify(status='failed')
