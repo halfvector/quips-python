@@ -205,7 +205,7 @@ App.Loaders.QuipController = (function QuipControlLoader(){
                     console.log("App.CurrentQuipAudio(); paused: " + this.id);
                     var progress = (this.duration > 0 ? 100 * this.position / this.duration : 0).toFixed(0) + '%';
                     localStorage.setItem("quip:" + this.id + ":progress", progress);
-                    localStorage.setItem("quip:" + this.id + ":position", this.duration.toFixed(0));
+                    localStorage.setItem("quip:" + this.id + ":position", this.position.toFixed(0));
                     that.model.set({'progress' : progress});
                 },
                 onfinish: function() {
