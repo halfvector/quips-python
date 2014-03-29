@@ -183,6 +183,21 @@
                 _audioGain.gain.value = gain;
             _cachedGainValue = gain;
         };
+        
+        this.preloadMediaStream = function() {
+            if (_cachedMediaStream)
+                return;
+
+            var getUserMedia = navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+
+            // request microphone access
+            // on HTTPS permissions get saved and this will be fast
+            getUserMedia.call(navigator, { audio: true }, function(mediaStream) {
+                _cachedMediaStream = mediaStream;
+            }, function (err) {
+                console.log("AudioCapture::start(); could not grab microphone. perhaps user didn't give us permission?");
+            });
+        };
 
         this.start = function (onStartedCallback) {
 

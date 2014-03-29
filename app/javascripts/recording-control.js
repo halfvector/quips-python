@@ -3,11 +3,12 @@ App.Loaders.RecordingController = (function(){
 
     App.Converters.IntToTime = function(value) {
 
-        var minutes = Math.round(value / 60);
+        var minutes = Math.floor(value / 60);
         var seconds = Math.round(value - minutes * 60);
+        
         return ("00" + minutes).substr(-2) + ":" + ("00" + seconds).substr(-2);
     };
-
+    
     App.Models.Recorder = Backbone.Model.extend({
         defaults: {
             recordingTime: 0
@@ -36,7 +37,10 @@ App.Loaders.RecordingController = (function(){
             
             this.model.on('change:recordingTime', function(model, time) {
                 $(".recording-time").text(time);
-            });
+            })
+            
+            // attempt to fetch media-stream on page-load
+            this.audioCapture.preloadMediaStream();
 
             // TODO: a pretty advanced but neat feature may be to store a backup copy of a recording locally in case of a crash or user-error
             /*

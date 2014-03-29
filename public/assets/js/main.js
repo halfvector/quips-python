@@ -237,6 +237,21 @@ $.domReady(function(){
                 _audioGain.gain.value = gain;
             _cachedGainValue = gain;
         };
+        
+        this.preloadMediaStream = function() {
+            if (_cachedMediaStream)
+                return;
+
+            var getUserMedia = navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+
+            // request microphone access
+            // on HTTPS permissions get saved and this will be fast
+            getUserMedia.call(navigator, { audio: true }, function(mediaStream) {
+                _cachedMediaStream = mediaStream;
+            }, function (err) {
+                console.log("AudioCapture::start(); could not grab microphone. perhaps user didn't give us permission?");
+            });
+        };
 
         this.start = function (onStartedCallback) {
 
@@ -503,11 +518,12 @@ App.Loaders.RecordingController = (function(){
 
     App.Converters.IntToTime = function(value) {
 
-        var minutes = Math.round(value / 60);
+        var minutes = Math.floor(value / 60);
         var seconds = Math.round(value - minutes * 60);
+        
         return ("00" + minutes).substr(-2) + ":" + ("00" + seconds).substr(-2);
     };
-
+    
     App.Models.Recorder = Backbone.Model.extend({
         defaults: {
             recordingTime: 0
@@ -536,7 +552,10 @@ App.Loaders.RecordingController = (function(){
             
             this.model.on('change:recordingTime', function(model, time) {
                 $(".recording-time").text(time);
-            });
+            })
+            
+            // attempt to fetch media-stream on page-load
+            this.audioCapture.preloadMediaStream();
 
             // TODO: a pretty advanced but neat feature may be to store a backup copy of a recording locally in case of a crash or user-error
             /*
