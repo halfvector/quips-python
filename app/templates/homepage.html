@@ -44,12 +44,12 @@
     </div>
     
     <script type="text/html" id="quip-control-link">
-        <a class="btn btn-no-text public-link" href="<%= publicLink %>">
+        <a class="btn btn-no-text public-link" href="<%= publicLink %>" title="Toggle privacy">
             <i class="fa fa-link"></i>
         </a>
     </script>
     
-    <script type="text/html" id="quip-control-privacy">
+    <script type="text/html" id="quip-control-privacy" title="Link directly to this quip">
         <a class="btn btn-no-text lock-indicator">
             <% if (isPublic) { %>
             <i class="fa fa-unlock"></i>

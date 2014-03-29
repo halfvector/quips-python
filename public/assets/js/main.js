@@ -706,7 +706,13 @@ App.Loaders.RecordingController = (function(){
         onMicReady: function() {
             console.log("mic ready to record. do countdown.");
             this.timerStart = 3;
-            this.timerId = setInterval(this.onCountdownTick.bind(this), 1000);
+            // run ncountdown
+            //this.timerId = setInterval(this.onCountdownTick.bind(this), 1000);
+            
+            // or launch capture immediately
+            this.model.set('recordingTime', App.Converters.IntToTime(0));
+            this.onMicRecording();
+            
             $(".recording-time").addClass("is-visible");
         },
         

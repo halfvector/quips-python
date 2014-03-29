@@ -1,3 +1,4 @@
+from bson.objectid import ObjectId
 from flask import redirect, url_for, request, flash, session, g, Blueprint
 import hashlib
 from twython import Twython
@@ -12,7 +13,7 @@ bp = Blueprint('auth', __name__, template_folder='templates')
 def destroy_session():
     session.pop('oauth_token', None)
     session.pop('oauth_token_secret', None)
-    session.pop('aid', None)
+    session.pop('userId', None)
 
 @bp.route('/logout')
 def auth_logout():
@@ -20,7 +21,7 @@ def auth_logout():
 
     # TODO: is there a better way to unset cookies in Flask?
     response = webapp.make_response(redirect(url_for('homepage.index')))
-    response.set_cookie('aid', '', expires=0)
+    #response.set_cookie('aid', '', expires=0)
     return response
 
 @bp.route('/auth')
@@ -88,6 +89,7 @@ def auth_authorized():
 
     # if we have a new user, populate the basic info
     if user_not_found:
+        user.id = ObjectId()
         user.username = final['screen_name']
 
     # recreate twitter-api interface using final oauth-tokens
