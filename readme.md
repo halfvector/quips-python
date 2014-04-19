@@ -2,6 +2,8 @@
 
 Quips is a micro-podcasting site. It's neat for sharing quips, motivational phrases, and "the drop" from your favorite dubstep song.
 
+[Deployment system and helpers](https://github.com/halfvector/quips-deployment)
+
 - [Trello Board](https://trello.com/b/wkVA1cK1/project-quips)
 - [The site](http://what.you.say.icanhaserror.com/)
 
