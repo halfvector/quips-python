@@ -1,0 +1,5 @@
+applications:
+- name: quips
+  memory: 512M
+  host: quips
+  instances: 1
