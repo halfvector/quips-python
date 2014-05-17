@@ -3,3 +3,4 @@ applications:
   memory: 512M
   host: quips
   instances: 1
+  domain: cfapps.io
