@@ -4,6 +4,8 @@ Quips is a micro-podcasting site. It's neat for sharing quips, motivational phra
 
 [Deployment system and helpers](https://github.com/halfvector/quips-deployment)
 
+This branch is optimized for automated deployments via a third-party CI.
+
 - [Trello Board](https://trello.com/b/wkVA1cK1/project-quips)
 - [The site](http://what.you.say.icanhaserror.com/)
 
