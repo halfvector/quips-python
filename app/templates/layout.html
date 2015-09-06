@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Quips</title>
         <link href='//fonts.googleapis.com/css?family=Open+Sans:400,600,300' rel='stylesheet' type='text/css' />
-        <link rel=stylesheet type=text/css href="{{ url_for('static', filename='css/site.css') }}" />
+        <link rel=stylesheet type=text/css href="{{ url_for('static', filename='assets/css/site.css') }}" />
 
         <script src="//cdn.ravenjs.com/1.1.11/console,native/raven.min.js"></script>
         <script type="text/javascript">
@@ -48,7 +48,7 @@
                             <div class="cp">
                                 <div backbone-controller="DropdownWidget" class="m-dropdown">
                                     <a href="#" class="dropdown-trigger">
-                                        <img class="cp-avatar" src="/profile_images/{{ user.profileImage }}" />
+                                        <img class="cp-avatar" src="/profile_images{{ user.profileImage }}" />
                                     </a>
                                     <div class="dropdown-content">
                                         <ul class="dropdown-list">

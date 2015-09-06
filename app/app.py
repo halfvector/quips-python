@@ -1,4 +1,4 @@
-from flask import Flask, session
+from flask import Flask, session, send_from_directory
 from flask.ext.mongoengine import MongoEngine, MongoEngineSessionInterface
 from os import path
 import ConfigParser
@@ -30,7 +30,7 @@ def load_configuration():
     return (general_config_path, flask_config_path, twitter_key, twitter_secret)
 
 def create_app():
-    app = Flask(__name__, static_folder = 'assets')
+    app = Flask(__name__, static_folder = '../public/', static_url_path = '/public')
     app.config.from_pyfile(FLASK_CONFIG_PATH)
 
     # change debug output formatter to a pretty one-liner
@@ -42,7 +42,8 @@ def create_app():
     app_path = path.dirname(__file__)
     app.config.update({
         'RECORDINGS_PATH': path.realpath(app_path + '/../public/recordings/'),
-        'PATH_USER_PROFILE_IMAGE': path.realpath(app_path + '/../public/profile_images/')
+        'PATH_USER_PROFILE_IMAGE': path.realpath(app_path + '/../public/profile_images/'),
+        'PATH_ASSETS': path.realpath(app_path + '/../public/assets/'),
     })
 
     # sanity checks
@@ -69,3 +70,16 @@ print "Loading configuration"
 
 print "Spawning Web App and ODM"
 (webapp, db) = create_app()
+
+# static file paths (when running without nginx)
+
+@webapp.route('/profile_images/<path:filename>')
+def profile_images(filename):
+	print "sending a profile image: " + filename
+	return send_from_directory(webapp.config['PATH_USER_PROFILE_IMAGE'], filename)
+
+
+@webapp.route('/assets/<path:filename>')
+def assets_js(filename):
+	print "sending static asset " + filename
+	return send_from_directory(webapp.config['PATH_ASSETS'], filename)

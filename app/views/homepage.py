@@ -17,10 +17,10 @@ def index():
     for record in recordings:
         record.timestamp = record.postedAt.isoformat()
         record.isMine = record.user.id == g.user['id']
-        
+
         tinyId = tinyurl.encode(str(record.id))
         record.publicUrl = url_for('user.one_recording', recordingId=tinyId)
-        
+
         if not record.description:
             record.description = "N/A"
 
