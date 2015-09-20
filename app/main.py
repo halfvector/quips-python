@@ -1,10 +1,12 @@
-from bson.objectid import ObjectId
-from flask import url_for, render_template, g, session, request
 import hashlib
 import uuid
 
-from app import webapp, db   # start server
+from bson.objectid import ObjectId
+from flask import g, session
+from app import webapp  # start server
 from views import homepage, recordings, auth, user  # import views
+from mongoengine.queryset import DoesNotExist
+
 
 # register individual pages
 webapp.register_blueprint(homepage.bp)
@@ -12,7 +14,7 @@ webapp.register_blueprint(recordings.bp)
 webapp.register_blueprint(auth.bp)
 webapp.register_blueprint(user.bp)
 
-from models import Recording, User
+from models import User
 
 # before processing a request, try to pull in the user session data
 @webapp.before_request
@@ -23,9 +25,10 @@ def before_request():
     # TODO: generate csrf
     #
 
+
 def generate_csrf(input):
     salt = uuid.uuid4().hex
-    return (hashlib.sha256(salt.encode() + input.encode()).hexdigest(), salt)
+    return hashlib.sha256(salt.encode() + input.encode()).hexdigest(), salt
 
 def load_current_user():
     user = None
@@ -33,9 +36,12 @@ def load_current_user():
 
     # load User from raw User.id
     if 'userId' in session and ObjectId.is_valid(session.get('userId')):
-        user, user_not_found = User.objects.get_or_create(id = ObjectId(session.get('userId')), auto_save=False)
+        try:
+            user = User.objects.get(id=session.get('userId'))
+        except DoesNotExist:
+            user = None
 
-        if user_not_found:
+        if user is None:
             # user not found, clear out session, possibly destroy cookie (user was deleted? user guessing ids?)
             auth.destroy_session()
 
@@ -65,8 +71,7 @@ def load_current_user():
 # handy for quick debugging
 if __name__ == '__main__':
     from werkzeug.debug import DebuggedApplication
-    from flask.ext.debugtoolbar import DebugToolbarExtension
 
-    #toolbar = DebugToolbarExtension(webapp) # a little toolbar which exposes sensitive information
-    debugapp = DebuggedApplication(webapp, evalex=True) # wrap flask wsgi entry-point with a browser-based debugger
+    # toolbar = DebugToolbarExtension(webapp) # a little toolbar which exposes sensitive information
+    debugapp = DebuggedApplication(webapp, evalex=True)  # wrap flask wsgi entry-point with a browser-based debugger
     webapp.run(host='0.0.0.0')

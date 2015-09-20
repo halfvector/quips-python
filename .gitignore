@@ -2,3 +2,6 @@
 public/profile_images
 venv
 public/recordings
+.idea
+node_modules
+tmp

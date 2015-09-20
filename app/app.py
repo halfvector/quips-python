@@ -1,13 +1,12 @@
-from flask import Flask, session, send_from_directory
+import ConfigParser
+
+from flask import Flask, send_from_directory
 from flask.ext.mongoengine import MongoEngine, MongoEngineSessionInterface
 from os import path
-import ConfigParser
 
 # this is the entry-point. all bootstrapping happens in this file.
 
-
 def load_configuration():
-
     # resolve paths relative to this file
     app_path = path.dirname(__file__)
     general_config_path = path.realpath(app_path + '/../conf/app.ini')
@@ -27,14 +26,16 @@ def load_configuration():
     twitter_key = general_config.get('twitter', 'key')
     twitter_secret = general_config.get('twitter', 'secret')
 
-    return (general_config_path, flask_config_path, twitter_key, twitter_secret)
+    return general_config_path, flask_config_path, twitter_key, twitter_secret
+
 
 def create_app():
-    app = Flask(__name__, static_folder = '../public/', static_url_path = '/public')
+    app = Flask(__name__, static_folder='../public/', static_url_path='/public')
     app.config.from_pyfile(FLASK_CONFIG_PATH)
 
     # change debug output formatter to a pretty one-liner
     from logging import Formatter
+
     format = Formatter("[%(levelname)s] %(asctime)s | %(pathname)s:%(lineno)d | %(message)s")
     app.logger.handlers[0].setFormatter(format)
 
@@ -63,7 +64,8 @@ def create_app():
     app.logger.info("> Recordings path: " + app.config['RECORDINGS_PATH'])
     app.logger.info("> User profile images path: " + app.config['PATH_USER_PROFILE_IMAGE'])
 
-    return (app, db)
+    return app, db
+
 
 print "Loading configuration"
 (GENERAL_CONFIG_PATH, FLASK_CONFIG_PATH, TWITTER_KEY, TWITTER_SECRET) = load_configuration()
@@ -75,11 +77,11 @@ print "Spawning Web App and ODM"
 
 @webapp.route('/profile_images/<path:filename>')
 def profile_images(filename):
-	print "sending a profile image: " + filename
-	return send_from_directory(webapp.config['PATH_USER_PROFILE_IMAGE'], filename)
+    print "sending a profile image: " + filename
+    return send_from_directory(webapp.config['PATH_USER_PROFILE_IMAGE'], filename)
 
 
 @webapp.route('/assets/<path:filename>')
 def assets_js(filename):
-	print "sending static asset " + filename
-	return send_from_directory(webapp.config['PATH_ASSETS'], filename)
+    print "sending static asset " + filename
+    return send_from_directory(webapp.config['PATH_ASSETS'], filename)
