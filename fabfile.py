@@ -5,12 +5,13 @@ from fabric.api import *
 from fabric.contrib.files import exists
 import os
 
+
 # no passwords stored here, all host authentication is in  ~/.ssh/config
 env.use_ssh_config = True
 env.roledefs = {
     'development': ['127.0.0.1'],
-    'staging': ['staging.quips'],
-    'production': ['git@what.you.say.icanhaserror.com:7693']
+    'staging': ['staging.couchpod.com'],
+    'production': ['production.couchpod.com']
 }
 # env.roles = ['development'] # default role is local dev
 
@@ -36,14 +37,14 @@ def dev():
 def staging():
     """Set remote production environment"""
     puts("Staging server deployment mode")
-    env.path = "/var/www/staging-quips"
+    env.path = "/var/www/couchpod.com"
     env.path_backups = '%s/backups/' % env.path
     env.path_recordings = '%s/storage/recordings' % env.path
     env.path_profile_images = '%s/storage/profile_images' % env.path
     env.path_current = '%s/system' % env.path
     env.path_revisions = '%s/revisions' % env.path
     env.path_failsafe_revision = '%s/revisions/0-fallback' % env.path
-    env.repo = "git@github.com:halfvector/quips-python.git"
+    env.repo = "https://github.com/halfvector/quips-python.git"
     env.reload_file = '%s/tmp/uwsgi.sock' % env.path
     env.pip_build_cache = '%s/cache/pip.cache/' % env.path
     env.pip_download_cache = '%s/cache/pip.downloads/' % env.path
@@ -54,14 +55,14 @@ def staging():
 def production():
     """Set remote production environment"""
     puts("Production server deployment mode")
-    env.path = "/var/www/audio.icanhaserror.com"
+    env.path = "/var/www/couchpod.com"
     env.path_backups = '%s/backups/' % env.path
     env.path_recordings = '%s/storage/recordings' % env.path
     env.path_profile_images = '%s/storage/profile_images' % env.path
     env.path_current = '%s/system' % env.path
     env.path_revisions = '%s/revisions' % env.path
     env.path_failsafe_revision = '%s/revisions/0-fallback' % env.path
-    env.repo = "git@github.com:halfvector/quips-python.git"
+    env.repo = "https://github.com/halfvector/quips-python.git"
     env.reload_file = '%s/tmp/uwsgi.sock' % env.path
     env.pip_build_cache = '%s/cache/pip.cache/' % env.path
     env.pip_download_cache = '%s/cache/pip.downloads/' % env.path
@@ -121,7 +122,7 @@ def df():
 def push_recordings():
     """HACK: Export local recordings"""
     require('path_recordings', provided_by=[production])
-    put('%s/recordings/*.ogg' % env.local_root_path, env.path_recordings, mode=0664)
+    put(env.local_root_path + '/storage/recordings/', env.path_recordings + '/*.ogg', mode=0664)
 
 
 @task
@@ -170,7 +171,6 @@ def restore_db(tarfile):
         run('tar zxf %s' % tarfile)
         run('mongorestore %s' % tarfile[:-7])
 
-    run('chown www-data:www-data %s' % env.path_backups)
 
 # commit_id should probably be the hash from 'git rev-parse production/master'
 # but could also be used to perform a rollback to a previous revision
@@ -289,3 +289,10 @@ def rollback_on_fail(rollback_callback):
     except SystemExit:
         rollback_callback()
         abort("Fail")
+
+
+# run a rebuild task on remote server (eg: redownload profile images)
+@task
+def update_profile_images():
+    with cd(env.path), prefix('source venv/bin/activate'):
+        run('python system/app/manage.py -u')

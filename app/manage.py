@@ -14,6 +14,7 @@ from models import *
 def process_args(option, opt, value, parser):
     return
 
+
 def repair_user_references():
     user = User.objects()[0]
     print 'user: ' + user.username
@@ -22,11 +23,12 @@ def repair_user_references():
     for record in recordings:
         user = record.user
         webapp.logger.debug('user: %s' % user.username)
-        userref = User.objects(id = bson.objectid.ObjectId(user.id))[0]
+        userref = User.objects(id=bson.objectid.ObjectId(user.id))[0]
         webapp.logger.debug('  ref: %s', userref)
         record.user = None
         record.user = userref
         record.save()
+
 
 def update_profile_images():
     users = User.objects()
@@ -55,11 +57,12 @@ def update_profile_images():
         user.profileImage = img_path_relative
         user.save()
 
+
 if __name__ == '__main__':
     parser = optparse.OptionParser(usage='usage: %prog [options]')
     parser.add_option('-u', '--update', action='store_true', dest='update', help='update database')
 
     opts, args = parser.parse_args()
 
-    if opts.update == True:
+    if opts.update:
         update_profile_images()
