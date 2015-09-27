@@ -5,3 +5,5 @@ public/recordings
 .idea
 node_modules
 tmp
+backups
+storage
