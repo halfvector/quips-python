@@ -35,8 +35,8 @@ def dev():
 
 @task
 def staging():
-    """Set remote production environment"""
-    puts("Staging server deployment mode")
+    """Set remote staging environment"""
+    puts("Deploying to staging environment")
     env.path = "/var/www/couchpod.com"
     env.path_backups = '%s/backups/' % env.path
     env.path_recordings = '%s/storage/recordings' % env.path
@@ -54,7 +54,7 @@ def staging():
 @task
 def production():
     """Set remote production environment"""
-    puts("Production server deployment mode")
+    puts("Deploying to production environment")
     env.path = "/var/www/couchpod.com"
     env.path_backups = '%s/backups/' % env.path
     env.path_recordings = '%s/storage/recordings' % env.path

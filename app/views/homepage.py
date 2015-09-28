@@ -1,5 +1,5 @@
 from datetime import datetime
-from flask import render_template, g, Blueprint, url_for
+from flask import render_template, g, Blueprint, url_for, session, send_from_directory, current_app
 from mongoengine import Q
 
 from models import Recording
@@ -10,9 +10,12 @@ bp = Blueprint('homepage', __name__, template_folder='templates')
 
 @bp.route('/')
 def index():
-    recordings = Recording.objects(Q(isPublic = True))[:50].order_by('-postedAt')
+    # if user not logged in, show login page
+    if 'userId' not in session or not hasattr(g, 'user'):
+        current_app.logger.info("homepage.index(); user not logged in, showing landing login page..")
+        return send_from_directory(current_app.config['PATH_PUBLIC'], 'landing.html')
 
-    print g.user['id']
+    recordings = Recording.objects(Q(isPublic = True))[:50].order_by('-postedAt')
 
     for record in recordings:
         record.timestamp = record.postedAt.isoformat()
@@ -22,7 +25,7 @@ def index():
         record.publicUrl = url_for('user.one_recording', recordingId=tinyId)
 
         if not record.description:
-            record.description = "N/A"
+            record.description = "(no description)"
 
     return render_template(
         'homepage.html',

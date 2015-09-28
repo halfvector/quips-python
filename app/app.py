@@ -36,7 +36,7 @@ def create_app():
     # change debug output formatter to a pretty one-liner
     from logging import Formatter
 
-    format = Formatter("[%(levelname)s] %(asctime)s | %(pathname)s:%(lineno)d | %(message)s")
+    format = Formatter("%(levelname)6s | %(relativeCreated)6d | %(filename)s:%(lineno)d | %(message)s")
     app.logger.handlers[0].setFormatter(format)
 
     # resolve paths relative to this file
@@ -45,6 +45,7 @@ def create_app():
         'RECORDINGS_PATH': path.realpath(app_path + '/../public/recordings/'),
         'PATH_USER_PROFILE_IMAGE': path.realpath(app_path + '/../public/profile_images/'),
         'PATH_ASSETS': path.realpath(app_path + '/../public/assets/'),
+        'PATH_PUBLIC': path.realpath(app_path + '/../public/'),
     })
 
     # sanity checks
@@ -61,8 +62,8 @@ def create_app():
     db.init_app(app)
     app.session_interface = MongoEngineSessionInterface(db)
 
-    app.logger.info("> Recordings path: " + app.config['RECORDINGS_PATH'])
-    app.logger.info("> User profile images path: " + app.config['PATH_USER_PROFILE_IMAGE'])
+    app.logger.info("Recordings path: " + app.config['RECORDINGS_PATH'])
+    app.logger.info("User profile images path: " + app.config['PATH_USER_PROFILE_IMAGE'])
 
     return app, db
 
@@ -77,11 +78,9 @@ print "Spawning Web App and ODM"
 
 @webapp.route('/profile_images/<path:filename>')
 def profile_images(filename):
-    print "sending a profile image: " + filename
     return send_from_directory(webapp.config['PATH_USER_PROFILE_IMAGE'], filename)
 
 
 @webapp.route('/assets/<path:filename>')
 def assets_js(filename):
-    print "sending static asset " + filename
     return send_from_directory(webapp.config['PATH_ASSETS'], filename)

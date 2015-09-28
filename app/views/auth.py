@@ -111,10 +111,7 @@ def auth_authorized():
     # set a cookie client-side with which we can locate this session
     response = webapp.make_response(redirect(next_url))
 
-    # 'save this browser' for the user
-    # for now this makes a permanent 1-year old cookie for everyone
-    # TODO: facebook style per-browser identification - allow user to manage sessions from other devices (eg: accidentally left open at the library)
-    # SECURITY: change permanent session to 'opt-in'
+    # make a permanent 1-year cookie for a successful login
     session['userId'] = str(user.id)
     session.permanent = True
 

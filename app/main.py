@@ -2,7 +2,7 @@ import hashlib
 import uuid
 
 from bson.objectid import ObjectId
-from flask import g, session
+from flask import g, session, request, url_for, redirect, current_app
 from app import webapp  # start server
 from views import homepage, recordings, auth, user  # import views
 from mongoengine.queryset import DoesNotExist
@@ -19,12 +19,23 @@ from models import User
 # before processing a request, try to pull in the user session data
 @webapp.before_request
 def before_request():
+    # bypass auth checks for some static assets
+    if request.endpoint is not None:
+        if 'profile_images' in request.endpoint:
+            return
+        if 'assets_js' in request.endpoint:
+            return
+
     # load user data
-    load_current_user()
+    return load_current_user()
 
     # TODO: generate csrf
-    #
 
+@webapp.after_request
+def add_header(response):
+    response.headers['X-UA-Compatible'] = 'IE=Edge,chrome=1'
+    response.headers['Cache-Control'] = 'public, max-age=0'
+    return response
 
 def generate_csrf(input):
     salt = uuid.uuid4().hex
@@ -33,6 +44,17 @@ def generate_csrf(input):
 def load_current_user():
     user = None
     session.permanent = True
+
+    secured_endpoints = ('homepage.index', 'recordings.', 'user.')
+
+    current_app.logger.info("load_current_user(); request.endpoint = %s" % request.endpoint)
+
+    # skip not-authed redirect check when already on landing page
+    if (request.endpoint is not None) and ('homepage.index' not in request.endpoint):
+        # if user not-authed, redirect
+        if ('userId' not in session) and any(endpoint in request.endpoint for endpoint in secured_endpoints):
+            print "redirecting due to missing userId for endpoint: " + request.endpoint
+            return redirect(url_for('homepage.index'))
 
     # load User from raw User.id
     if 'userId' in session and ObjectId.is_valid(session.get('userId')):
