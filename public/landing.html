@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Couchpod - Your own podcast, easy.</title>
+    <title>Couchpod - Your #1 couch-based podcasting solution</title>
 
     <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Josefin+Sans:400,600" />
     <link rel="stylesheet" href="assets/css/landing.css" />
@@ -14,109 +14,13 @@
     <script src="//oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
     <script src="//oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
     <![endif]-->
+
+	<script src="//cdn.ravenjs.com/1.1.11/console,native/raven.min.js"></script>
+	<script type="text/javascript">
+		window.heap=window.heap||[],heap.load=function(e,t){window.heap.appid=e,window.heap.config=t=t||{};var n=t.forceSSL||"https:"===document.location.protocol,a=document.createElement("script");a.type="text/javascript",a.async=!0,a.src=(n?"https:":"http:")+"//cdn.heapanalytics.com/js/heap-"+e+".js";var o=document.getElementsByTagName("script")[0];o.parentNode.insertBefore(a,o);for(var r=function(e){return function(){heap.push([e].concat(Array.prototype.slice.call(arguments,0)))}},p=["clearEventProperties","identify","setEventProperties","track","unsetEventProperty"],c=0;c<p.length;c++)heap[p[c]]=r(p[c])};
+		heap.load("946714067");
+	</script>
 </head>
-
-<style>
-html, body {
-	width: 100%;
-	height: 100%;
-	padding: 0;
-	margin: 0;
-}
-body {
-	font-family: 'Josefin Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-	font-size: 16px;
-	font-weight: normal;
-}
-.bg, .bg-overlay, .contents {
-	width: 100%;
-	height: 100%;
-	position: absolute;
-}
-.bg {
-	background: #000000 url('assets/img/landing-screenshot.jpg') center center no-repeat;
-	background-size: cover;
-}
-.bg-overlay {
-	background: #282020;
-	opacity: 0.7;
-}
-.landing-screen {
-	width: 100%;
-	height: 100%;
-}
-.wordmark-container {
-	margin: 30px 30px 0px;
-	display: block;
-	position: relative;
-}
-	.wordmark {
-		color: #fff;
-		font-size: 25px;
-		font-weight: 600;
-		letter-spacing: 2px;
-		text-decoration: none;
-		text-transform: uppercase;
-	}
-.contents {
-
-}
-.message-container {
-	position: absolute;
-	width: 100%;
-	text-align: center;
-	top: 50%;
-    transform: translateY(-50%);
-}
-	.message {
-		position: relative;
-		margin: auto;
-		max-width: 960px;
-		text-align: middle;
-	}
-	.message h1 {
-		font-size: 26px;
-		font-weight: normal;
-		letter-spacing: 3px;
-		text-transform: uppercase;
-		color: #aaa;
-		margin: 0 0 40px;
-	}
-	.message h2 {
-		font-size: 70px;
-		line-height: 85px;
-		font-weight: normal;
-		letter-spacing: 0px;
-		color: #fff;
-		margin: 0;
-	}
-.button-panel {
-	margin-top: 40px;
-}
-	a.btn {
-		font-size: 16px;
-		font-weight: 600;
-		line-height: 20px;
-		letter-spacing: 2px;
-		color: #aaa;
-
-		border: 2px solid #aaa;
-
-		margin: 0px 10px;
-		min-width: 160px;
-		padding: 10px 30px;
-		text-decoration: none;
-
-		transition-delay: 0s, 0s;
-		transition-duration: 0.1s, 0.1s;
-		transition-property: background-color, color;
-		transition-timing-function: ease, ease;
-	}
-	a.btn:hover {
-		background-color: #aaa;
-		color: #444;
-	}
-</style>
 
 <body>
 	<section class="landing-screen">
