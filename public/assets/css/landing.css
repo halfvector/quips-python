@@ -16,7 +16,7 @@ body {
     position: absolute;
 }
 .bg {
-    background: #000000 url('assets/img/landing-screenshot.jpg') center center no-repeat;
+    background: #000000 url('/assets/img/landing-screenshot.jpg') center center no-repeat;
     background-size: cover;
 }
 .bg-overlay {
