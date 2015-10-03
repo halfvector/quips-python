@@ -828,11 +828,11 @@
 
 *, *::before, *::after { -webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; }
 
-html { padding: 0; margin: 0; font-family: "Open Sans"; font-size: 18px; line-height: 27px; display: table; width: 100%; height: 100%; background: #f7f7f7; }
+html { padding: 0; margin: 0; font-family: "Open Sans"; font-size: 18px; line-height: 27px; display: table; width: 100%; height: 100%; background: #F6F6F6; color: #343434; }
 
 body { padding: 0; margin: 0; display: table; width: 100%; }
 
-.site-header { background: #444; color: #fff; display: table-row; width: 100%; }
+.site-header { background: #3B3B3B; color: #fff; display: table-row; width: 100%; }
 .site-header .center-grid { max-width: 1080px; margin-left: auto; margin-right: auto; }
 .site-header .center-grid::after { content: " "; display: block; clear: both; }
 
@@ -847,7 +847,7 @@ body { padding: 0; margin: 0; display: table; width: 100%; }
 .header-nav .header-btn { padding: 0px; cursor: pointer; position: relative; z-index: 100; text-decoration: none; font-size: 30px; margin: 0; display: inline-block; text-align: center; }
 .header-nav .header-btn i.fa { padding: 0px; }
 .header-nav .header_logo { font-size: 25px; font-weight: 300; display: table-cell; vertical-align: inherit; width: 21%; text-align: right; }
-.header-nav .header_logo a { color: inherit; text-decoration: none; }
+.header-nav .header_logo a { font-family: "Josefin Sans", "Helvetica Neue", Helvetica, Arial, sans-serif; color: #fff; font-size: 25px; font-weight: 600; letter-spacing: 2px; text-decoration: none; text-transform: uppercase; }
 .header-nav .header_menu { padding: 0px; display: table-cell; vertical-align: inherit; }
 .header-nav .header_anon-cp { display: table-cell; width: 150px; vertical-align: inherit; }
 .header-nav .header_anon-cp .btn-link { color: #ccc; text-decoration: none; text-transform: uppercase; font-size: 15px; padding: 0px 16px; }
@@ -929,7 +929,7 @@ body { padding: 0; margin: 0; display: table; width: 100%; }
 
 .btn-no-text i.fa { padding: 0px; }
 
-.btn-success { background: #3bc492; color: #fff; }
+.btn-success { background: #4F9FEB; color: #fff; }
 .btn-success:hover { background: #62d0a8; }
 
 .btn-danger { background: #d95b67; color: #fff; }
