@@ -35,6 +35,7 @@ var config = {
 
     src_html: "app/templates/*.html",
 
+    src_sass_all: "app/stylesheets/**/*.sass",
     src_sass: "app/stylesheets/site.sass",
     dest_css: "public/assets/css",
 
@@ -118,7 +119,7 @@ gulp.task('build', function(completed) {
 
 gulp.task('watch', ['build'], function(completed) {
     // rebuild asset when source is changed
-    gulp.watch(config.src_sass, ['styles']);
+    gulp.watch(config.src_sass_all, ['styles']);
     gulp.watch(config.external_src_js, ['external-scripts']);
     gulp.watch(config.workers_src_js, ['worker-scripts']);
     gulp.watch(config.main_src_js, ['main-scripts']);

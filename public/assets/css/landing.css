@@ -35,10 +35,17 @@ body {
 .wordmark {
     color: #fff;
     font-size: 25px;
-    font-weight: 600;
+    font-weight: 300;
     letter-spacing: 2px;
     text-decoration: none;
     text-transform: uppercase;
+}
+    .wordmark strong {
+        font-weight: 600;
+    }
+.wordmark-container img {
+    display: block;
+    margin: 20px 0px 0px;
 }
 .contents {
 

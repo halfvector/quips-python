@@ -846,8 +846,10 @@ body { padding: 0; margin: 0; display: table; width: 100%; }
 .header-nav { display: table; line-height: 54px; width: 100%; vertical-align: middle; }
 .header-nav .header-btn { padding: 0px; cursor: pointer; position: relative; z-index: 100; text-decoration: none; font-size: 30px; margin: 0; display: inline-block; text-align: center; }
 .header-nav .header-btn i.fa { padding: 0px; }
-.header-nav .header_logo { font-size: 25px; font-weight: 300; display: table-cell; vertical-align: inherit; width: 21%; text-align: right; }
-.header-nav .header_logo a { font-family: "Josefin Sans", "Helvetica Neue", Helvetica, Arial, sans-serif; color: #fff; font-size: 25px; font-weight: 600; letter-spacing: 2px; text-decoration: none; text-transform: uppercase; }
+.header-nav .header_logo { font-size: 25px; font-weight: 300; display: table-cell; vertical-align: inherit; width: 21%; min-width: 270px; text-align: left; }
+.header-nav .header_logo img { vertical-align: middle; margin: 0px 20px 0px; width: 50px; }
+.header-nav .header_logo a { font-family: "Josefin Sans", "Helvetica Neue", Helvetica, Arial, sans-serif; color: #fff; font-size: 25px; font-weight: 300; letter-spacing: 2px; text-decoration: none; text-transform: uppercase; }
+.header-nav .header_logo a strong { font-weight: 600; }
 .header-nav .header_menu { padding: 0px; display: table-cell; vertical-align: inherit; }
 .header-nav .header_anon-cp { display: table-cell; width: 150px; vertical-align: inherit; }
 .header-nav .header_anon-cp .btn-link { color: #ccc; text-decoration: none; text-transform: uppercase; font-size: 15px; padding: 0px 16px; }
