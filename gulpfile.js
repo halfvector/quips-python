@@ -108,7 +108,7 @@ gulp.task('html', function () {
 });
 
 gulp.task('clean', function () {
-    return gulp.src(['public/assets/css', 'public/assets/js'], {read: false})
+    return gulp.src(['public/assets/css/site.css', 'public/assets/js'], {read: false})
         .pipe(clean());
 });
 
