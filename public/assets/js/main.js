@@ -725,7 +725,7 @@ App.Loaders.RecordingController = (function(){
         onMicReady: function() {
             console.log("mic ready to record. do countdown.");
             this.timerStart = 3;
-            // run ncountdown
+            // run countdown
             //this.timerId = setInterval(this.onCountdownTick.bind(this), 1000);
             
             // or launch capture immediately

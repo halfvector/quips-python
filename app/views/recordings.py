@@ -1,4 +1,5 @@
 from bson import ObjectId, DBRef
+from mongoengine import Q, DoesNotExist
 from flask.ext.classy import FlaskView, route
 from flask import url_for, redirect, render_template, g, request, session, jsonify, Blueprint
 from app import webapp
@@ -10,9 +11,12 @@ bp = Blueprint('recordings', __name__, template_folder='templates')
 
 @bp.route('/record')
 def show_recorder():
+    recording_count = Recording.objects(Q(user=session.get('userId'))).count()
+
     return render_template(
         'record.html',
-        user=g.user
+        user=g.user,
+        recording_count=recording_count
     )
 
 @bp.route('/recording/publish/<recording_id>', methods=['POST'])

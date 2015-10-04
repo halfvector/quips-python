@@ -2,6 +2,12 @@
 
 {% block body %}
 
+    {% if recordings | length == 0 %}
+        <div class="m-quips-sample-listing">
+            <img src="/assets/img/sample-listing.png" />
+        </div>
+    {% endif %}
+
     <div backbone-controller="RecordingsList" class="m-quips">
         <div class="divider"></div>
 

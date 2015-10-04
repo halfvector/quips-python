@@ -1,133 +1,161 @@
 .header-nav
-    display: table
-    line-height: $line-height * 2
-    width: 100%
+  display: table
+  //line-height: $line-height * 2
+  line-height: 70px
+  width: 100%
+  vertical-align: middle
+
+  .header-btn
+    padding: 0px
+    cursor: pointer
+    position: relative
+    z-index: 100
+    text-decoration: none
+
+    font-size: 30px
+    margin: 0
+    display: inline-block
+    text-align: center
+
+    //background-color: #495164
+    //color: #ADEAFC
+    color: #fff
+
+    i.fa
+      vertical-align: middle
+      padding: 0px
+
+  .header_logo
+    font-size: 25px
+    font-weight: 300
+    display: table-cell
     vertical-align: middle
+    width: 300px
+    min-width: 270px
+    text-align: left
+    padding-left: 30px
+
+    img
+      vertical-align: middle
+      margin: 0px 20px 0px
+      width: 50px
+
+    a
+      line-height: 1
+      vertical-align: middle
+      font-family: 'Josefin Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif
+      color: #fff
+      font-size: 25px
+      font-weight: 300
+      letter-spacing: 2px
+      text-decoration: none
+      text-transform: uppercase
+
+      strong
+        font-weight: 600
+
+  .header_menu
+    padding: 0
+    display: table-cell
+    vertical-align: middle
+    text-align: center
+
+    a
+      display: inline-block
+      vertical-align: middle
+
+      img
+        width: 50px
+        vertical-align: middle
+        margin: 0px auto 0px
+
+  .header_anon-cp
+    display: table-cell
+    width: 150px
+    //line-height: 1
+    vertical-align: inherit
+
+    .btn-link
+      color: #ccc
+      text-decoration: none
+      text-transform: uppercase
+      font-size: 15px
+      padding: 0px 16px
+
+      &:hover
+        color: #fff
+        background: #555
+
+  .header_user-cp
+    font-size: 0
+    text-align: right
+    display: table-cell
+    vertical-align: inherit
+    width: $line-height * 2
+    padding-right: 30px
+
+    .cp
+      text-align: right
+      color: #fff
+      display: block
+
+      .m-dropdown
+        margin: 0px auto
+        font-size: 1rem
+        text-decoration: none
+        line-height: 1
+        display: block
+
+      .dropdown-trigger
+        line-height: 1
+        display: block
+
+    img.cp-avatar
+      width: $line-height * 1.5
+      line-height: $line-height * 1.5
+      margin: 0px
+      display: block
+      border-radius: 50%
+
+  .header_shortcuts
+    display: table-cell
+    text-align: right
+    width: 230px
+    vertical-align: middle
+    padding-right: 30px
 
     .header-btn
-        padding: 0px
-        cursor: pointer
-        position: relative
-        z-index: 100
-        text-decoration: none
+      float: right
+      font-size: 20px
+      border-radius: 50%
+      display: block
+      width: $line-height * 1.5
+      line-height: $line-height * 1.5
+      transition: transform .06s ease-in-out
 
-        font-size: 30px
-        margin: 0
-        display: inline-block
-        text-align: center
+      &:hover
+        transform: scale(1.2)
 
-        i.fa
-            padding: 0px
 
-    .header_logo
-        font-size: 25px
-        font-weight: 300
-        display: table-cell
-        vertical-align: inherit
-        width: 21%
-        min-width: 270px
-        text-align: left
+  .primary-nav
+    display: table
+    margin: 0
+    padding: 0
+    margin-left: 4%
 
-        img
-            vertical-align: middle
-            margin: 0px 20px 0px
-            width: 50px
+    li
+      display: table-cell
+      line-height: inherit
+      margin: 0
 
-        a
-            font-family: 'Josefin Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif
-            color: #fff
-            font-size: 25px
-            font-weight: 300
-            letter-spacing: 2px
-            text-decoration: none
-            text-transform: uppercase
+    a
+      font-size: 30px
+      margin: 0
+      color: #ccc
+      display: block
+      width: 75px
+      text-align: center
 
-            strong
-                font-weight: 600
-
-    .header_menu
-        padding: 0px
-        display: table-cell
-        vertical-align: inherit
-
-    .header_anon-cp
-        display: table-cell
-        width: 150px
-        //line-height: 1
-        vertical-align: inherit
-
-        .btn-link
-            color: #ccc
-            text-decoration: none
-            text-transform: uppercase
-            font-size: 15px
-            padding: 0px 16px
-
-            &:hover
-                color: #fff
-                background: #555
-
-    .header_user-cp
-        font-size: 0
-        text-align: right
-        display: table-cell
-        width: 70px
-        vertical-align: inherit
-
-        .cp
-            text-align: right
-            color: #fff
-            display: block
-
-            .m-dropdown
-                margin: 0px auto
-                font-size: 1rem
-                text-decoration: none
-                background: green
-                line-height: 1
-                display: block
-                width: 30px
-
-            .dropdown-trigger
-                background: orange
-                line-height: 1
-                display: block
-
-        img.cp-avatar
-            width: 30px
-            margin: 0px
-            display: block
-
-    .header_shortcuts
-        display: table-cell
-        //line-height: 1
-        //width: 120px
-        text-align: right
-        vertical-align: inherit
-
-        .header-btn
-            font-size: 1rem
-            width: $line-height * 2
-
-    .primary-nav
-        display: table
-        margin: 0
-        padding: 0
-        margin-left: 4%
-
-        li
-            display: table-cell
-            line-height: inherit
-            margin: 0
-
-        a
-            font-size: 30px
-            margin: 0
-            color: #ccc
-            display: block
-            width: 75px
-            text-align: center
-
-            &:hover
-                background: #555
-                color: #fff
+      &:hover
+        background: #555
+        color: #fff
