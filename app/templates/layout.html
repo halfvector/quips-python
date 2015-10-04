@@ -3,46 +3,34 @@
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Quips</title>
+        <title>Couchpod</title>
+        <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Josefin+Sans:400,600" />
         <link href='//fonts.googleapis.com/css?family=Open+Sans:400,600,300' rel='stylesheet' type='text/css' />
         <link rel=stylesheet type=text/css href="{{ url_for('static', filename='assets/css/site.css') }}" />
 
         <script src="//cdn.ravenjs.com/1.1.11/console,native/raven.min.js"></script>
         <script type="text/javascript">
-          var heap=heap||[];heap.load=function(a){window._heapid=a;var b=document.createElement("script");b.type="text/javascript",b.async=!0,b.src=("https:"===document.location.protocol?"https:":"http:")+"//cdn.heapanalytics.com/js/heap.js";var c=document.getElementsByTagName("script")[0];c.parentNode.insertBefore(b,c);var d=function(a){return function(){heap.push([a].concat(Array.prototype.slice.call(arguments,0)))}},e=["identify","track"];for(var f=0;f<e.length;f++)heap[e[f]]=d(e[f])};
-          heap.load("2084706587");
+            window.heap=window.heap||[],heap.load=function(e,t){window.heap.appid=e,window.heap.config=t=t||{};var n=t.forceSSL||"https:"===document.location.protocol,a=document.createElement("script");a.type="text/javascript",a.async=!0,a.src=(n?"https:":"http:")+"//cdn.heapanalytics.com/js/heap-"+e+".js";var o=document.getElementsByTagName("script")[0];o.parentNode.insertBefore(a,o);for(var r=function(e){return function(){heap.push([e].concat(Array.prototype.slice.call(arguments,0)))}},p=["clearEventProperties","identify","setEventProperties","track","unsetEventProperty"],c=0;c<p.length;c++)heap[p[c]]=r(p[c])};
+            heap.load("946714067");
+            heap.identify({name: "{{ g.user.username }}", id: "{{ g.user.id }}"});
         </script>
     </head>
 
-
-<!--
-
-    )     )                        (        )
- ( /(  ( /(   *   )   (     (      )\ )  ( /(       (  (
- )\()) )\())` )  /(   )\    )\    (()/(  )\()) (    )\))(   '
-((_)\ ((_)\  ( )(_))(((_)((((_)(   /(_))((_)\  )\  ((_)()\ )
- _((_)  ((_)(_(_()) )\___ )\ _ )\ (_))   _((_)((_) _(())\_)()
-| || | / _ \|_   _|((/ __|(_)_\(_)/ __| | || || __|\ \((_)/ /
-| __ || (_) | | |   | (__  / _ \  \__ \ | __ || _|  \ \/\/ /
-|_||_| \___/  |_|    \___|/_/ \_\ |___/ |_||_||___|  \_/\_/
-
-
--->
-
     <body>
         <header class="site-header">
-            <div class="center-grid">
+            <div class="">
                 <nav class="header-nav">
-                    <div class="header_logo"><a href="/">Quips</a></div>
+                    <div class="header_logo">
+                        <a href="/"><strong>Couch</strong>pod</a>
+                    </div>
                     <div class="header_menu">
-                        <ul class="primary-nav">
-{#                            <li><a href="/"><i class="fa fa-home"></i></a></li>#}
-                            <li><a href="/"><i class="fa fa-globe"></i></a></li>
-                        </ul>
+                        <a href="/">
+                            <img src="/assets/img/couchpod-3-tiny.png" />
+                        </a>
                     </div>
                     {% if user and user.authenticated %}
                         <div class="header_shortcuts">
-                            <a class="header-btn btn-success" href="/record"><i class="fa fa-plus"></i></a>
+                            <a class="header-btn btn-success" href="/record"><i class="fa fa-microphone"></i></a>
                         </div>
                         <div class="header_user-cp">
                             <div class="cp">
@@ -53,7 +41,7 @@
                                     <div class="dropdown-content">
                                         <ul class="dropdown-list">
                                             <li>
-                                                <a href="/#noprofileyetsorry"><i class="fa fa-star"></i> Profile</a>
+                                                <a href="/u/{{ user.username }}"><i class="fa fa-star"></i> Profile</a>
                                             </li>
                                             <li>
                                                 <a href="/logout"><i class="fa fa-sign-out"></i> Logout</a>

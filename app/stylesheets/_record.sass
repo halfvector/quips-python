@@ -1,199 +1,238 @@
 .m-recording-motivational
-    text-align: center
-    font-size: 72px
-    line-height: 1.8
-    display: none
+  text-align: center
+  font-size: 72px
+  line-height: 1.8
+  display: none
+
+.m-recording-motivation
+  padding: 60px 0px 0px 30px
+  h1
+    margin: 0
+    line-height: 1
 
 .btn
-    display: inline-block
-    padding: 7px 21px
-    cursor: pointer
-    position: relative
-    z-index: 100
-    text-decoration: none
+  display: inline-block
+  padding: 7px 21px
+  cursor: pointer
+  position: relative
+  z-index: 100
+  text-decoration: none
+  border-radius: 5px
 
-    i.fa
-        padding-right: 7px
+  i.fa
+    padding-right: 7px
 
 .btn-no-text
-    i.fa
-        padding: 0px
-        
-.btn-success
-    background: #3bc492
-    color: #fff
+  i.fa
+    padding: 0px
 
-    &:hover
-        background: lighten(#3bc492, 10%)
+.btn-success
+  background: #4F9FEB
+  color: #fff
+
+  &:hover
+    background: lighten(#3bc492, 10%)
 
 .btn-danger
-    background: $colorRed4
-    color: #fff
+  background: $colorRed4
+  color: #fff
 
-    &:hover
-        background: lighten(#3bc492, 10%)
-        
+  &:hover
+    background: lighten(#3bc492, 10%)
+
 .btn-link
-    text-decoration: underline
-
+  text-decoration: underline
 
 .m-recording-container
-    position: relative
-    height: 400px
-    width: 500px
-    margin: 20px auto 0px
-    z-index: 100
-    +perspective(600)
+  position: absolute
+  top: 100px
+  left: 50%
+  height: 400px
+  width: 500px
+  margin: 20px auto 0px
+  margin-left: -250px
+  z-index: 100
+  +perspective(600)
 
-    //&:hover
-    //    .card
-    //        +transform(rotateY(-180deg))
+  //&:hover
+  //    .card
+  //        +transform(rotateY(-180deg))
 
-    &.flipped
-        .card
-            +transform(rotateY(-180deg))
-
+  &.flipped
     .card
-        position: relative
-        width: 100%
-        height: 100%
-        +transform-style(preserve-3d)
-        transition: all 0.2s ease-in-out
+      +transform(rotateY(-180deg))
 
-    .face
-        position: absolute
-        width: 100%
-        height: 100%
-        +backface-visibility(hidden)
-        z-index: 3
+  .card
+    position: relative
+    width: 100%
+    height: 100%
+    +transform-style(preserve-3d)
+    transition: all 0.2s ease-in-out
 
-        &.back
-            z-index: 5
-            +transform(rotateY(180deg))
+  .face
+    position: absolute
+    width: 100%
+    height: 100%
+    +backface-visibility(hidden)
+    z-index: 3
+
+    &.back
+      z-index: 5
+      +transform(rotateY(180deg))
 
 .m-recording-uploading
-    //background: #eee
-    vertical-align: middle
-    display: table-cell
-    
-    &.disabled
-        display: none
-    
-    .upload-progress
-        width: 80%
-        margin: auto
-        margin-top: 150px
-        
-        h4
-            padding: 0px
-            margin: 0px
-            line-height: $line-height * 1.5
-    
-    .progress-bar
-        background: #ccc
-        
-        .bar
-            width: 0%
-            background: #aaa
-            height: 27px
-            +transition(all, 0.3s, ease-out)
-        
-            
+  //background: #eee
+  vertical-align: middle
+  display: table-cell
+
+  &.disabled
+    display: none
+
+  .upload-progress
+    width: 80%
+    margin: auto
+    margin-top: 150px
+
+    h4
+      padding: 0px
+      margin: 0px
+      line-height: $line-height * 1.5
+
+  .progress-bar
+    background: #ccc
+
+    .bar
+      width: 0%
+      background: #aaa
+      height: 27px
+      +transition(all, 0.3s, ease-out)
+
 .m-recording-upload
-    text-align: center
-    color: #444
-    padding: 1em
-    padding-top: 100px
-    
-    &.disabled
-        display: none
+  text-align: center
+  color: #444
+  padding: 1em
+  padding-top: 100px
 
-    .fa
-        font-size: 60px
-        line-height: 1.2
+  &.disabled
+    display: none
 
-    .duration
-        padding-left: 30px
-        font-size: 60px
-        line-height: 1.2
+  .fa
+    font-size: 60px
+    line-height: 1.2
 
-    .stats
-        display: none
+  .duration
+    padding-left: 30px
+    font-size: 60px
+    line-height: 1.2
 
-    .controls
-        width: 450px
-        margin: 0px auto
-        margin-top: 20px
-        //background: #eee
-        display: inline-block
+  .stats
+    display: none
 
-        #upload-recording
-            float: left
-            
-        #cancel-recording
-            float: right
-            
-        
-    #recorded-preview
-        width: 450px
-        
-    .description
-        margin: 0px auto
-        padding-top: 20px
-        width: 450px
+  .controls
+    width: 450px
+    margin: 0px auto
+    margin-top: 20px
+    //background: #eee
+    display: inline-block
 
-        textarea
-            width: 100%
-            height: 100%
-            padding: 4px 8px
-            border: 1px solid #ccc
-            border-radius: 3px
-            font-size: 18px
-            line-height: 27px
-            font-family: 'Open Sans'
+    #upload-recording
+      float: left
+
+    #cancel-recording
+      float: right
+
+  #recorded-preview
+    width: 450px
+
+  .description
+    margin: 0px auto
+    padding-top: 20px
+    width: 450px
+
+    textarea
+      width: 100%
+      height: 100%
+      padding: 4px 8px
+      border: 1px solid #ccc
+      border-radius: 3px
+      font-size: 18px
+      line-height: 27px
+      font-family: 'Open Sans'
+
+// keyframes mixin
+=keyframes($name)
+  @-webkit-keyframes #{$name}
+    @content
+  @-moz-keyframes #{$name}
+    @content
+  @-ms-keyframes #{$name}
+    @content
+  @keyframes #{$name}
+    @content
+
+// use of keyframes mixin
++keyframes(microphone-beat)
+  0%
+    transform: scale(1)
+  30%
+    transform: scale(1.04)
+  100%
+    transform: scale(1)
 
 .m-recording-screen
-    text-align: center
-    color: #444
-    padding-top: 70px
-    //background: #ccc
-    
-    &.disabled
-        display: none
+  text-align: center
+  color: #444
+  padding-top: 70px
+  //background: #ccc
 
+  &.disabled
+    display: none
+
+  .recording-toggle
+    font-size: 160px
+    width: 250px
+    height: 250px
+    line-height: 250px
+    display: inline-block
+    margin: 0px auto
+    background: #777
+    color: #fff
+    border-radius: 50%
+    cursor: pointer
+    transition: transform .06s ease-in-out
+    vertical-align: middle
+
+    &:hover
+      transform: scale(1.05)
+      background-color: $colorPink1
+
+    i
+      vertical-align: middle
+
+  &.is-recording
     .recording-toggle
-        font-size: 160px
-        width: 250px
-        height: 250px
-        line-height: 250px
-        display: inline-block
-        margin: 0px auto
-        background: #eee
-        border-radius: 30px
-        border: 1px solid #fff
-        box-shadow: 0px 2px 3px #ccc
-        cursor: pointer
+      background-color: $colorPink
 
-    &.is-recording
-        .fa-microphone, .recording-time
-            color: $colorRed4
-        
-    .recording-time
-        margin-top: 50px
-        font-size: 72px
-        line-height: 80px
-        opacity: 0
-        +transition(background-color, 0.2s, ease-in)
-        
-        &.is-visible
-            opacity: 1
+      &:hover
+        background-color: $colorPink1
 
-    .description
-        padding-top: 20px
+  .recording-time
+    margin-top: 30px
+    font-size: 40px
+    line-height: 80px
+    opacity: 0
+    +transition(all, 0.2s, ease-in)
 
-        textarea
-            width: 100%
-            height: 100%
-            padding: 4px 8px
-            border: 1px solid #ccc
-            border-radius: 3px
+    &.is-visible
+      opacity: 1
+      font-size: 70px
+
+  .description
+    padding-top: 20px
+
+    textarea
+      width: 100%
+      height: 100%
+      padding: 4px 8px
+      border: 1px solid #ccc
+      border-radius: 5px

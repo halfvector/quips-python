@@ -2,8 +2,9 @@
 public/profile_images
 venv
 public/recordings
-backups
-node_modules
-storage
-tmp
 .idea
+node_modules
+tmp
+backups
+storage
+Gemfile.lock

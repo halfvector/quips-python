@@ -12,7 +12,6 @@
 {% block body %}
 
     <div backbone-controller="RecordingsList" class="m-quips">
-        <div class="divider"></div>
 
     {% for post in recordings %}
         <div class="m-quip" data-quip-id="{{ post.id }}" data-is-mine="{{ post.isMine }}" data-is-public="{{ post.isPublic }}">

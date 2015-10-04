@@ -8,6 +8,15 @@
 
 {% block body %}
 
+    <div class="m-quips-sample-listing">
+    {% if recording_count == 0 %}
+        <div class="m-recording-motivation">
+            <h1>Record your first podcast.</h1>
+            <p>You have 20 seconds, go.</p>
+        </div>
+    {% endif %}
+    </div>
+
     <div backbone-controller="RecordingController" class="m-recording-container">
 
         <div class="card">
@@ -16,10 +25,11 @@
                 <div title="toggle recording" class="recording-toggle"><i class="fa fa-microphone"></i></div>
                 <div class="recording-time">3</div>
             </div>
-            
+
             <div id="recorder-uploader" class="m-recording-uploading face disabled">
                 <div class="upload-progress">
                     <h4>Uploading</h4>
+
                     <div class="progress-bar">
                         <div class="bar"></div>
                     </div>
@@ -32,16 +42,16 @@
                     <i class="fa fa-play-circle"></i>
                     <span class="duration"></span>
                 </div>
-                
+
                 <div class="description">
                     <textarea name="description" placeholder="optional description"></textarea>
                 </div>
-                
+
                 <div class="controls">
-                    <a href="#" class="btn btn-success" id="upload-recording">Upload</a>
-                    <a href="#" class="btn btn-link" id="cancel-recording">Delete and Try Again</a>
+                    <a href="" class="btn btn-success" id="upload-recording">Upload</a>
+                    <a href="" class="btn btn-link" id="cancel-recording">Delete and Try Again</a>
                 </div>
-                
+
             </div>
 
         </div>
