@@ -4,7 +4,7 @@ import uuid
 from bson.objectid import ObjectId
 from flask import g, session, request, url_for, redirect, current_app
 from app import webapp  # start server
-from views import homepage, recordings, auth, user  # import views
+from views import homepage, recordings, auth, user, changelog  # import views
 from mongoengine.queryset import DoesNotExist
 
 
@@ -13,6 +13,7 @@ webapp.register_blueprint(homepage.bp)
 webapp.register_blueprint(recordings.bp)
 webapp.register_blueprint(auth.bp)
 webapp.register_blueprint(user.bp)
+webapp.register_blueprint(changelog.bp)
 
 from models import User
 

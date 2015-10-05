@@ -12,6 +12,7 @@ var http = require('http'),
     concat = require('gulp-concat'),
     cache = require('gulp-cache'),
     livereload = require('gulp-livereload'),
+    autoprefixer = require('gulp-autoprefixer'),
     lr = require('tiny-lr'),
     server = lr()
     ;
@@ -66,6 +67,7 @@ gulp.task('styles', function () {
         stopOnError: true
     })
         .on('error', sass.logError)
+        .pipe(autoprefixer())
         .pipe(gulp.dest(config.dest_css))
 });
 

@@ -1,8 +1,26 @@
-+keyframes(revealDropdownMenu)
+@keyframes revealDropdownMenu
     0%
         opacity: 0
+        transform: translate(0, -50px) scale(0.5, 0.1)
+    70%
+        transform: scale(1.1)
     100%
         opacity: 1
+        transform: translate(0, 0px) scale(1, 1)
+
+@keyframes hideDropdownMenu
+    0%
+        opacity: 1
+    30%
+        transform: scale(1.4)
+    99%
+        //opacity: 0
+        transform: translate(0, -10px) scale(0.5)
+    100%
+        //display: none
+
+.blurred
+    filter: blur(3px) grayscale(80%)
 
 // basic layout and functionality
 .m-dropdown
@@ -10,7 +28,6 @@
     overflow: visible
     display: inline-block
     text-align: center
-    position: relative
 
     $dropdown-color: #f7f7f7
     $border-radius: 4px
@@ -31,23 +48,23 @@
 
     &.opened
         .dropdown-content
-            top: 80%
-            //display: block
-            //box-shadow: 0px 4px 10px rgba(#333,0.5)
-            opacity: 1
-            //+animation(revealDropdownMenu 0.5s ease-in)
+            display: block
+            animation: revealDropdownMenu 0.2s ease-out forwards
+
+    &.closed
+        .dropdown-content
+            animation: hideDropdownMenu 0.2s ease-in forwards
 
     .dropdown-content
-        box-shadow: 0px 3px 6px rgba(#333, 0.3)
+        box-shadow: 0px 3px 6px rgba(#333, 0.2)
         border-radius: $border-radius
         position: absolute
-        top: -300px
-        right: -50%
-        margin-top: 7px
+        right: -10px
+        top: 60px
         text-align: center
         z-index: 1000
         opacity: 0
-        +transition(opacity .5s)
+        display: none
 
     ::focus
         .dropdown-content
@@ -104,7 +121,6 @@
                 color: #333
                 background-color: $dropdown-color
                 line-height: 46px
-                +transition(background-color, 0.2s, ease-in)
 
                 i.fa
                     margin-right: 6px

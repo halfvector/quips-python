@@ -94,6 +94,14 @@
     width: $line-height * 2
     padding-right: 30px
 
+    .header-btn
+      border: 4px solid transparent
+      border-radius: 50%
+      width: auto
+
+      //&.activated
+      //  border: 4px solid #fff
+
     .cp
       text-align: right
       color: #fff
@@ -131,11 +139,15 @@
       display: block
       width: $line-height * 1.5
       line-height: $line-height * 1.5
-      transition: transform .06s ease-in-out
 
-      &:hover
-        transform: scale(1.2)
+  .header-btn
+    display: block
+    width: $line-height * 1.5
+    line-height: $line-height * 1.5
+    transition: transform .06s ease-in-out
 
+    &:hover, &.activated
+      transform: scale(1.2)
 
   .primary-nav
     display: table

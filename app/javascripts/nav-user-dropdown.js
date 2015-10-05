@@ -22,11 +22,15 @@ App.Loaders.DropdownWidget = (function(){
         toggle: function() {
             if($(this.el).data("dropdown-state") === "open") {
                 $(this.el).data("dropdown-state", "closed");
-                $(this.el).removeClass("opened");
+                $(this.el).removeClass("opened").addClass("closed");
                 this.overlay.removeClass("opened");
+                $('div.page').removeClass("blurred");
+                $(this.el).find('.header-btn').removeClass('activated');
             } else {
                 $(this.el).data("dropdown-state", "open");
-                $(this.el).addClass("opened");
+                $(this.el).removeClass("closed").addClass("opened");
+                $('div.page').addClass("blurred");
+                $(this.el).find('.header-btn').addClass('activated');
 
                 if(!this.overlay) {
                     // create the overlay for the first time
