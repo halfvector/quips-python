@@ -4,7 +4,7 @@
 # im not a fan of case-sensitive urls, but a couple of popular url shortener services do this, so i think it's ok
 # youtube, cl.ly, goo.gl
 ALPHABET_RANDOMIZED = 'JFZyW1r7f0Pja3ks5B9CVeTNtlxGmgwMpDbYR42cK8n6qXdhHSLQvz_'
-#ALPHABET_RANDOMIZED = 'g879mnt6vshj3wl4xyd2fpr1cqk5bz'
+# ALPHABET_RANDOMIZED = 'g879mnt6vshj3wl4xyd2fpr1cqk5bz'
 
 
 """
@@ -54,17 +54,18 @@ def perf_test():
     import random
 
     for i in range(numOfItems):
-        rnd = random.randint(1,25742615863843122151790442836)
+        rnd = random.randint(1, 25742615863843122151790442836)
         value = start + rnd
         str = format(value, 'x')
-        
+
         encoded = encode(str)
         decoded = decode(encoded)
-        
+
         print "%s -> %s -> %s" % (str, encoded, decoded)
 
         if decoded != str:
             print "SANITY FAILURE: %s != %s" % (decoded, str)
-            
+
+
 if __name__ == '__main__':
     perf_test()

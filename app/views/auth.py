@@ -1,12 +1,11 @@
 import urllib
 
-from bson.objectid import ObjectId
 from flask import redirect, url_for, request, flash, session, Blueprint
 from mongoengine import DoesNotExist
 from twython import Twython
-import os
-from models import User
+from app.models import User
 from app import webapp, TWITTER_KEY, TWITTER_SECRET
+import os
 
 bp = Blueprint('auth', __name__, template_folder='templates')
 
@@ -91,7 +90,7 @@ def auth_authorized():
     try:
         user = User.objects.get(username=final['screen_name'])
     except DoesNotExist:
-        user = User(username = final['screen_name'])
+        user = User(username=final['screen_name'])
 
     # recreate twitter-api interface using final oauth-tokens
     twitter = Twython(TWITTER_KEY, TWITTER_SECRET, final['oauth_token'], final['oauth_token_secret'])

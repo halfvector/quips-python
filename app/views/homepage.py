@@ -1,12 +1,11 @@
-from datetime import datetime
 from flask import render_template, g, Blueprint, url_for, session, send_from_directory, current_app
 from mongoengine import Q
 
-from models import Recording
+from app.models import Recording
 import tinyurl
 
-
 bp = Blueprint('homepage', __name__, template_folder='templates')
+
 
 @bp.route('/')
 def index():
@@ -15,7 +14,7 @@ def index():
         current_app.logger.info("homepage.index(); user not logged in, showing landing login page..")
         return send_from_directory(current_app.config['PATH_PUBLIC'], 'landing.html')
 
-    recordings = Recording.objects(Q(isPublic = True))[:50].order_by('-postedAt')
+    recordings = Recording.objects(Q(isPublic=True))[:50].order_by('-postedAt')
 
     for record in recordings:
         record.timestamp = record.postedAt.isoformat()

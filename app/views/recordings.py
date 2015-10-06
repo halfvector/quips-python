@@ -1,13 +1,13 @@
-from bson import ObjectId, DBRef
-from mongoengine import Q, DoesNotExist
-from flask.ext.classy import FlaskView, route
+from bson import ObjectId
+from mongoengine import Q
 from flask import url_for, redirect, render_template, g, request, session, jsonify, Blueprint
 from app import webapp
 import os
 
-from models import Recording, User
+from app.models import Recording, User
 
 bp = Blueprint('recordings', __name__, template_folder='templates')
+
 
 @bp.route('/record')
 def show_recorder():
@@ -19,26 +19,26 @@ def show_recorder():
         recording_count=recording_count
     )
 
+
 @bp.route('/recording/publish/<recording_id>', methods=['POST'])
 def toggle_public(recording_id):
     """Toggle private/public bit on recording. Must only work on a recording caller owns"""
-    
+
     try:
         is_public = request.form['isPublic']
         print "Making recording: %s public: %s" % (recording_id, is_public)
-        recording = Recording.objects.get(id = recording_id, user = g.user['id'])
+        recording = Recording.objects.get(id=recording_id, user=g.user['id'])
         recording.isPublic = is_public == 'true'
         recording.save()
         return jsonify(status='success')
     except Exception as err:
         print "Error while toggling isPublic:"
         print err
-        return jsonify(status='failed', error=err.message)    
-    
+        return jsonify(status='failed', error=err.message)
+
 
 @bp.route('/recording/create', methods=['POST'])
 def create():
-    
     if 'audio-blob' not in request.files:
         webapp.logger.warning('upload attempted without correct file-key')
         return jsonify(status='failed')
@@ -60,7 +60,7 @@ def create():
         recording.save()
 
         recordingId = str(recording.id)
-        filePath = os.path.join(webapp.config['RECORDINGS_PATH'], recordingId  + '.ogg')
+        filePath = os.path.join(webapp.config['RECORDINGS_PATH'], recordingId + '.ogg')
         webapp.logger.debug('saving recording to: ' + filePath)
         file.save(filePath)
 
@@ -70,9 +70,9 @@ def create():
     # else file upload failed, show an error page
     return jsonify(status='failed')
 
+
 @bp.route('/recording/delete', methods=['POST'])
 def remove():
     # TODO: implement deleting recordings
-    recording=1
+    recording = 1
     return redirect(url_for('show_recording', recording=recording), code=302)
-

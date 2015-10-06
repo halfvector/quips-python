@@ -6,6 +6,7 @@ from flask import g, session, request, url_for, redirect, current_app
 from app import webapp  # start server
 from views import homepage, recordings, auth, user, changelog  # import views
 from mongoengine.queryset import DoesNotExist
+from models import User
 
 
 # register individual pages
@@ -15,7 +16,6 @@ webapp.register_blueprint(auth.bp)
 webapp.register_blueprint(user.bp)
 webapp.register_blueprint(changelog.bp)
 
-from models import User
 
 # before processing a request, try to pull in the user session data
 @webapp.before_request
@@ -32,15 +32,18 @@ def before_request():
 
     # TODO: generate csrf
 
+
 @webapp.after_request
 def add_header(response):
     response.headers['X-UA-Compatible'] = 'IE=Edge,chrome=1'
     response.headers['Cache-Control'] = 'public, max-age=0'
     return response
 
+
 def generate_csrf(input):
     salt = uuid.uuid4().hex
     return hashlib.sha256(salt.encode() + input.encode()).hexdigest(), salt
+
 
 def load_current_user():
     user = None
@@ -89,6 +92,7 @@ def load_current_user():
         }
 
         webapp.logger.debug("user session is anonymous")
+
 
 # after app.py configures everything, we can spawn a standalone (non-wsgi) server here
 # handy for quick debugging

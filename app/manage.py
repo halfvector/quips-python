@@ -1,12 +1,12 @@
 # helper script for production boxes
 # for doing repairs, backups, etc
 
-import os
-import bson
-from twython import Twython
 import urllib
 import optparse
 
+import os
+import bson
+from twython import Twython
 from app import webapp, TWITTER_KEY, TWITTER_SECRET
 from models import *
 

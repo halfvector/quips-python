@@ -1,6 +1,6 @@
 from flask import render_template, g, Blueprint, url_for
 from mongoengine import Q, DoesNotExist
-from models import Recording, User
+from app.models import Recording, User
 import tinyurl
 
 bp = Blueprint('user', __name__, template_folder='templates')
