@@ -7,7 +7,7 @@ import optparse
 import os
 import bson
 from twython import Twython
-from app import webapp, TWITTER_KEY, TWITTER_SECRET
+from config import webapp, TWITTER_KEY, TWITTER_SECRET
 from models import *
 
 

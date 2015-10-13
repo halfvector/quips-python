@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from app import db
+from services import db
 
 
 class User(db.Document):

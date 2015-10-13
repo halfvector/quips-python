@@ -1,10 +1,9 @@
+from app.services import app
 from bson import ObjectId
 from mongoengine import Q
 from flask import url_for, redirect, render_template, g, request, session, jsonify, Blueprint
-from app import webapp
+from ..models import Recording, User
 import os
-
-from app.models import Recording, User
 
 bp = Blueprint('recordings', __name__, template_folder='templates')
 
@@ -40,15 +39,15 @@ def toggle_public(recording_id):
 @bp.route('/recording/create', methods=['POST'])
 def create():
     if 'audio-blob' not in request.files:
-        webapp.logger.warning('upload attempted without correct file-key')
+        app.logger.warning('upload attempted without correct file-key')
         return jsonify(status='failed')
 
     if 'userId' not in session:
-        webapp.logger.warning('upload attempted with session without aid')
+        app.logger.warning('upload attempted with session without aid')
         return jsonify(status='failed')
 
     file = request.files['audio-blob']
-    webapp.logger.debug("file: '%s' type: '%s'" % (file.filename, file.content_type))
+    app.logger.debug("file: '%s' type: '%s'" % (file.filename, file.content_type))
 
     if file and file.content_type == 'audio/ogg':
         user = User.objects.get(id=ObjectId(session['userId']))
@@ -59,10 +58,10 @@ def create():
         recording.user = user
         recording.save()
 
-        recordingId = str(recording.id)
-        filePath = os.path.join(webapp.config['RECORDINGS_PATH'], recordingId + '.ogg')
-        webapp.logger.debug('saving recording to: ' + filePath)
-        file.save(filePath)
+        recording_id = str(recording.id)
+        recording_path = os.path.join(app.config['RECORDINGS_PATH'], recording_id + '.ogg')
+        app.logger.debug('saving recording to: ' + recording_path)
+        file.save(recording_path)
 
         url = url_for('user.user_recordings', username=g.user['username'])
         return jsonify(status='success', url=url)

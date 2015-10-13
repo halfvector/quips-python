@@ -1,10 +1,11 @@
 import urllib
 
+from app.services import app
 from flask import redirect, url_for, request, flash, session, Blueprint
 from mongoengine import DoesNotExist
 from twython import Twython
-from app.models import User
-from app import webapp, TWITTER_KEY, TWITTER_SECRET
+from ..models import User
+from ..config import TWITTER_KEY, TWITTER_SECRET
 import os
 
 bp = Blueprint('auth', __name__, template_folder='templates')
@@ -21,7 +22,7 @@ def auth_logout():
     destroy_session()
 
     # TODO: is there a better way to unset cookies in Flask?
-    response = webapp.make_response(redirect(url_for('homepage.index')))
+    response = app.make_response(redirect(url_for('homepage.index')))
     # response.set_cookie('aid', '', expires=0)
     return response
 
@@ -45,20 +46,20 @@ def auth_login():
 
 def download_user_profile_image(twitter, user):
     user_info = twitter.show_user(screen_name=user.username)
-    webapp.logger.debug('user "%s" profile img: %s' % (user.username, user_info['profile_image_url']))
+    app.logger.debug('user "%s" profile img: %s' % (user.username, user_info['profile_image_url']))
 
     # figure out paths to store the image, using the filename and extension provided by twitter
     raw_id = str(user.id)
     img_filename = user_info['profile_image_url'].split('/')[-1]
     img_path_relative = '/%s/%s' % (raw_id, img_filename)
-    img_path_absolute = webapp.config['PATH_USER_PROFILE_IMAGE'] + img_path_relative
+    img_path_absolute = app.config['PATH_USER_PROFILE_IMAGE'] + img_path_relative
 
     # ensure parent folder exists
     img_parent_dir = os.path.dirname(img_path_absolute)
     if not os.path.isdir(img_parent_dir): os.makedirs(img_parent_dir)
 
     # download image
-    webapp.logger.debug('downloading profile image to %s' % img_path_absolute)
+    app.logger.debug('downloading profile image to %s' % img_path_absolute)
     urllib.urlretrieve(user_info['profile_image_url'], img_path_absolute)
 
     # update user data, do not save yet
@@ -75,7 +76,7 @@ def auth_authorized():
         final = twitter.get_authorized_tokens(request.args.get('oauth_verifier'))
 
     except Exception as exception:
-        webapp.logger.exception(exception)
+        app.logger.exception(exception)
         final = None
 
     if final is None:
@@ -108,7 +109,7 @@ def auth_authorized():
     flash('%s is in the house!' % final['screen_name'], 'info')
 
     # set a cookie client-side with which we can locate this session
-    response = webapp.make_response(redirect(next_url))
+    response = app.make_response(redirect(next_url))
 
     # make a permanent 1-year cookie for a successful login
     session['userId'] = str(user.id)

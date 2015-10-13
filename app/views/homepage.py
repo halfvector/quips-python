@@ -1,8 +1,8 @@
+from app import tinyurl
 from flask import render_template, g, Blueprint, url_for, session, send_from_directory, current_app
 from mongoengine import Q
 
-from app.models import Recording
-import tinyurl
+from ..models import Recording
 
 bp = Blueprint('homepage', __name__, template_folder='templates')
 
@@ -20,8 +20,8 @@ def index():
         record.timestamp = record.postedAt.isoformat()
         record.isMine = record.user.id == g.user['id']
 
-        tinyId = tinyurl.encode(str(record.id))
-        record.publicUrl = url_for('user.one_recording', recordingId=tinyId)
+        tiny_id = tinyurl.encode(str(record.id))
+        record.publicUrl = url_for('user.one_recording', recordingId=tiny_id)
 
         if not record.description:
             record.description = "(no description)"
