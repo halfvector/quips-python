@@ -5,4 +5,4 @@
 import config
 import services
 import auth
-import main
+from main import app

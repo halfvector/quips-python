@@ -210,7 +210,7 @@ def deploy(commit_id):
                 run('pip install -q --download-cache %s -f %s pip-accel'
                     % (env.pip_download_cache, env.pip_download_cache))
                 run('PIP_DOWNLOAD_CACHE=%s PIP_ACCEL_CACHE=%s pip-accel install -q -r %s/requirements.txt'
-                    % (env.pip_download_cache, env.pip_build_cache, env.path))
+                    % (env.pip_download_cache, env.pip_build_cache, env.req_path))
 
             # setup static paths
             puts("Updating paths..")
@@ -232,7 +232,9 @@ def deploy(commit_id):
             run('chown www-data:www-data %s' % env.req_path)
 
             # reload
-            run('touch %s' % env.reload_file)
+            # run('touch %s' % env.reload_file)
+            # do a less-than-graceful restart in case previous process died
+            run('supervisorctl restart couchpod.com')
 
         except SystemExit:
             puts("Deploy failed; Removing bad-commit")
@@ -242,12 +244,14 @@ def deploy(commit_id):
 # automatic rollback to a previous version may not always be the best thing
 # so rollback should be performed manually and specifically. this only repairs a symlink, using a known safe-fallback.
 @task
-def remove(commit_id):
+def remove(bad_commit_id, good_commit_id):
     """Removes a revision from production. If doing so breaks 'current' symlink, it performs a fallback"""
     require('path_revisions', 'path_current', provided_by=[production])
 
-    puts("removing commit: %s" % commit_id)
-    env.req_commit = commit_id
+    puts("removing commit: %s" % bad_commit_id)
+    env.req_commit = bad_commit_id
+
+    good_path = '%s/%s' % (env.path_revisions, good_commit_id)
 
     # flatten and evaluate path (to get rid of ../ traversal operators)
     env.req_path = '%(path_revisions)s/%(req_commit)s' % env
@@ -276,7 +280,7 @@ def remove(commit_id):
         if 'broken' in run('file %s' % env.path_current).stdout:
             puts("Detected broken release symlink. falling back to failsafe.")
             # TODO: we are forcing a file-overwrite here, could use a safety check
-            run('ln -sfnr %s %s' % (env.path_failsafe_revision, env.path_current))
+            run('ln -sfnr %s %s' % (good_path, env.path_current))
 
     # reload
     run('touch %s' % env.reload_file)

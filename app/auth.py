@@ -1,5 +1,6 @@
 import hashlib
 import uuid
+
 from app.models import User
 from app.services import app
 from app.views import auth

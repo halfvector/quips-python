@@ -1,11 +1,6 @@
-import hashlib
-import uuid
 from app.auth import load_current_user
-from bson.objectid import ObjectId
-from flask import g, session, request, url_for, redirect, current_app, send_from_directory
-from mongoengine.queryset import DoesNotExist
-from .views import homepage, recordings, auth, user, changelog  # import views
-from .models import User
+from flask import request, send_from_directory
+from views import homepage, recordings, auth, user, changelog  # import views
 
 import config
 from services import app
@@ -59,7 +54,7 @@ def add_header(response):
 
 # after app.py configures everything, we can spawn a standalone (non-wsgi) server here
 # handy for quick debugging
-if __name__ == '__main__' or True:
+if __name__ == '__main__':
     from werkzeug.serving import run_simple
 
     run_simple('0.0.0.0', 5000, app, use_reloader=False, use_debugger=True, use_evalex=True)
