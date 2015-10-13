@@ -224,6 +224,7 @@ def deploy(commit_id):
                 # install configuration
                 put('conf/app.ini', path_conf, mode=0664)
                 put('conf/flask.ini', path_conf, mode=0664)
+                put('conf/uwsgi.ini', path_conf, mode=0664)
 
                 # final step: link to new revision
                 run('ln -sfn revisions/%s system' % commit_id)
