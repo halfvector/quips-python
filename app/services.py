@@ -1,8 +1,10 @@
 # instantiate all services
+from logging import Formatter
+
+from raven.contrib.flask import Sentry
 from app import config
 from os import path
 from flask import Flask
-from logging import Formatter
 from flask.ext.mongoengine import MongoEngineSessionInterface, MongoEngine
 
 
@@ -45,3 +47,6 @@ def create_app():
 
 print "Instantiating services: Web App and Mongo DB"
 (app, db) = create_app()
+
+# hookup error handling
+sentry = Sentry(app, dsn=config.SENTRY_DSN)

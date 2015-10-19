@@ -6,4 +6,4 @@ import config
 import services
 import auth
 import models
-from main import app
+from setup import app

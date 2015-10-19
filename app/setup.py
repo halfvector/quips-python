@@ -5,11 +5,6 @@ from views import homepage, recordings, auth, user, changelog  # import views
 import config
 from services import app
 
-# hookup error handling
-from raven.contrib.flask import Sentry
-
-sentry = Sentry(app, dsn=config.SENTRY_DSN)
-
 # register individual pages
 app.register_blueprint(homepage.bp)
 app.register_blueprint(recordings.bp)
@@ -50,11 +45,3 @@ def add_header(response):
     response.headers['X-UA-Compatible'] = 'IE=Edge,chrome=1'
     response.headers['Cache-Control'] = 'public, max-age=0'
     return response
-
-
-# after app.py configures everything, we can spawn a standalone (non-wsgi) server here
-# handy for quick debugging
-if __name__ == '__main__':
-    from werkzeug.serving import run_simple
-
-    run_simple('0.0.0.0', 5000, app, use_reloader=False, use_debugger=True, use_evalex=True)
