@@ -1,4 +1,6 @@
-
+* {
+    box-sizing: border-box;
+}
 html, body {
     width: 100%;
     height: 100%;
@@ -53,6 +55,7 @@ body {
 .message-container {
     position: absolute;
     width: 100%;
+    padding: 7%;
     text-align: center;
     top: 50%;
     transform: translateY(-50%);
@@ -104,4 +107,51 @@ a.btn {
 a.btn:hover {
     background-color: #aaa;
     color: #444;
+}
+
+/*$most_phones: "(max-width: 640px)"*/
+/*$most_tablets: "(min-width: 640px) and (max-width: 1080px)"*/
+/*$laptops: "(min-width: 1080px)"*/
+
+@media (min-width: 640px) and (max-width: 1080px) {
+    .wordmark-container span:last-child {
+        display: none;
+    }
+}
+
+@media (max-width: 640px) {
+    .message h1 {
+        padding: 0px 10px;
+        font-size: 26px;
+        line-height: 36px;
+    }
+
+    .message h2 {
+        font-size: 36px;
+        line-height: 40px;
+    }
+
+    .wordmark-container {
+        display: flex;
+        flex-direction: row;
+        margin: 0px;
+    }
+
+    .wordmark-container span:first-child {
+        text-align: left;
+        padding: 20px;
+        display: inline-block;
+        flex: 1;
+    }
+
+    .wordmark-container span:last-child {
+        text-align: right;
+        width: 30%;
+        display: inline-block;
+    }
+    .wordmark-container span:last-child img {
+        margin: 15px;
+        width: 60px;
+        display: inline-block;
+    }
 }

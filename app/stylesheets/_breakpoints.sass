@@ -1,0 +1,26 @@
+/*
+ * Breakpoints based on http://www.metaltoad.com/sites/default/files/Q4_2014_viewports.png
+ * 320px = 35%
+ * 360-375px = 20%
+ * 375-720px = 10%
+ * 768px = 20%
+ *
+ * Ranges:
+ *   <= 320px    = 320px fixed  // Galaxy S2,3, iPhone1-5, LG G2
+ *   320px-375px = 360px fluid  // Galaxy S4, Note 2/3, HTC One, Moto G
+ *   375px-720px = 640px fluid  // iPhone6/s
+ *   720px-800px = 768px fluid  // Galaxy Tab 7-10"
+ *   800-1080px  = 1080px fluid // Galaxy Tab 11" and other Tablets
+ *   > 1080px    = 1300px fluid // Laptops
+ */
+
+$old_phones: "(max-width: 320px)"
+$new_phones: "(min-width: 320px) and (max-width: 375px)"
+$big_phones: "(min-width: 375px) and (max-width: 720px)"
+$small_tablet: "(min-width: 720px) and (max-width: 800px)"
+$large_tablet: "(min-width: 800px) and (max-width: 1080px)"
+$laptop: "(min-width: 1080px)"
+
+$most_phones: "(max-width: 640px)"
+$most_tablets: "(min-width: 640px) and (max-width: 1080px)"
+$laptops: "(min-width: 1080px)"
