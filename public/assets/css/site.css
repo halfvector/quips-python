@@ -826,16 +826,17 @@ html { padding: 0; margin: 0; font-family: "Open Sans", Arial, sans-serif; font-
 body { padding: 0; margin: 0; display: table; width: 100%; }
 
 .site-header { background: #3B3B3B; color: #fff; display: table-row; width: 100%; }
-.site-header .center-grid { max-width: 1080px; margin-left: auto; margin-right: auto; }
+.site-header .center-grid { max-width: 100%; margin-left: auto; margin-right: auto; }
 .site-header .center-grid::after { content: " "; display: block; clear: both; }
 
 .secondary-header { background: #fff; box-shadow: 0px 3px 6px #eee; z-index: 100; width: 100%; }
 .secondary-header:after { display: block; }
 
 .page { z-index: 20; height: 100%; position: relative; display: table-row; }
-.page .page-contents { max-width: 1080px; margin-left: auto; margin-right: auto; }
+.page .page-contents { max-width: 100%; margin-left: auto; margin-right: auto; }
 .page .page-contents::after { content: " "; display: block; clear: both; }
 
+/* Breakpoints based on http://www.metaltoad.com/sites/default/files/Q4_2014_viewports.png 320px = 35% 360-375px = 20% 375-720px = 10% 768px = 20%  Ranges: <= 320px    = 320px fixed  // Galaxy S2,3, iPhone1-5, LG G2 320px-375px = 360px fluid  // Galaxy S4, Note 2/3, HTC One, Moto G 375px-720px = 640px fluid  // iPhone6/s 720px-800px = 768px fluid  // Galaxy Tab 7-10" 800-1080px  = 1080px fluid // Galaxy Tab 11" and other Tablets > 1080px    = 1300px fluid // Laptops */
 .header-nav { display: table; line-height: 70px; width: 100%; vertical-align: middle; }
 .header-nav .header-btn { padding: 0px; cursor: pointer; position: relative; z-index: 100; text-decoration: none; font-size: 30px; margin: 0; display: inline-block; text-align: center; color: #fff; }
 .header-nav .header-btn i.fa { vertical-align: middle; padding: 0px; }
@@ -866,7 +867,7 @@ body { padding: 0; margin: 0; display: table; width: 100%; }
 
 .m-hero { margin: 20px 0px; padding: 30px; background: #eee; }
 
-.m-search { max-width: 1080px; margin-left: auto; margin-right: auto; display: block; text-align: center; padding: 30px 0px; }
+.m-search { max-width: 100%; margin-left: auto; margin-right: auto; display: block; text-align: center; padding: 30px 0px; }
 .m-search::after { content: " "; display: block; clear: both; }
 .m-search .inline-search-form { display: block; margin: 0; position: relative; }
 .m-search .inline-search-form input[type=text] { width: 100%; border: 1px solid #ccc; line-height: 27px; padding: 8px 50px 8px 15px; box-shadow: inset 0px 0px 6px #ddd; }
@@ -876,16 +877,19 @@ body { padding: 0; margin: 0; display: table; width: 100%; }
 
 .m-quips { position: relative; padding-top: 20px; }
 
-.m-quip { max-width: 1080px; margin-left: auto; margin-right: auto; margin-bottom: 15px; }
-.m-quip::after { content: " "; display: block; clear: both; }
+@media (max-width: 640px) { .specs { display: none; } }
+.m-quip { display: -webkit-box; display: -webkit-flex; display: -ms-flexbox; display: flex; margin-bottom: 15px; }
 .m-quip:after { content: ""; display: table; clear: both; }
 .m-quip .meta { width: 21%; }
+@media (max-width: 640px) { .m-quip .meta { width: auto; } }
 .m-quip .meta a { display: block; }
-.m-quip .meta .specs { font-size: 16px; text-align: right; line-height: 25px; width: 66.66667%; float: left; padding-left: 5px; padding-right: 5px; padding-right: 10px; }
+.m-quip .meta .specs { font-size: 16px; text-align: right; line-height: 25px; width: 205.26316%; float: left; margin-right: 5.26316%; padding-right: 10px; }
 .m-quip .meta .specs time { color: #888; }
-.m-quip .meta .avatar { width: 33.33333%; float: left; padding-left: 5px; padding-right: 5px; text-align: right; }
+.m-quip .meta .avatar { width: 100%; float: left; text-align: right; }
 .m-quip .meta .avatar img { width: 50px; }
+@media (max-width: 640px) { .m-quip .meta .avatar { width: auto; } }
 .m-quip .details { width: 75%; float: right; }
+@media (max-width: 640px) { .m-quip .details { width: auto; -webkit-box-flex: 1; -webkit-flex: 1; -ms-flex: 1; flex: 1; } }
 .m-quip .details .description { background: #fff; position: relative; z-index: 100; display: -webkit-box; display: -webkit-flex; display: -moz-flex; display: -ms-flexbox; display: flex; -webkit-box-pack: stretch; box-pack: stretch; -webkit-justify-content: stretch; -moz-justify-content: stretch; -ms-justify-content: stretch; -o-justify-content: stretch; justify-content: stretch; -ms-flex-pack: stretch; -webkit-box-align: stretch; box-align: stretch; -webkit-align-items: stretch; -moz-align-items: stretch; -ms-align-items: stretch; -o-align-items: stretch; align-items: stretch; -ms-flex-align: stretch; -webkit-align-content: stretch; align-content: stretch; -ms-flex-line-pack: stretch; }
 .m-quip .details .description:after { content: ""; display: table; clear: both; }
 .m-quip .details .description .progress-bar { background: #eee; position: absolute; top: 0; bottom: 0; left: 0; width: 0%; z-index: -30; }
@@ -909,10 +913,12 @@ body { padding: 0; margin: 0; display: table; width: 100%; }
   100% { opacity: 1; -webkit-transform: translate(0, 0px) scale(1, 1); transform: translate(0, 0px) scale(1, 1); } }
 @-webkit-keyframes hideDropdownMenu { 0% { opacity: 1; }
   30% { -webkit-transform: scale(1.4); transform: scale(1.4); }
-  99% { -webkit-transform: translate(0, -10px) scale(0.5); transform: translate(0, -10px) scale(0.5); } }
+  99% { -webkit-transform: translate(0, -10px) scale(0.5); transform: translate(0, -10px) scale(0.5); }
+  100% { display: none; } }
 @keyframes hideDropdownMenu { 0% { opacity: 1; }
   30% { -webkit-transform: scale(1.4); transform: scale(1.4); }
-  99% { -webkit-transform: translate(0, -10px) scale(0.5); transform: translate(0, -10px) scale(0.5); } }
+  99% { -webkit-transform: translate(0, -10px) scale(0.5); transform: translate(0, -10px) scale(0.5); }
+  100% { display: none; } }
 .blurred { -webkit-filter: blur(3px) grayscale(80%); filter: blur(3px) grayscale(80%); }
 
 .m-dropdown { position: relative; overflow: visible; display: inline-block; text-align: center; }

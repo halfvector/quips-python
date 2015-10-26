@@ -1,140 +1,154 @@
 .m-hero
-  margin: 20px 0px
-  padding: 30px
-  background: #eee
+    margin: 20px 0px
+    padding: 30px
+    background: #eee
 
 .m-search
-  +container
-  display: block
-  text-align: center
-  padding: 30px 0px
-
-  .inline-search-form
+    +container
     display: block
-    //background: orange
-    margin: 0
-    position: relative
+    text-align: center
+    padding: 30px 0px
 
-    input[type=text]
-      width: 100%
-      border: 1px solid #ccc
-      line-height: $line-height
-      padding: 8px 50px 8px 15px
-      box-shadow: inset 0px 0px 6px #ddd
+    .inline-search-form
+        display: block
+        //background: orange
+        margin: 0
+        position: relative
 
-    button[type=submit]
-      position: absolute
-      top: 0
-      bottom: 0
-      right: 0
-      margin: 0
-      border: none
-      background: none
-      padding: 0px 20px
-      color: #aaa
-      transition: all 0.2s ease-in-out
-      cursor: pointer
-      font-size: 18px
+        input[type=text]
+            width: 100%
+            border: 1px solid #ccc
+            line-height: $line-height
+            padding: 8px 50px 8px 15px
+            box-shadow: inset 0px 0px 6px #ddd
+
+        button[type=submit]
+            position: absolute
+            top: 0
+            bottom: 0
+            right: 0
+            margin: 0
+            border: none
+            background: none
+            padding: 0px 20px
+            color: #aaa
+            transition: all 0.2s ease-in-out
+            cursor: pointer
+            font-size: 18px
 
 .m-quips-sample-listing
-  position: relative
-  margin-top: 30px
-  background: url('/assets/img/sample-listing.png') center no-repeat
-  min-height: 540px
-
+    position: relative
+    margin-top: 30px
+    background: url('/assets/img/sample-listing.png') center no-repeat
+    min-height: 540px
 
 .m-quips
-  position: relative
-  padding-top: 20px
+    position: relative
+    padding-top: 20px
+
+@media #{$most_phones}
+    .specs
+        display: none
 
 .m-quip
-  +container
-  margin-bottom: 15px
-  +clearfix
+    display: flex
+    margin-bottom: 15px
+    +clearfix
 
-  .meta
-    width: 21%
+    .meta
+        width: 21%
 
-    a
-      display: block
+        @media #{$most_phones}
+            width: auto
 
-    .specs
-      font-size: 16px
-      text-align: right
-      line-height: 25px
-      +span(8)
-      padding-right: 10px
+        a
+            display: block
 
-      time
-        color: #888
+        .specs
+            font-size: 16px
+            text-align: right
+            line-height: 25px
+            +span(8)
+            padding-right: 10px
 
-    .avatar
-      +span(4)
-      text-align: right
-      img
-        width: 50px
-  .details
-    width: 75%
-    float: right
+            time
+                color: #888
 
-    .description
-      background: #fff
-      position: relative
-      z-index: 100
-      +clearfix
-      +flexbox
-      +justify-content(stretch)
-      +align-items(stretch)
-      +align-content(stretch)
+        .avatar
+            +span(4)
+            text-align: right
+            img
+                width: 50px
 
-      .progress-bar
-        background: #eee
-        position: absolute
-        top: 0
-        bottom: 0
-        left: 0
-        width: 0%
-        z-index: -30
+            @media #{$most_phones}
+                width: auto
 
-      .text
-        cursor: pointer
-        z-index: 200
-        padding: 10px 14px
-        +flex(1 1 auto)
+    .details
+        width: 75%
+        float: right
 
-      .controls
-        padding-left: 20px
-        transition: all 0.2s ease-in-out
+        @media #{$most_phones}
+            width: auto
+            flex: 1
 
-        +flex(0 0 auto)
-        +flexbox
-        +justify-content(center)
-        +align-items(center)
+        .description
+            background: #fff
+            position: relative
+            z-index: 100
+            +clearfix
+            +flexbox
+            +justify-content(stretch)
+            +align-items(stretch)
+            +align-content(stretch)
 
-        .btn-no-text
-          text-shadow: 0px 1px 0px #fff
+            .progress-bar
+                background: #eee
+                position: absolute
+                top: 0
+                bottom: 0
+                left: 0
+                width: 0%
+                z-index: -30
 
-          &:hover
+            .text
+                cursor: pointer
+                z-index: 200
+                padding: 10px 14px
+                +flex(1 1 auto)
+
+            .controls
+                padding-left: 20px
+                transition: all 0.2s ease-in-out
+
+                +flex(0 0 auto)
+                +flexbox
+                +justify-content(center)
+                +align-items(center)
+
+                .btn-no-text
+                    text-shadow: 0px 1px 0px #fff
+
+                    &:hover
+                        .fa
+                            color: #777
+
+        .public-link
+            color: #ddd
+            text-align: center
+
+            i.fa
+                color: inherit
+
+        .lock-indicator
+            color: #eee
+            text-align: center
+
             .fa
-              color: #777
+                min-width: 18px
+                color: inherit
 
-    .public-link
-      color: #ddd
-      text-align: center
+            .fa-lock
+                color: $colorRed4
 
-      i.fa
-        color: inherit
-
-    .lock-indicator
-      color: #eee
-      text-align: center
-
-      .fa
-        min-width: 18px
-        color: inherit
-
-      .fa-lock
-        color: $colorRed4
-
-      .fa-unlock
-        color: #ddd
+            .fa-unlock
+                color: #ddd
