@@ -1,44 +1,51 @@
 {% extends "layout.html" %}
 
 {% block secondary %}
-{#    <div class="m-search">#}
-{#        <form class="inline-search-form" method="post" action="{{ url_for('HomepageView:index') }}">#}
-{#            <input type="text" name="query" value="" placeholder="Search" />#}
-{#            <button type="submit" name="action" value="search"><i class="fa fa-search"></i></button>#}
-{#        </form>#}
-{#    </div>#}
+    {#    <div class="m-search">#}
+    {#        <form class="inline-search-form" method="post" action="{{ url_for('HomepageView:index') }}">#}
+    {#            <input type="text" name="query" value="" placeholder="Search" />#}
+    {#            <button type="submit" name="action" value="search"><i class="fa fa-search"></i></button>#}
+    {#        </form>#}
+    {#    </div>#}
 {% endblock %}
 
 {% block body %}
 
-    <div backbone-controller="RecordingsList" class="m-quips">
+    <div backbone-controller="RecordingsList" class="quips-list">
 
-    {% for post in recordings %}
-        <div class="m-quip" data-quip-id="{{ post.id }}" data-is-mine="{{ post.isMine }}" data-is-public="{{ post.isPublic }}">
-            <div class="meta">
-                <div class="specs">
-                    <div class="name">{{ post.user.username }}</div>
-                    <time datetime="{{ post.timestamp }}"></time>
+        {% for post in recordings %}
+            <div class="quip" data-quip-id="{{ post.id }}" data-is-mine="{{ post.isMine }}"
+                 data-is-public="{{ post.isPublic }}">
+                <div class="flex-row">
+                    <div class="quip-profile">
+                        <a class="btn" href="/u/{{ post.user.username }}">
+                            <img src="/profile_images{{ post.user.profileImage }}"/>
+                        </a>
+                    </div>
+                    <div class="quip-details">
+                        <div class="flex-row">
+                            <span class="name">{{ post.user.username }}</span>
+                            <time datetime="{{ post.timestamp }}"></time>
+                        </div>
+                        <div class="text">{{ post.description }}</div>
+                    </div>
                 </div>
-                <div class="avatar">
-                    <a href="/u/{{ post.user.username }}">
-                        <img src="/profile_images{{ post.user.profileImage }}" />
+                <div class="quip-player">
+                    <!--
+                    <audio>
+                        <source src="/recordings/{{ post.id }}.ogg" />
+                    </audio>
+                    -->
+                    <div class="progress-bar"></div>
+                    <i class="fa fa-play-circle"></i>
+                </div>
+                <div class="quip-actions">
+                    <a class="button" href="{{ post.publicUrl }}">
+                        <i class="fa fa-share-square"></i> <span class="caption">Share</span>
                     </a>
                 </div>
             </div>
-            <div class="details">
-                <div class="description">
-                    <div class="progress-bar"></div>
-                    <div class="text">{{ post.description }}</div>
-                    <div class="controls">
-                        <a class="btn btn-no-text public-link" href="{{ post.publicUrl }}">
-                            <i class="fa fa-link"></i>
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    {% endfor %}
+        {% endfor %}
 
     </div>
 

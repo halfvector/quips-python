@@ -1,0 +1,86 @@
+.quips-list
+    padding-top: 20px
+
+.quip
+    margin: 10px 10px 30px
+    border-bottom: 1px solid #ccc
+    background: #fff
+
+    .flex-row
+        display: flex
+        flex-direction: row
+
+    .quip-profile
+        width: auto
+        padding: 10px
+
+        a
+            display: inline-block
+
+            img
+                border-radius: 50%
+                width: 48px
+
+    .quip-details
+        flex: 1 1
+        padding: 8px
+
+        .name
+            flex: 1 1
+            font-size: 95%
+            font-weight: 500
+
+        time
+            text-align: right
+            flex: 1 1
+            font-size: 80%
+            color: #aaa
+
+        .text
+            font-weight: 400
+            color: #888
+
+    .quip-player
+        margin: 0 0px
+        height: 50px
+        line-height: 50px
+        background: #eee
+        position: relative
+        text-align: center
+        vertical-align: middle
+        border-top: 1px solid #ddd
+        border-bottom: 1px solid #ddd
+
+        i.fa
+            font-size: 30px
+            line-height: inherit
+
+        .progress-bar
+            position: absolute
+            left: 0
+            bottom: 0
+            top: 0
+            width: 10px
+            background-color: #ddd
+
+    .quip-actions
+        margin: 10px 10px
+        padding: 5px 10px
+        border-top: 1px solid #eee
+        border-bottom: 1px solid #eee
+
+        a.button
+            text-decoration: none
+            display: inline-block
+            color: #888
+            margin-right: 20px
+            padding: 4px 0
+
+            i
+                display: inline-block
+                vertical-align: middle
+
+            .caption
+                padding-left: 7px
+                display: inline-block
+                font-size: 90%

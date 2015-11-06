@@ -1,53 +1,39 @@
-App.Loaders.RecordingsList = (function(){
-    'use strict';
+import Backbone from 'backbone'
+import { QuipModel, QuipView, Quips } from './quip-control.js'
 
-    // load our Quip MVC
-    App.Loaders.QuipController();
+export default class RecordingsList extends Backbone.View {
+    initialize() {
+        soundManager.setup({
+            debugMode: true,
+            url: '/assets/swf/',
+            preferFlash: false,
+            onready: function () {
+                console.log("soundManager ready");
+            }
+        });
 
-    App.Views.RecordingsList = Backbone.View.extend({
-        el: '.m-quips',
-
-        initialize: function() {
-
-            console.log("RecordingsList initialized");
-
-            soundManager.setup({
-                debugMode: true,
-                url: '/assets/swf/',
-                preferFlash: false,
-                onready: function() {
-                    console.log("soundManager ready");
-                }
+        $('.quip').each(elem => {
+            var view = new QuipView({
+                el: elem,
+                model: new QuipModel({progress: 0})
             });
 
-            $('.m-quip').each(function spawnQuipController(elem){
+            Quips.add(view.model);
+            view.render();
+        });
 
-                var view = new App.Views.Quip({
-                    el: elem,
-                    model: new App.Models.Quip({progress: 0})
-                });
+        // process all timestamps
+        var vagueTime = require('vague-time');
+        var now = new Date();
 
-                App.Quips.add(view.model);
-                view.render();
-            });
+        $("time[datetime]").each(function generateVagueDate(ele) {
+            ele.textContent = vagueTime.get({from: now, to: new Date(ele.getAttribute('datetime'))});
+        });
 
-            // process all timestamps
-            var vagueTime = require('vague-time');
-            var now = new Date();
+        this.listenTo(Quips, 'add', this.quipAdded);
+    }
 
-            $("time[datetime]").each(function generateVagueDate(ele){
-                ele.textContent = vagueTime.get({from:now, to:new Date(ele.getAttribute('datetime'))});
-            });
+    quipAdded(quip) {
+    }
+}
 
-            this.listenTo(App.Quips, 'add', this.quipAdded);
-        },
-
-        quipAdded: function(quip) {
-
-        }
-    });
-
-    var view = new App.Views.RecordingsList();
-    view.render();
-
-});

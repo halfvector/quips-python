@@ -24,6 +24,10 @@ def assets_js(filename):
     return send_from_directory(app.config['PATH_ASSETS'], filename)
 
 
+@app.route('/recordings/<path:filename>')
+def audio_file(filename):
+    return send_from_directory(app.config['RECORDINGS_PATH'], filename)
+
 # before processing a request, try to pull in the user session data
 @app.before_request
 def before_request():

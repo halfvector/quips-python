@@ -1,257 +1,186 @@
+import Backbone from 'backbone'
+import SoundPlayer from './audio-player.js'
+
 /**
  * Quip
- * Plays audio clips
- * Manages their state tracking
+ * Plays audio and tracks position
  */
-App.Loaders.QuipController = (function QuipControlLoader(){
-    'use strict';
-    
-    App.Models.Quip = Backbone.Model.extend({
-        default: {
-            id: 0,
-            progress: 0,
-            position: 0,
-            duration: 0,
-            isPublic: false,
-        },
 
-        initialize: function() {
-        },
-
-        save: function(attributes) {
-            console.log("Quip Model saving to localStorage");
-            localStorage.setItem(this.id, JSON.stringify(this.toJSON()));
-        },
-
-        fetch: function() {
-            console.log("Quip Model loading from localStorage");
-            this.set(JSON.parse(localStorage.getItem(this.id)));
-        },
-
-        id: 0, // guid
-        progress: 0, // percentage
-        position: 0, // msec
-        duration: 0, // msec
-        isPublic: false,
-
-        updateProgress: function() {
-            this.set({
-                progress: (duration > 0 ? position / duration : 0).toFixed(0) + "%"
-            });
+class QuipModel extends Backbone.Model {
+    defaults() {
+        return {
+            id: 0, // guid
+            progress: 0, // [0-100] percentage
+            position: 0, // msec
+            duration: 0, // msec
+            isPublic: false
         }
-    });
+    }
 
-    App.Collections.Quips = Backbone.Collection.extend({
-        model: App.Models.Quip
-    });
+    constructor() {
+        super();
+    }
 
-    App.Quips = new App.Collections.Quips();
+    save(attributes) {
+        console.log("Quip Model saving to localStorage");
+        localStorage.setItem(this.id, JSON.stringify(this.toJSON()));
+    }
 
-    App.CurrentQuipAudio = null;
+    fetch() {
+        console.log("Quip Model loading from localStorage");
+        this.set(JSON.parse(localStorage.getItem(this.id)));
+    }
 
-    App.Views.Quip = Backbone.View.extend({
+    updateProgress() {
+        this.set({
+            progress: (duration > 0 ? position / duration : 0).toFixed(0) + "%"
+        });
+    }
+}
 
-        el: '.m-quip',
+class QuipView extends Backbone.View {
+    defaults() {
+        return {
+            quipId: 0
+        }
+    }
 
-        quipId: 0,
+    events() {
+        return {
+            "click .description .lock-indicator": "togglePublic",
+            "click .quip-player": "toggle"
+        }
+    }
 
-        initialize: function(options) {
-            var $this = this;
+    initialize() {
+        //this.model.view = this;
+        this.quipId = this.$el.data("quipId");
 
-            this.el = options.el;
-            this.model.view = this;
-            this.quipId = this.$el.data("quipId");
+        var progress = localStorage.getItem("quip:" + this.quipId + ":progress");
+        var position = localStorage.getItem("quip:" + this.quipId + ":position");
 
-            var progress = localStorage.getItem("quip:" + $this.quipId + ":progress");
-            var position = localStorage.getItem("quip:" + $this.quipId + ":position");
+        // update visuals to indicate playback progress
+        this.model.on('change:progress', function (model, progress) {
+            $("div[data-quip-id='" + this.quipId + "'] .progress-bar").css("width", progress);
+        });
 
-            // update visuals to indicate playback progress
-            this.model.on('change:progress', function(model, progress) {
-                $("div[data-quip-id='" + $this.quipId + "'] .progress-bar").css("width", progress);
-            });
-            
-            //var desc = $($this.el).find('.description')[0];
-            //Hammer(desc).on("swipeleft", this.onRevealControls.bind(this));
-            //Hammer(desc).on("swiperight", this.onHideControls.bind(this));
-            
-            this.publicLink = '/u/' + this.quipId;
-            
-            this.model.set({
-                'id' : $this.quipId,
-                'progress':progress,
-                'position':position,
-                'isPublic':  this.$el.data("isPublic") == 'True',
-                'isMine':  this.$el.data("isMine") == 'True'
-            });
-            
-            // only redraw template on data change 
-            this.model.on('change:isPublic', this.render, this);
-            this.model.on('change:isMine', this.render, this);
-        },
+        this.publicLink = '/u/' + this.quipId;
 
-        events: {
-            "click .description .lock-indicator" : "togglePublic",
-            "click .description .text" : "toggle"
-        },
-        
-        
-        togglePublic: function(ev) {
+        this.model.set({
+            'id': this.quipId,
+            'progress': progress,
+            'position': position,
+            'isPublic': this.$el.data("isPublic") == 'True',
+            'isMine': this.$el.data("isMine") == 'True'
+        });
 
-            var newState = !this.model.get('isPublic');
-            this.model.set({'isPublic': newState});
-            
-            console.log("toggling new published state: " + newState);
-            
-            $.ajax({
-                url: '/recording/publish/' + this.quipId,
-                method: 'post',
-                data: { isPublic: newState },
-                complete: function(resp) {
-                    if(resp && resp.status == 'success') {
-                        // change successful
-                    } else
-                    {   // change failed
-                        // TODO: add visual to indicate change-failure
-                        console.warn("Toggling recording publication state failed:");
-                        console.dir(resp);
-                    }
-                }
-            });
-            
-            return false;
-        },
-        
-        onRevealControls: function(ev) {
-            ev.gesture.preventDefault();
-            $(this.el).find(".controls").css("right", "100px");
-            console.log("swiped left");
-            
-        },
-        
-        onHideControls: function(ev) {
-            ev.gesture.preventDefault();
-            $(this.el).find(".controls").css("right", "0px");
-            console.log("swiped right");
-        },
+        // only redraw template on data change
+        this.listenTo(this.model, "change", this.render);
+        //this.model.on('change:isPublic', this.render, this);
+        //this.model.on('change:isMine', this.render, this);
+    }
 
-        toggle: function(event) {
-            var quipId = $(this.el).data("quipId");
-            var url = '/recordings/' + quipId + '.ogg';
-            console.log("toggling recording playback: " + url);
+    togglePublic(ev) {
+        var newState = !this.model.get('isPublic');
+        this.model.set({'isPublic': newState});
 
-            var that = this;
+        console.log("toggling new published state: " + newState);
 
-            var resumePosition = parseInt(that.model.get('position') || 0);
-            console.log('resumePosition = ' + resumePosition);
-
-            // check if sound is already buffered
-            var existingQuip = soundManager.getSoundById(quipId);
-            if( existingQuip ) {
-                // resume existing audio clip
-                if(!existingQuip.paused && existingQuip.playState) {
-                    soundManager.pauseAll();
-                    console.log("pausing existing clip");
-                } else {
-                    soundManager.pauseAll();
-
-                    if(!existingQuip.playState) {
-                        existingQuip.setPosition(0);
-                    }
-
-                    existingQuip.play();
-                    console.log("resuming existing clip");
+        $.ajax({
+            url: '/recording/publish/' + this.quipId,
+            method: 'post',
+            data: {isPublic: newState},
+            complete: function (resp) {
+                if (resp && resp.status == 'success') {
+                    // change successful
+                } else {   // change failed
+                    // TODO: add visual to indicate change-failure
+                    console.warn("Toggling recording publication state failed:");
+                    console.dir(resp);
                 }
             }
+        });
 
-            if(existingQuip)
-                return;
+        return false;
+    }
 
-            soundManager.pauseAll();
+    toggle(event) {
+        var quipId = $(this.el).data("quipId");
+        var url = '/recordings/' + quipId + '.ogg';
+        console.log("toggling recording playback: " + url);
 
-            // would be better if this was a completely single-page ajax app and there was a persistent audio player
-            App.CurrentQuipAudio = soundManager.createSound({
-                id: quipId,
-                url: url,
-                volume: 100,
-                autoLoad: true,
-                autoPlay: false,
-                from: resumePosition,
-                whileloading: function() {
-                    //console.log("loaded: " + this.bytesLoaded + " of " + this.bytesTotal);
-                },
-                onload: function() {
-                    console.log('App.CurrentQuipAudio(); starting playback at position = ' + resumePosition + '/' + this.duration);
+        var that = this;
 
-                    if((resumePosition + 10) > this.duration) {
-                        // the track is pretty much complete, loop it
-                        // FIXME: this should actually happen earlier, we should know that the action will cause a rewind
-                        //        and indicate the rewind visually so there is no surprise
-                        resumePosition = 0;
-                        console.log('App.CurrentQuipAudio(); track needed a rewind');
-                    }
+        var resumePosition = parseInt(that.model.get('position') || 0);
+        console.log('resumePosition = ' + resumePosition);
 
-                    // FIXME: resume compatibility with various browsers
-                    // FIXME: sometimes you resume a file all the way at the end, should loop them around
-                    this.setPosition(resumePosition);
-                    this.play();
-                },
-                whileplaying: function() {
-                    var progress = (this.duration > 0 ? 100 * this.position / this.duration : 0).toFixed(0) + '%';
-                    localStorage.setItem("quip:" + this.id + ":progress", progress);
-                    localStorage.setItem("quip:" + this.id + ":position", this.position.toFixed(0));
-                    that.model.set({'progress' : progress});
-                },
-                onpause: function() {
-                    console.log("App.CurrentQuipAudio(); paused: " + this.id);
-                    var progress = (this.duration > 0 ? 100 * this.position / this.duration : 0).toFixed(0) + '%';
-                    localStorage.setItem("quip:" + this.id + ":progress", progress);
-                    localStorage.setItem("quip:" + this.id + ":position", this.position.toFixed(0));
-                    that.model.set({'progress' : progress});
-                },
-                onfinish: function() {
-                    console.log("App.CurrentQuipAudio(); finished playing: " + this.id);
+        // check if sound is already buffered
+        var existingQuip = soundManager.getSoundById(quipId);
+        if (existingQuip) {
+            // resume existing audio clip
+            if (!existingQuip.paused && existingQuip.playState) {
+                soundManager.pauseAll();
+                console.log("pausing existing clip");
 
-                    // store completion in browser
-                    localStorage.setItem("quip:" + this.id + ":progress", '100%');
-                    localStorage.setItem("quip:" + this.id + ":position", this.duration.toFixed(0));
-                    that.model.set({'progress' : '100%'});
+                $(this.el)
+                    .find('.fa-play-circle')
+                    .removeClass('fa-pause')
+                    .addClass('fa-play-circle');
 
-                    // TODO: unlock some sort of achievement for finishing this track, mark it a diff color, etc
-                    // TODO: this is a good place to fire a hook to a playback manager to move onto the next audio clip
+            } else {
+                soundManager.pauseAll();
+
+                if (!existingQuip.playState) {
+                    existingQuip.setPosition(0);
                 }
-            });
-        },
-        
-        _fullyRendered: false,
-        renderOnce: function() {
+
+                existingQuip.play();
+                console.log("resuming existing clip");
+
+                $(this.el)
+                    .find('.fa-play-circle')
+                    .removeClass('fa-play-circle')
+                    .addClass('fa-pause');
+            }
+        }
+
+        if (existingQuip)
+            return;
+
+        soundManager.pauseAll();
+
+        this.model.url = url;
+
+        // would be better if this was a completely single-page ajax app and there was a persistent audio player
+        SoundPlayer.create(this.model);
+    }
+
+    render() {
+        console.log("quip-control redraw");
+
+        var result = $(this.el).find('.controls').find('.lock-indicator');
+        if (result)
+            result.remove();
+
+        if (this.model.get('isMine')) {
             var _ = require('underscore');
-            
-            if(this.model.get('isMine')) {
-                var html = _.template($("#quip-control-privacy").html());
-                $(this.el).find(".controls").prepend(html({
-                    isPublic: this.model.get('isPublic'),
-                    publicLink: this.publicLink
-                }));
-            }
-        },
-        
-        render: function() {
-            
-            console.log("quip-control redraw");
-            
-            var result = $(this.el).find('.controls').find('.lock-indicator');
-            if(result)
-                result.remove();
-            
-            if(this.model.get('isMine')) {
-                var _ = require('underscore');
-                var html = _.template($("#quip-control-privacy").html());
-                
-                $(this.el).find(".controls").prepend(html({
-                    isPublic: this.model.get('isPublic'),
-                    publicLink: this.publicLink
-                }));
-            }
+            var html = _.template($("#quip-control-privacy").html());
+
+            $(this.el).find(".controls").prepend(html({
+                isPublic: this.model.get('isPublic'),
+                publicLink: this.publicLink
+            }));
         }
-    });
-});
+    }
+}
+
+class QuipList extends Backbone.Collection {
+    constructor(options) {
+        super(options);
+        this.model = QuipModel;
+    }
+}
+
+var Quips = new QuipList();
+
+export { QuipModel, QuipView, QuipList, Quips };

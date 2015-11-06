@@ -1,29 +1,76 @@
 .header-nav
-    display: table
-    //line-height: $line-height * 2
-    line-height: 70px
     width: 100%
-    vertical-align: middle
+    display: flex
+    flex-direction: row
+    justify-content: space-between
+    align-items: center
+    height: 70px
 
-    .header-btn
-        padding: 0px
-        cursor: pointer
-        position: relative
-        z-index: 100
-        text-decoration: none
-
-        font-size: 30px
-        margin: 0
+    .btn-logo
         display: inline-block
-        text-align: center
+        align-items: center
+        max-width: 100%
+        max-height: 100%
 
-        //background-color: #495164
-        //color: #ADEAFC
-        color: #fff
+
+    .btn
+        display: inline-block
+        width: 40px
+        height: 40px
+        border-radius: 50%
+        transition: transform .06s ease-in-out
+        font-size: 20px
+        cursor: pointer
+        text-decoration: none
+        text-align: center
+        vertical-align: middle
+        overflow: hidden
+        padding: 0
+        margin: 0
+        align-items: center
+        position: relative
+        display: flex
+
+        &.btn-square
+            border-radius: 0
+
+        &:hover, &.activated
+            transform: scale(1.2)
 
         i.fa
+            display: inline-block
+            width: 100%
+            line-height: 100%
             vertical-align: middle
-            padding: 0px
+            padding: 0
+            margin: 0
+            font-size: inherit
+
+        img.profile-pic
+            display: inline-block
+            align-items: center
+            width: 100%
+            height: 100%
+            border-radius: 50%
+
+
+    //.header-btn
+    //    padding: 0px
+    //    cursor: pointer
+    //    position: relative
+    //    z-index: 100
+    //    text-decoration: none
+    //
+    //    font-size: 30px
+    //    margin: 0
+    //    display: inline-block
+    //    text-align: center
+    //
+    //    //background-color: #495164
+    //    //color: #ADEAFC
+    //    color: #fff
+    //
+
 
     .header_logo
         font-size: 25px
@@ -34,6 +81,9 @@
         min-width: 270px
         text-align: left
         padding-left: 30px
+
+        @media #{$most_phones}
+            display: none
 
         img
             vertical-align: middle
@@ -54,69 +104,35 @@
             strong
                 font-weight: 600
 
+
+    .header-container
+        display: flex
+        align-items: center
+        justify-content: center
+
     .header_menu
-        padding: 0
-        display: table-cell
+        @extend .header-container
+
+        background: orange
         vertical-align: middle
-        text-align: center
+        display: flex
+        align-items: center
+        justify-content: center
 
-        a
-            display: inline-block
-            vertical-align: middle
+    .header_user
+        @extend .header-container
 
-            img
-                width: 50px
-                vertical-align: middle
-                margin: 0px auto 0px
 
-    .header_anon-cp
-        display: table-cell
-        width: 150px
-        //line-height: 1
-        vertical-align: inherit
-
-        .btn-link
-            color: #ccc
+        .m-dropdown
+            margin: 0px auto
+            font-size: 1rem
             text-decoration: none
-            text-transform: uppercase
-            font-size: 15px
-            padding: 0px 16px
-
-            &:hover
-                color: #fff
-                background: #555
-
-    .header_user-cp
-        font-size: 0
-        text-align: right
-        display: table-cell
-        vertical-align: inherit
-        width: $line-height * 2
-        padding-right: 30px
-
-        .header-btn
-            border: 4px solid transparent
-            border-radius: 50%
-            width: auto
-
-        //&.activated
-        //  border: 4px solid #fff
-
-        .cp
-            text-align: right
-            color: #fff
+            line-height: 1
             display: block
 
-            .m-dropdown
-                margin: 0px auto
-                font-size: 1rem
-                text-decoration: none
-                line-height: 1
-                display: block
-
-            .dropdown-trigger
-                line-height: 1
-                display: block
+        .dropdown-trigger
+            line-height: 1
+            display: block
 
         img.cp-avatar
             width: $line-height * 1.5
@@ -126,48 +142,4 @@
             border-radius: 50%
 
     .header_shortcuts
-        display: table-cell
-        text-align: right
-        width: 230px
-        vertical-align: middle
-        padding-right: 30px
-
-        .header-btn
-            float: right
-            font-size: 20px
-            border-radius: 50%
-            display: block
-            width: $line-height * 1.5
-            line-height: $line-height * 1.5
-
-    .header-btn
-        display: block
-        width: $line-height * 1.5
-        line-height: $line-height * 1.5
-        transition: transform .06s ease-in-out
-
-        &:hover, &.activated
-            transform: scale(1.2)
-
-    .primary-nav
-        display: table
-        margin: 0
-        padding: 0
-        margin-left: 4%
-
-        li
-            display: table-cell
-            line-height: inherit
-            margin: 0
-
-        a
-            font-size: 30px
-            margin: 0
-            color: #ccc
-            display: block
-            width: 75px
-            text-align: center
-
-            &:hover
-                background: #555
-                color: #fff
+        @extend .header-container

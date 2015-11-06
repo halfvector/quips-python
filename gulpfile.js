@@ -1,6 +1,14 @@
 var gulp = require('gulp'),
     gutil = require('gulp-util');
 
+var source = require('vinyl-source-stream');
+var babel = require('gulp-babel');
+var es6transpiler = require('gulp-es6-transpiler');
+var sourcemaps = require('gulp-sourcemaps');
+var browserify = require('browserify');
+var babelify = require('babelify');
+var notify = require('gulp-notify');
+
 var http = require('http'),
     runSequence = require('run-sequence'),
     sass = require('gulp-ruby-sass'),
@@ -45,14 +53,8 @@ var config = {
     workers_src_js: jsDir + 'workers/*.js',
 
     // individual scripts
-    main_src_js: [
-        jsDir + 'app.js',
-        jsDir + 'audio-capture.js',
-        jsDir + 'homepage.js',
-        jsDir + 'recording-control.js',
-        jsDir + 'quip-control.js',
-        jsDir + 'nav-user-dropdown.js'
-    ],
+    all_src_js: jsDir + '**/*.js',
+    main_src_js: jsDir + 'app.js',
     dest_js: "public/assets/js/",
 
     // concatenated result file names
@@ -97,12 +99,36 @@ gulp.task('worker-scripts', function () {
 
 // js: primary scripts
 gulp.task('main-scripts', function () {
-    return gulp.src(config.main_src_js)
-        //.pipe(jshint(/* ".jshintrc" */))
-        //.pipe(jshint.reporter('jshint-stylish'))
-        .pipe(concat(config.js_concat_main))
+    return browserify({entries: config.main_src_js, debug: true})
+        .external(['backbone', 'vague-time', 'underscore'])
+        .transform([babelify])
+        .bundle()
+        .on('error', notify.onError())
+        .pipe(source('app.js'))
         .pipe(gulp.dest(config.dest_js))
+        //.pipe(reload({stream:true}))
+        //.pipe(notify("Browser reloaded after watchify update!"))
+    ;
+
+
+    //return gulp.src(config.all_src_js)
+    //    .pipe(sourcemaps.init())
+    //    .pipe(babel({
+    //        presets: ['babel-preset-es2015']
+    //    }))
+    //    .on('error', onError)
+    //    //.pipe(jshint(/* ".jshintrc" */))
+    //    //.pipe(jshint.reporter('jshint-stylish'))
+    //    //.pipe(concat(config.js_concat_main))
+    //    .pipe(concat('all.js'))
+    //    .pipe(sourcemaps.write('.'))
+    //    .pipe(gulp.dest(config.dest_js))
 });
+
+function onError(err) {
+    console.log(err);
+    this.emit('end');
+}
 
 // watch html
 gulp.task('html', function () {
@@ -115,16 +141,16 @@ gulp.task('clean', function () {
         .pipe(clean());
 });
 
-gulp.task('build', function(completed) {
+gulp.task('build', function (completed) {
     runSequence('clean', 'external-scripts', 'worker-scripts', 'main-scripts', 'styles', completed);
 });
 
-gulp.task('watch', ['build'], function(completed) {
+gulp.task('watch', ['build'], function (completed) {
     // rebuild asset when source is changed
     gulp.watch(config.src_sass_all, ['styles']);
     gulp.watch(config.external_src_js, ['external-scripts']);
     gulp.watch(config.workers_src_js, ['worker-scripts']);
-    gulp.watch(config.main_src_js, ['main-scripts']);
+    gulp.watch(config.all_src_js, ['main-scripts']);
 
     // live reload when asset is changed
     gulp.watch(config.src_html, livereload.changed);
