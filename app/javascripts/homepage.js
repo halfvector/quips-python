@@ -1,8 +1,11 @@
 import Backbone from 'backbone'
-import { QuipModel, QuipView, Quips } from './quip-control.js'
+import { QuipModel, QuipView, Quips, AudioPlayerView } from './quip-control.js'
 
 export default class RecordingsList extends Backbone.View {
     initialize() {
+
+        var audioPlayer = new AudioPlayerView();
+
         soundManager.setup({
             debugMode: true,
             url: '/assets/swf/',

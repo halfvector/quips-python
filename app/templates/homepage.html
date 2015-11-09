@@ -11,6 +11,9 @@
 
 {% block body %}
 
+    <audio id="audio-player" autoplay="false">
+    </audio>
+
     <div backbone-controller="RecordingsList" class="quips-list">
 
         {% for post in recordings %}
@@ -31,17 +34,12 @@
                     </div>
                 </div>
                 <div class="quip-player">
-                    <!--
-                    <audio>
-                        <source src="/recordings/{{ post.id }}.ogg" />
-                    </audio>
-                    -->
                     <div class="progress-bar"></div>
-                    <i class="fa fa-play-circle"></i>
+                    <i class="fa fa-play"></i>
                 </div>
                 <div class="quip-actions">
-                    <a class="button" href="{{ post.publicUrl }}">
-                        <i class="fa fa-share-square"></i> <span class="caption">Share</span>
+                    <a class="button" href="{{ post.publicUrl }}" title="Share">
+                        <i class="fa fa-share-square-o"></i> <span class="caption">Share</span>
                     </a>
                 </div>
             </div>
@@ -49,21 +47,14 @@
 
     </div>
 
-    <script type="text/html" id="quip-control-link">
-        <a class="btn btn-no-text public-link" href="<%= publicLink %>" title="Toggle privacy">
-            <i class="fa fa-link"></i>
-        </a>
-    </script>
-
-    <script type="text/html" id="quip-control-privacy" title="Link directly to this quip">
-        <a class="btn btn-no-text lock-indicator">
+    <script type="text/html" id="quip-control-privacy">
+        <a class="button lock-indicator" title="Toggle visibility">
             <% if (isPublic) { %>
-            <i class="fa fa-unlock"></i>
+            <i class="fa fa-unlock"></i> <span class="caption">Make Private</span>
             <% } else { %>
-            <i class="fa fa-lock"></i>
+            <i class="fa fa-lock"></i> <span class="caption">Make Public</span>
             <% } %>
         </a>
     </script>
-
 
 {% endblock %}

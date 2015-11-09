@@ -835,7 +835,7 @@ body { padding: 0; margin: 0; width: 100%; }
 
 .quips-list { padding-top: 20px; }
 
-.quip { margin: 10px 10px 30px; border-bottom: 1px solid #ccc; background: #fff; }
+.quip { margin: 10px 10px 30px; border-bottom: 1px solid #ccc; background: #fff; border-radius: 5px; padding: 10px; box-shadow: 0px 0px 17px rgba(136, 136, 136, 0.1); }
 .quip .flex-row { display: -webkit-box; display: -webkit-flex; display: -ms-flexbox; display: flex; -webkit-box-orient: horizontal; -webkit-box-direction: normal; -webkit-flex-direction: row; -ms-flex-direction: row; flex-direction: row; }
 .quip .quip-profile { width: auto; padding: 10px; }
 .quip .quip-profile a { display: inline-block; }
@@ -843,12 +843,12 @@ body { padding: 0; margin: 0; width: 100%; }
 .quip .quip-details { -webkit-box-flex: 1; -webkit-flex: 1 1; -ms-flex: 1 1; flex: 1 1; padding: 8px; }
 .quip .quip-details .name { -webkit-box-flex: 1; -webkit-flex: 1 1; -ms-flex: 1 1; flex: 1 1; font-size: 95%; font-weight: 500; }
 .quip .quip-details time { text-align: right; -webkit-box-flex: 1; -webkit-flex: 1 1; -ms-flex: 1 1; flex: 1 1; font-size: 80%; color: #aaa; }
-.quip .quip-details .text { font-weight: 400; color: #888; }
-.quip .quip-player { margin: 0 0px; height: 50px; line-height: 50px; background: #eee; position: relative; text-align: center; vertical-align: middle; border-top: 1px solid #ddd; border-bottom: 1px solid #ddd; }
-.quip .quip-player i.fa { font-size: 30px; line-height: inherit; }
-.quip .quip-player .progress-bar { position: absolute; left: 0; bottom: 0; top: 0; width: 10px; background-color: #ddd; }
-.quip .quip-actions { margin: 10px 10px; padding: 5px 10px; border-top: 1px solid #eee; border-bottom: 1px solid #eee; }
-.quip .quip-actions a.button { text-decoration: none; display: inline-block; color: #888; margin-right: 20px; padding: 4px 0; }
+.quip .quip-details .text { font-weight: 400; color: #888; word-break: break-all; }
+.quip .quip-player { margin: 10px; height: 50px; line-height: 50px; background: #eee; position: relative; text-align: center; vertical-align: middle; border-radius: 5px; box-shadow: inset 0px 0px 10px rgba(153, 153, 153, 0.3); }
+.quip .quip-player i.fa { font-size: 30px; line-height: inherit; position: relative; }
+.quip .quip-player .progress-bar { border-radius: 5px; position: absolute; left: 0px; bottom: 0px; top: 0px; width: 0px; background-color: rgba(87, 202, 244, 0.5); background-image: -webkit-linear-gradient(-360deg, rgba(255, 255, 255, 0.3) 0.8em, transparent 1px); background-image: -webkit-linear-gradient(0deg, rgba(255, 255, 255, 0.3) 0.8em, transparent 1px); background-image: linear-gradient(90deg, rgba(255, 255, 255, 0.3) 0.8em, transparent 1px); background-size: 30px 50px; -webkit-transition: width 0.1s linear; transition: width 0.1s linear; border-right: 5px solid rgba(87, 202, 244, 0.4); }
+.quip .quip-actions { margin: 10px; padding: 10px; }
+.quip .quip-actions a.button { text-decoration: none; display: inline-block; color: #888; margin-right: 20px; padding: 4px 0; line-height: 1; cursor: pointer; }
 .quip .quip-actions a.button i { display: inline-block; vertical-align: middle; }
 .quip .quip-actions a.button .caption { padding-left: 7px; display: inline-block; font-size: 90%; }
 

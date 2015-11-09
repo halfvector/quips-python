@@ -1,5 +1,6 @@
 import Backbone from 'backbone'
 import RecordingsList from './homepage'
+import { RecorderView, Recorder } from './recording-control'
 
 class Application {
     constructor() {
@@ -8,6 +9,11 @@ class Application {
 
         var view = new RecordingsList();
         view.render();
+
+        var recorder = new RecorderView({
+            el: $('.m-recording-container'),
+            model: new Recorder({recordingTime: -3})
+        });
 
         //// locate any controllers on the page and load their requirements
         //// this is a part of Angular i really liked, the custom directives

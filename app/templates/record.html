@@ -8,6 +8,8 @@
 
 {% block body %}
 
+    <audio id="recorded-preview" controls="controls"></audio>
+
     <div class="m-quips-sample-listing">
     {% if recording_count == 0 %}
         <div class="m-recording-motivation">
@@ -37,7 +39,6 @@
             </div>
 
             <div id="recorder-done" class="m-recording-upload face back">
-                <audio id="recorded-preview" controls="controls"></audio>
                 <div class="stats">
                     <i class="fa fa-play-circle"></i>
                     <span class="duration"></span>

@@ -17,8 +17,9 @@ export default class SoundPlayer {
             onload: function () {
                 console.log('Sound; audio loaded; position = ' + resumePosition + ', duration = ' + this.duration);
 
-                if (this.duration == null) {
-                    console.log("duration is null")
+                if (this.duration == null || this.duration == 0) {
+                    console.log("duration is null");
+                    return;
                 }
 
                 if ((resumePosition + 10) > this.duration) {
@@ -42,9 +43,10 @@ export default class SoundPlayer {
             },
             onpause: function () {
                 console.log("Sound; paused: " + this.id);
-                var progress = (this.duration > 0 ? 100 * this.position / this.duration : 0).toFixed(0) + '%';
+                var position = this.position ? this.position.toFixed(0) : 0;
+                var progress = (this.duration > 0 ? 100 * position / this.duration : 0).toFixed(0) + '%';
                 localStorage.setItem("quip:" + this.id + ":progress", progress);
-                localStorage.setItem("quip:" + this.id + ":position", this.position.toFixed(0));
+                localStorage.setItem("quip:" + this.id + ":position", position);
                 model.set({'progress': progress});
             },
             onfinish: function () {

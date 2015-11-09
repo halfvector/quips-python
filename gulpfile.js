@@ -69,7 +69,7 @@ gulp.task('styles', function () {
         stopOnError: true
     })
         .on('error', sass.logError)
-        .pipe(autoprefixer())
+        .pipe(autoprefixer({browsers: ['last 3 versions', 'android 4', 'ie 9', '> 5%']}))
         .pipe(gulp.dest(config.dest_css))
 });
 
