@@ -11,3 +11,5 @@ Gemfile.lock
 .DS_Store
 .ruby-version
 bower_components
+.bundle
+ruby_gems
