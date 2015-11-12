@@ -47,8 +47,10 @@ export class RecorderView extends Backbone.View {
         this.audioCapture = new AudioCapture();
 
         this.audioPlayer = document.getElementById("recorded-preview");
-        console.log('this.audioPlayer = ' + this.audioPlayer);
-
+        if(this.audioPlayer == null) {
+            return;
+        }
+        
         //this.audioPlayer.loop = "loop";
         //this.audioPlayer.autoplay = "autoplay";
         this.audioPlayer.src = "/assets/sounds/beep_short_on.ogg";
