@@ -24,7 +24,8 @@ export class AudioCapture {
             _onStartedCallback: null,
 
             _fftSize: 256,
-            _fftSmoothing: 0.8
+            _fftSmoothing: 0.8,
+            _totalNumSamples: 0
         });
     }
 
@@ -35,29 +36,29 @@ export class AudioCapture {
         this._audioEncoder = new MediaRecorder(mediaStream);
 
         this._audioEncoder.ondataavailable = function (e) {
-            console.log("AudioCapture::startManualEncoding(); MediaRecorder.ondataavailable(); new blob: size=" + e.data.size + " type=" + e.data.type);
+            console.log("AudioCapture::startAutomaticEncoding(); MediaRecorder.ondataavailable(); new blob: size=" + e.data.size + " type=" + e.data.type);
             this._latestAudioBuffer.push(e.data);
         };
 
         this._audioEncoder.onstop = function () {
-            console.log("AudioCapture::startManualEncoding(); MediaRecorder.onstop(); hit");
+            console.log("AudioCapture::startAutomaticEncoding(); MediaRecorder.onstop(); hit");
 
             // send the last captured audio buffer
             var encoded_blob = new Blob(this._latestAudioBuffer, {type: 'audio/ogg'});
 
-            console.log("AudioCapture::startManualEncoding(); MediaRecorder.onstop(); got encoded blob: size=" + encoded_blob.size + " type=" + encoded_blob.type);
+            console.log("AudioCapture::startAutomaticEncoding(); MediaRecorder.onstop(); got encoded blob: size=" + encoded_blob.size + " type=" + encoded_blob.type);
 
             if (this._onCaptureCompleteCallback)
                 this._onCaptureCompleteCallback(encoded_blob);
         };
 
-        console.log("AudioCapture::startManualEncoding(); MediaRecorder.start()");
+        console.log("AudioCapture::startAutomaticEncoding(); MediaRecorder.start()");
         this._audioEncoder.start(0);
     }
 
     createAudioContext(mediaStream) {
         // build capture graph
-        var AudioContextCreator = window.webkitAudioContext || window.AudioContext;
+        var AudioContextCreator = window.AudioContext || window.webkitAudioContext;
 
         this._audioContext = new AudioContextCreator();
         this._audioInput = this._audioContext.createMediaStreamSource(mediaStream);
@@ -65,16 +66,16 @@ export class AudioCapture {
         console.log("AudioCapture::startManualEncoding(); _audioContext.sampleRate: " + this._audioContext.sampleRate + " Hz");
 
         // create a listener node to grab microphone samples and feed it to our background worker
-        this._audioListener = (this._audioContext.createScriptProcessor || this._audioContext.createJavaScriptNode).call(this._audioContext, 8192, 2, 2);
+        this._audioListener = (this._audioContext.createScriptProcessor || this._audioContext.createJavaScriptNode).call(this._audioContext, 1024, 1, 1);
 
         console.log("this._cachedGainValue = " + this._cachedGainValue);
 
         this._audioGain = this._audioContext.createGain();
         this._audioGain.gain.value = this._cachedGainValue;
 
-        this._audioAnalyzer = this._audioContext.createAnalyser();
-        this._audioAnalyzer.fftSize = this._fftSize;
-        this._audioAnalyzer.smoothingTimeConstant = this._fftSmoothing;
+        //this._audioAnalyzer = this._audioContext.createAnalyser();
+        //this._audioAnalyzer.fftSize = this._fftSize;
+        //this._audioAnalyzer.smoothingTimeConstant = this._fftSmoothing;
     }
 
     startManualEncoding(mediaStream) {
@@ -95,8 +96,10 @@ export class AudioCapture {
 
                 // two Float32Arrays
                 left: e.inputBuffer.getChannelData(0),
-                right: e.inputBuffer.getChannelData(1)
+                right: e.inputBuffer.getChannelData(0)
             };
+
+            this._totalNumSamples += e.inputBuffer.getChannelData(0).length / 4;
 
             this._encodingWorker.postMessage(msg);
         };
@@ -106,7 +109,12 @@ export class AudioCapture {
 
             // worker finished and has the final encoded audio buffer for us
             if (e.data.action === "encoded") {
-                var encoded_blob = new Blob([e.data.buffer], {type: 'audio/ogg'});
+                var oggBuffer = e.data.buffer.slice(0);
+
+                var encoded_blob = new Blob([oggBuffer], {type: 'audio/ogx'});
+
+                console.log("this._totalNumSamples = " + this._totalNumSamples);
+                console.log("this._audioContext.sampleRate = " + this._audioContext.sampleRate);
 
                 console.log("got encoded blob: size=" + encoded_blob.size + " type=" + encoded_blob.type);
 
@@ -115,6 +123,21 @@ export class AudioCapture {
 
                 // worker has exited, unreference it
                 this._encodingWorker = null;
+
+                //var buffer = this._audioContext.createBuffer(1, this._totalNumSamples, this._audioContext.sampleRate);
+                //var buf = buffer.getChannelData(0);
+                //for (var i = 0; i < e.data.buffer.length; ++i) {
+                //    buf[i] = e.data.buffer[i];
+                //}
+
+                //var dst = this._audioContext.destination;
+                //var source = this._audioContext.createBufferSource();
+                //this._audioContext.decodeAudioData(buf.buffer, (result) => {
+                //    console.log("decoded audio");
+                //    source.buffer = result;
+                //    source.connect(dst);
+                //    source.start(0);
+                //}, (error) => { console.log("hit a snag decoding audio data:", error)});
             }
         };
 
@@ -134,13 +157,16 @@ export class AudioCapture {
 
         console.log("AudioCapture::startManualEncoding(); Connecting Audio Nodes..");
 
-        console.log("input->gain");
+        console.log("connecting: input->gain");
         this._audioInput.connect(this._audioGain);
-        console.log("gain->analyzer");
-        this._audioGain.connect(this._audioAnalyzer);
-        console.log("analyzer->listesner");
-        this._audioAnalyzer.connect(this._audioListener);
-        console.log("listener->destination");
+        //console.log("connecting: gain->analyzer");
+        //this._audioGain.connect(this._audioAnalyzer);
+        //console.log("connecting: analyzer->listesner");
+        //this._audioAnalyzer.connect(this._audioListener);
+        // connect gain directly into listener, bypassing analyzer
+        console.log("connecting: gain->listener");
+        this._audioGain.connect(this._audioListener);
+        console.log("connecting: listener->destination");
         this._audioListener.connect(this._audioContext.destination);
 
         return true;
@@ -149,13 +175,15 @@ export class AudioCapture {
     shutdownManualEncoding() {
         console.log("AudioCapture::shutdownManualEncoding(); Tearing down AudioAPI connections..");
 
-        console.log("listener->destination");
+        console.log("disconnecting: listener->destination");
         this._audioListener.disconnect(this._audioContext.destination);
-        console.log("analyzer->listesner");
-        this._audioAnalyzer.disconnect(this._audioListener);
-        console.log("gain->analyzer");
-        this._audioGain.disconnect(this._audioAnalyzer);
-        console.log("input->gain");
+        //console.log("disconnecting: analyzer->listesner");
+        //this._audioAnalyzer.disconnect(this._audioListener);
+        //console.log("disconnecting: gain->analyzer");
+        //this._audioGain.disconnect(this._audioAnalyzer);
+        console.log("disconnecting: gain->listener");
+        this._audioGain.disconnect(this._audioListener);
+        console.log("disconnecting: input->gain");
         this._audioInput.disconnect(this._audioGain);
     }
 

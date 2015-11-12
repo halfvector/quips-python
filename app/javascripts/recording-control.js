@@ -24,6 +24,7 @@ export class RecorderView extends Backbone.View {
         return {
             audioCapture: null,
             audioBlob: null,
+            audioBlobUrl: null,
             audioPlayer: null,
             isRecording: false,
             timerId: 0,
@@ -35,7 +36,8 @@ export class RecorderView extends Backbone.View {
         return {
             "click .recording-toggle": "toggle",
             "click #cancel-recording": "cancelRecording",
-            "click #upload-recording": "uploadRecording"
+            "click #upload-recording": "uploadRecording",
+            "click #helper-btn": "playPreview"
         }
     }
 
@@ -256,6 +258,7 @@ export class RecorderView extends Backbone.View {
         // play sound immediately to bypass mobile chrome's "user initiated media" requirement
         this.audioPlayer.src = "/assets/sounds/beep_short_off.ogg";
         this.audioPlayer.play();
+        this.audioPlayer.loop = true;
 
         this.audioCapture.stop((blob) => this.onRecordingCompleted(blob));
 
@@ -272,17 +275,28 @@ export class RecorderView extends Backbone.View {
         this.showCompletionScreen();
     }
 
+
+
+    playPreview() {
+        console.log("playing preview..");
+        console.log("audio blob", this.audioBlob);
+        console.log("audio blob url", this.audioBlobUrl);
+        this.audioPlayer.src = this.audioBlobUrl;
+        this.audioPlayer.play();
+    }
+
     showCompletionScreen() {
         console.log("Recorder::onRecordingCompleted(); flipping card");
-        var url = URL.createObjectURL(this.audioBlob);
+        this.audioBlobUrl = window.URL.createObjectURL(this.audioBlob);
         $(".m-recording-container").addClass("flipped");
 
         // TODO: get a chainable animations library that supports delays
         //setTimeout(() => {
-            console.log("Recorder::onRecordingCompleted(); changing audioplayer");
-            this.audioPlayer.src = url;
-            this.audioPlayer.play();
-        console.log("audio player with blob", this.audioPlayer);
+        //    console.log("Recorder::onRecordingCompleted(); assigning blob url: " + url);
+            //this.audioPlayer.src = url;
+            //this.audioPlayer.play();
+            this.audioPlayer.loop = false;
+            console.log("audio player with blob", this.audioPlayer);
         //}, 200);
     }
 }

@@ -33,8 +33,11 @@ function shutdownEncoder() {
 
 onmessage = function(e) {
 
-    if(e.data.action == "initialize")
+    if(e.data.action == "initialize") {
+        console.log("e.data.sample_rate = " + e.data.sample_rate);
+        console.log("e.data.buffer_size = " + e.data.buffer_size);
         initializeEncoder(e.data.sample_rate, e.data.buffer_size);
+    }
 
     if(e.data.action == "finish")
         shutdownEncoder();
