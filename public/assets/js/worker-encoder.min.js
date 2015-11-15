@@ -4,11 +4,13 @@ var g_AudioBufferLeft,
     g_AudioBufferRight;
 var g_Initialized = false;
 var g_EncoderState;
+var g_SampleRate;
 var g_BufferSamples = 4096;
 
 function initializeEncoder(sample_rate, samples_per_buffer) {
     g_EncoderState = Module._lexy_encoder_start(sample_rate, 0.3);
     g_BufferSamples = samples_per_buffer;
+    g_SampleRate = sample_rate;
 
     // create a f32 view over the heap buffers
     g_AudioBufferLeft = new Float32Array(Module.HEAPF32.buffer, Module._malloc(g_BufferSamples * 4), g_BufferSamples);
@@ -52,11 +54,16 @@ onmessage = function(e) {
 
         for( var i = 0; i < e.data.left.length; i ++) {
             g_AudioBufferLeft[i] = e.data.left[i];
-            g_AudioBufferRight[i] = e.data.right[i];
+            g_AudioBufferRight[i] = e.data.left[i];
         }
 
         // one 2.7ghz core encodes 1 second of audio within 60-200ms, a lot faster than realtime!
+        // on LG 2 Android 4.4, first encoding of 300ms takes 700ms, after that 80ms
+        var start = performance.now();
         Module._lexy_encoder_write(g_EncoderState, g_AudioBufferLeft.byteOffset, g_AudioBufferRight.byteOffset, g_BufferSamples);
+        var span = Math.round(performance.now() - start);
+        var duration = Math.round(1000 * e.data.left.length / g_SampleRate);
+        console.debug("_lexy_encoder_write took " + (span) + " ms to encode " + (duration) + " ms of audio");
     }
 
 };

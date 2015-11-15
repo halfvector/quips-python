@@ -47,10 +47,12 @@ export class RecorderView extends Backbone.View {
         this.audioCapture = new AudioCapture();
 
         this.audioPlayer = document.getElementById("recorded-preview");
-        if(this.audioPlayer == null) {
+        if (this.audioPlayer == null) {
             return;
         }
-        
+
+        console.log("can play vorbis: ", !!this.audioPlayer.canPlayType && "" != this.audioPlayer.canPlayType('audio/ogg; codecs="vorbis"'));
+
         //this.audioPlayer.loop = "loop";
         //this.audioPlayer.autoplay = "autoplay";
         this.audioPlayer.src = "/assets/sounds/beep_short_on.ogg";
@@ -190,7 +192,8 @@ export class RecorderView extends Backbone.View {
                 console.log("Recorder::onRecordingCompleted(); manual xhr error", xhr);
             }
             var result = JSON.parse(xhr.response);
-            console.dir(result);
+            console.log("xhr.response", xhr.response);
+            console.log("result", result);
 
             if (result.status == "success") {
                 window.location.href = result.url;
@@ -258,9 +261,8 @@ export class RecorderView extends Backbone.View {
         clearInterval(this.timerId);
 
         // play sound immediately to bypass mobile chrome's "user initiated media" requirement
-        this.audioPlayer.src = "/assets/sounds/beep_short_off.ogg";
+        this.audioPlayer.src = "/assets/sounds/beep_short_on.ogg";
         this.audioPlayer.play();
-        this.audioPlayer.loop = true;
 
         this.audioCapture.stop((blob) => this.onRecordingCompleted(blob));
 
@@ -277,8 +279,6 @@ export class RecorderView extends Backbone.View {
         this.showCompletionScreen();
     }
 
-
-
     playPreview() {
         console.log("playing preview..");
         console.log("audio blob", this.audioBlob);
@@ -288,17 +288,27 @@ export class RecorderView extends Backbone.View {
     }
 
     showCompletionScreen() {
-        console.log("Recorder::onRecordingCompleted(); flipping card");
+        console.log("Recorder::onRecordingCompleted(); flipping to audio playback");
         this.audioBlobUrl = window.URL.createObjectURL(this.audioBlob);
         $(".m-recording-container").addClass("flipped");
 
-        // TODO: get a chainable animations library that supports delays
-        //setTimeout(() => {
-        //    console.log("Recorder::onRecordingCompleted(); assigning blob url: " + url);
-            //this.audioPlayer.src = url;
-            //this.audioPlayer.play();
-            this.audioPlayer.loop = false;
-            console.log("audio player with blob", this.audioPlayer);
-        //}, 200);
+        // HACK: route blob through xhr to let Android Chrome play blobs via <audio>
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', this.audioBlobUrl, true);
+        xhr.responseType = 'blob';
+        xhr.overrideMimeType('audio/ogg');
+
+        xhr.onreadystatechange = () => {
+            if (xhr.readyState === 4 && xhr.status == 200) {
+                var xhrBlobUrl = window.URL.createObjectURL(xhr.response);
+
+                console.log("Loaded blob from cache url: " + this.audioBlobUrl);
+                console.log("Routed into blob url: " + xhrBlobUrl);
+
+                this.audioPlayer.src = xhrBlobUrl;
+                this.audioPlayer.play();
+            }
+        };
+        xhr.send();
     }
 }
