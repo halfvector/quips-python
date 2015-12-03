@@ -6,11 +6,14 @@ var g_Initialized = false;
 var g_EncoderState;
 var g_SampleRate;
 var g_BufferSamples = 4096;
+var g_OutputBuffer = new Float32Array(48000 * 10);
+var g_OutputSize = 0;
 
 function initializeEncoder(sample_rate, samples_per_buffer) {
     g_EncoderState = Module._lexy_encoder_start(sample_rate, 0.3);
     g_BufferSamples = samples_per_buffer;
     g_SampleRate = sample_rate;
+    g_OutputSize = 0;
 
     // create a f32 view over the heap buffers
     g_AudioBufferLeft = new Float32Array(Module.HEAPF32.buffer, Module._malloc(g_BufferSamples * 4), g_BufferSamples);
@@ -25,7 +28,10 @@ function shutdownEncoder() {
     var encoded_length = Module._lexy_get_buffer_length(g_EncoderState);
 
     // build an array out of it to send back from the web-worker into main JS code
-    var encoded_buffer = new Uint8Array(Module.HEAPU8.buffer, encoded_buffer_ptr, encoded_length);
+    var encoded_buffer = g_OutputBuffer.subarray(0, g_OutputSize);
+
+    console.log("output size", g_OutputSize);
+    console.log("output buffer", g_OutputBuffer);
 
     postMessage({action: "encoded", buffer: encoded_buffer});
 
@@ -55,15 +61,18 @@ onmessage = function(e) {
         for( var i = 0; i < e.data.left.length; i ++) {
             g_AudioBufferLeft[i] = e.data.left[i];
             g_AudioBufferRight[i] = e.data.left[i];
+
+            g_OutputBuffer[g_OutputSize++] = e.data.left[i];
         }
 
         // one 2.7ghz core encodes 1 second of audio within 60-200ms, a lot faster than realtime!
         // on LG 2 Android 4.4, first encoding of 300ms takes 700ms, after that 80ms
         var start = performance.now();
-        Module._lexy_encoder_write(g_EncoderState, g_AudioBufferLeft.byteOffset, g_AudioBufferRight.byteOffset, g_BufferSamples);
+        //Module._lexy_encoder_write(g_EncoderState, g_AudioBufferLeft.byteOffset, g_AudioBufferRight.byteOffset, g_BufferSamples);
         var span = Math.round(performance.now() - start);
         var duration = Math.round(1000 * e.data.left.length / g_SampleRate);
         console.debug("_lexy_encoder_write took " + (span) + " ms to encode " + (duration) + " ms of audio");
+        console.debug("g_OutputSize: " + g_OutputSize);
     }
 
 };

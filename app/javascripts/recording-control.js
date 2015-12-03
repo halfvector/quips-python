@@ -55,8 +55,8 @@ export class RecorderView extends Backbone.View {
 
         //this.audioPlayer.loop = "loop";
         //this.audioPlayer.autoplay = "autoplay";
-        this.audioPlayer.src = "/assets/sounds/beep_short_on.ogg";
-        this.audioPlayer.play();
+        //this.audioPlayer.src = "/assets/sounds/beep_short_on.ogg";
+        //this.audioPlayer.play();
 
         this.model.on('change:recordingTime', function (model, time) {
             $(".recording-time").text(time);
@@ -292,11 +292,17 @@ export class RecorderView extends Backbone.View {
         this.audioBlobUrl = window.URL.createObjectURL(this.audioBlob);
         $(".m-recording-container").addClass("flipped");
 
+        //console.dir(this.audioBlobUrl);
+        //
+        //this.audioPlayer.src = this.audioBlobUrl;
+        //this.audioPlayer.play();
+        //return;
+
         // HACK: route blob through xhr to let Android Chrome play blobs via <audio>
         var xhr = new XMLHttpRequest();
         xhr.open('GET', this.audioBlobUrl, true);
         xhr.responseType = 'blob';
-        xhr.overrideMimeType('audio/ogg');
+        xhr.overrideMimeType('audio/wav');
 
         xhr.onreadystatechange = () => {
             if (xhr.readyState === 4 && xhr.status == 200) {
