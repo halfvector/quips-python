@@ -36,11 +36,19 @@
             cursor: pointer
             font-size: 18px
 
+@keyframes backgroundFadeIn
+    0%
+        opacity: 0
+    100%
+        opacity: .2
+
 .m-quips-sample-listing
     position: relative
-    margin-top: 30px
-    background: url('/assets/img/sample-listing.png') center no-repeat
+    background-size: cover
     min-height: 540px
+    height: 100%
+    animation: backgroundFadeIn 1s ease-out forwards
+
 
 .m-quips
     position: relative

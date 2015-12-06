@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html class="dark-theme">
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="initial-scale=1, maximum-scale=1">
@@ -30,16 +30,23 @@
 <body>
 <header class="site-header">
     <nav class="header-nav">
+        <div class="nav-left">
+            <a class="wordmark" href="#">
+                <strong>Couch</strong>pod
+            </a>
+        </div>
         <a class="btn btn-square" href="/">
             <img class="btn-logo" src="/assets/img/couchpod-3-tiny.png"/>
         </a>
         {% if user and user.authenticated %}
-            <a class="btn btn-success" href="/record">
-                <i class="fa fa-microphone"></i>
-            </a>
-            <a class="btn btn-default" href="/u/{{ user.username }}">
-                <img class="profile-pic" src="/profile_images{{ user.profileImage }}"/>
-            </a>
+            <div class="nav-right">
+                <a class="btn btn-success" href="/record">
+                    <i class="fa fa-microphone"></i>
+                </a>
+                <a class="btn btn-default" href="/u/{{ user.username }}">
+                    <img class="profile-pic" src="/profile_images{{ user.profileImage }}"/>
+                </a>
+            </div>
         {% else %}
             <a class="btn btn-default" href="/auth">
                 <i class="fa fa-sign-in"></i> Login
@@ -51,6 +58,7 @@
     {% block secondary %}{% endblock %}
 </div>
 <div class="page">
+    <div class="bg"></div>
     {% for message in get_flashed_messages() %}
         <div class="flash">
             {{ message }}
@@ -66,7 +74,6 @@
 {#            <source src="/assets/swf/test.ogg" type="audio/ogg" />#}
 {#        </audio>#}
 
-<script src="https://cdn.webrtc-experiment.com/MediaStreamRecorder.js"></script>
 <script src="/assets/js/externals.js"></script>
 <script src="/assets/js/app.js"></script>
 </body>

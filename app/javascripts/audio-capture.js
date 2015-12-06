@@ -1,4 +1,5 @@
 import _ from 'underscore'
+import Polyfill from './polyfill.js'
 
 export class AudioCapture {
     constructor() {
@@ -7,26 +8,26 @@ export class AudioCapture {
 
         console.log("Initialized AudioCapture");
 
-        _.extend(this, {
-            _audioContext: null,
-            _audioInput: null,
-            _encodingWorker: null,
-            _isRecording: false,
-            _audioListener: null,
-            _onCaptureCompleteCallback: null,
-            _audioAnalyzer: null,
-            _audioGain: null,
-            _cachedMediaStream: null,
+        this._audioContext = null;
+        this._audioInput = null;
+        this._encodingWorker = null;
+        this._isRecording = false;
+        this._audioListener = null;
+        this._onCaptureCompleteCallback = null;
+        this._audioAnalyzer = null;
+        this._audioGain = null;
+        this._cachedMediaStream = null;
 
-            _audioEncoder: null,
-            _latestAudioBuffer: [],
-            _cachedGainValue: 1,
-            _onStartedCallback: null,
+        this._audioEncoder = null;
+        this._latestAudioBuffer = [];
+        this._cachedGainValue = 1;
+        this._onStartedCallback = null;
 
-            _fftSize: 256,
-            _fftSmoothing: 0.8,
-            _totalNumSamples: 0
-        });
+        this._fftSize = 256;
+        this._fftSmoothing = 0.8;
+        this._totalNumSamples = 0;
+
+        Polyfill.install();
     }
 
     // TODO: firefox's built-in ogg-creation route
@@ -219,21 +220,7 @@ export class AudioCapture {
         if (this._cachedMediaStream)
             return;
 
-        navigator.mediaDevices = navigator.mediaDevices || ((navigator.mozGetUserMedia || navigator.webkitGetUserMedia) ? {
-                getUserMedia: function (c) {
-                    return new Promise(function (y, n) {
-                        (navigator.mozGetUserMedia ||
-                        navigator.webkitGetUserMedia).call(navigator, c, y, n);
-                    });
-                }
-            } : null);
-
-        if (!navigator.mediaDevices) {
-            console.warn("start(); getUserMedia() not supported.");
-            return;
-        }
-
-        navigator.mediaDevices
+        navigator.mediaDevice
             .getUserMedia({audio: true})
             .then((ms) => {
                 this._cachedMediaStream = ms;
@@ -244,28 +231,15 @@ export class AudioCapture {
             })
     };
 
-    start(onStartedCallback) {
 
+
+    start(onStartedCallback) {
         this._onStartedCallback = onStartedCallback;
 
         if (this._cachedMediaStream)
             return this.onMicrophoneProvided(this._cachedMediaStream);
 
-        navigator.mediaDevices = navigator.mediaDevices || ((navigator.mozGetUserMedia || navigator.webkitGetUserMedia) ? {
-                getUserMedia: function (c) {
-                    return new Promise(function (y, n) {
-                        (navigator.mozGetUserMedia ||
-                        navigator.webkitGetUserMedia).call(navigator, c, y, n);
-                    });
-                }
-            } : null);
-
-        if (!navigator.mediaDevices) {
-            console.warn("start(); getUserMedia() not supported.");
-            return;
-        }
-
-        navigator.mediaDevices
+        navigator.mediaDevice
             .getUserMedia({audio: true})
             .then((ms) => this.onMicrophoneProvided(ms))
             .catch((err) => {
