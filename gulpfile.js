@@ -80,7 +80,7 @@ gulp.task('external-scripts', function () {
             if (path.basename.indexOf('.min') == -1)
                 path.basename += '.min'
         }))
-        .pipe(uglify())
+        //.pipe(uglify())
         .pipe(concat(config.js_concat_externals))
         .pipe(gulp.dest(config.dest_js))
 });
@@ -100,7 +100,7 @@ gulp.task('worker-scripts', function () {
 // js: primary scripts
 gulp.task('main-scripts', function () {
     return browserify({entries: config.main_src_js, debug: true})
-        .external(['backbone', 'vague-time', 'underscore'])
+        .external(['backbone', 'vague-time', 'underscore', 'jquery'])
         .transform([babelify])
         .bundle()
         .on('error', notify.onError())

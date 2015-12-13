@@ -17,4 +17,12 @@ class Recording(db.Document):
     isPublic = db.BooleanField(required=True)
     postedAt = db.DateTimeField(default=datetime.now, required=True)
     user = db.ReferenceField(User, required=True, dbref=False)
-    # shortHash = db.IntField()
+    duration = db.IntField # duration in seconds
+
+
+class Listen(db.Document):
+    user = db.ReferenceField(User, required=True)
+    recording = db.ReferenceField(Recording, required=True)
+    position = db.IntField(required=True) # position within recording in seconds
+    duration = db.IntField(required=True) # seconds
+    progress = db.IntField(required=True) # %

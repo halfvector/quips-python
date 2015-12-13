@@ -1,9 +1,13 @@
 from app.auth import load_current_user
 from flask import request, send_from_directory
-from views import homepage, recordings, auth, user, changelog  # import views
+# import all views
+from views import homepage, recordings, auth, user, changelog
+
+# import all api resourcs
+from resources import *
 
 import config
-from services import app
+from services import app, api
 
 # register individual pages
 app.register_blueprint(homepage.bp)
@@ -11,6 +15,15 @@ app.register_blueprint(recordings.bp)
 app.register_blueprint(auth.bp)
 app.register_blueprint(user.bp)
 app.register_blueprint(changelog.bp)
+
+# register restful api endpoints
+api.add_resource(UserResource, '/users/<string:user_id>')
+api.add_resource(UserListResource, '/users')
+api.add_resource(CurrentUserResource, '/current_user')
+api.add_resource(QuipResource, '/quips/<string:quip_id>')
+api.add_resource(QuipListResource, '/quips')
+api.add_resource(ListenResource, '/listen/<string:user_id>/<string:recording_id>')
+api.add_resource(ListenListResource, '/listen')
 
 
 # static file paths (when running without nginx)

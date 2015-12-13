@@ -824,17 +824,19 @@
 html { padding: 0; margin: 0; font-family: "Open Sans", Arial, sans-serif; font-size: 17px; line-height: 27px; width: 100%; height: 100%; background: #F6F6F6; color: #343434; }
 html.dark-theme { background: #222222; color: #fff; }
 
-body { padding: 0; margin: 0; width: 100%; height: 100%; }
+body { padding: 0; margin: 0; width: 100%; height: 100%; position: relative; }
 
-.site-header { background: #3B3B3B; color: #fff; width: 100%; }
+.site-header { background: rgba(59, 59, 59, 0.8); color: #fff; width: 100%; position: fixed; z-index: 100; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1); }
 .site-header .header-nav { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
 
 .secondary-header { background: #fff; box-shadow: 0px 3px 6px #eee; z-index: 100; width: 100%; max-width: 1200px; }
 .secondary-header:after { display: block; }
 
-.page { z-index: 20; min-height: 100%; position: relative; margin: 0 auto; }
+.page { z-index: 20; min-height: 100%; position: relative; margin: 0 auto; display: -webkit-box; display: -webkit-flex; display: -ms-flexbox; display: flex; }
 .page .bg { background: url("/assets/img/bg-cityscape.jpeg") center no-repeat; background-attachment: fixed; min-height: 100%; width: 100%; position: absolute; z-index: 22; opacity: 0.1; }
-.page .page-contents { position: relative; z-index: 30; height: 100%; max-width: 1200px; margin: 0 auto; }
+.page .page-contents { position: relative; z-index: 30; max-width: 1200px; margin: 0 auto; padding-top: 100px; }
+
+.changelog { padding: 0 20px; }
 
 .quips-list { padding-top: 20px; margin: auto; max-width: 750px; }
 
@@ -983,7 +985,7 @@ body { padding: 0; margin: 0; width: 100%; height: 100%; }
 
 .m-recording-screen { text-align: center; color: #444; }
 .m-recording-screen.disabled { display: none; }
-.m-recording-screen .recording-toggle { font-size: 160px; width: 250px; height: 250px; line-height: 250px; display: inline-block; margin: 0px auto; background: #777; color: #fff; border-radius: 50%; cursor: pointer; -webkit-transition: -webkit-transform 0.06s ease-in-out; transition: transform 0.06s ease-in-out; vertical-align: middle; }
+.m-recording-screen .recording-toggle { font-size: 160px; width: 250px; height: 250px; margin: 0px auto; background: #777; color: #fff; border-radius: 50%; cursor: pointer; -webkit-transition: -webkit-transform 0.06s ease-in-out; transition: transform 0.06s ease-in-out; display: -webkit-box; display: -webkit-flex; display: -ms-flexbox; display: flex; -webkit-box-align: center; -webkit-align-items: center; -ms-flex-align: center; align-items: center; -webkit-box-pack: center; -webkit-justify-content: center; -ms-flex-pack: center; justify-content: center; }
 .m-recording-screen .recording-toggle:hover { -webkit-transform: scale(1.05); -ms-transform: scale(1.05); transform: scale(1.05); background-color: #FF3D7F; }
 .m-recording-screen .recording-toggle i { vertical-align: middle; }
 .m-recording-screen.is-recording .recording-toggle { background-color: #EC225E; }

@@ -6,4 +6,5 @@ import config
 import services
 import auth
 import models
-from setup import app
+import protected_resource
+from setup import app, api

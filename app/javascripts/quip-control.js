@@ -1,42 +1,8 @@
 import Backbone from 'backbone'
+import _ from 'underscore'
 import SoundPlayer from './audio-player.js'
+import { QuipModel } from './models/Quip'
 
-/**
- * Quip
- * Plays audio and tracks position
- */
-
-class QuipModel extends Backbone.Model {
-    defaults() {
-        return {
-            id: 0, // guid
-            progress: 0, // [0-100] percentage
-            position: 0, // msec
-            duration: 0, // msec
-            isPublic: false
-        }
-    }
-
-    constructor() {
-        super();
-    }
-
-    save(attributes) {
-        console.log("Quip Model saving to localStorage");
-        localStorage.setItem(this.id, JSON.stringify(this.toJSON()));
-    }
-
-    fetch() {
-        console.log("Quip Model loading from localStorage");
-        this.set(JSON.parse(localStorage.getItem(this.id)));
-    }
-
-    updateProgress() {
-        this.set({
-            progress: (duration > 0 ? position / duration : 0).toFixed(0) + "%"
-        });
-    }
-}
 
 class AudioPlayerEvents extends Backbone.Model {
     getPauseUrl(id) {
@@ -97,9 +63,9 @@ class AudioPlayerView extends Backbone.View {
         }
 
         var progressUpdate = {
-            currentTime: this.audioPlayer.currentTime,
-            duration: this.audioPlayer.duration,
-            progress: 100 * this.audioPlayer.currentTime / this.audioPlayer.duration
+            position: this.audioPlayer.currentTime, // sec
+            duration: this.audioPlayer.duration, // sec
+            progress: 100 * this.audioPlayer.currentTime / this.audioPlayer.duration // %
         }
 
         AudioPlayer.trigger("/" + this.quipModel.id + "/progress", progressUpdate);
@@ -124,7 +90,9 @@ class AudioPlayerView extends Backbone.View {
     }
 
     play(quipModel) {
+        this.audioPlayer.currentTime = Math.floor(quipModel.position);
         this.audioPlayer.play();
+
         AudioPlayer.trigger("/" + quipModel.id + "/playing");
         this.startPeriodicTimer();
     }
@@ -142,35 +110,29 @@ class AudioPlayerView extends Backbone.View {
     loadTrack(url) {
         console.log("Loading audio: " + url);
         this.audioPlayer.src = url;
+        this.audioPlayer.load();
     }
 }
 
 class QuipView extends Backbone.View {
-    defaults() {
+    get defaults() {
         return {
             quipId: 0,
             audioPlayer: null
         }
     }
 
-    events() {
+    get events() {
         return {
             "click .quip-actions .lock-indicator": "togglePublic",
-            "click .quip-player": "toggle"
+            "click .quip-player": "togglePlayback"
         }
     }
 
+    get tagName() { return 'div'; }
+
     onPause() {
         console.log("QuipView; paused");
-
-        $(this.el)
-            .find('.fa-play')
-            .removeClass('fa-play')
-            .addClass('fa-pause');
-    }
-
-    onPlay() {
-        console.log("QuipView; playing");
 
         $(this.el)
             .find('.fa-pause')
@@ -178,26 +140,41 @@ class QuipView extends Backbone.View {
             .addClass('fa-play');
     }
 
+    onPlay() {
+        console.log("QuipView; playing");
+
+        $(this.el)
+            .find('.fa-play')
+            .removeClass('fa-play')
+            .addClass('fa-pause');
+    }
+
     onProgress(progressUpdate) {
-        this.model.set({'progress': progressUpdate.progress});
+        this.model.set({'position': progressUpdate.position}); // sec
+        this.model.set({'duration': progressUpdate.duration}); // sec
+        this.model.set({'progress': progressUpdate.progress}); // %
+        this.model.throttledSave();
     }
 
     initialize() {
-        this.quipId = this.$el.data("quipId");
-        this.publicLink = '/u/' + this.quipId;
+        this.template = _.template($('#quip-template').html());
 
-        AudioPlayer.on("/" + this.quipId + "/paused", () => this.onPause());
-        AudioPlayer.on("/" + this.quipId + "/playing", () => this.onPlay());
-        AudioPlayer.on("/" + this.quipId + "/progress", (update) => this.onProgress(update));
+        var id = this.model.get("id");
 
-        this.loadModel();
+        AudioPlayer.on("/" + id + "/paused", () => this.onPause());
+        AudioPlayer.on("/" + id + "/playing", () => this.onPlay());
+        AudioPlayer.on("/" + id + "/progress", (update) => this.onProgress(update));
+
+        this.render();
+
+        $(this.el).find(".progress-bar").css("width", this.model.get('progress') + "%");
 
         // update visuals to indicate playback progress
-        this.listenTo(this.model, 'change:progress', (model, progress) => {
+        this.model.on('change:progress', (model, progress) => {
             $(this.el).find(".progress-bar").css("width", progress + "%");
         });
 
-        this.listenTo(this.model, "change", this.render);
+        //this.on(this.model, "change", this.render);
     }
 
     loadModel() {
@@ -219,59 +196,18 @@ class QuipView extends Backbone.View {
 
         console.log("toggling new published state: " + newState);
 
-        $.ajax({
-            url: '/recording/publish/' + this.quipId,
-            method: 'post',
-            data: {isPublic: newState},
-            complete: function (resp) {
-                if (resp && resp.status == 'success') {
-                    // change successful
-                } else {   // change failed
-                    // TODO: add visual to indicate change-failure
-                    console.warn("Toggling recording publication state failed:");
-                    console.dir(resp);
-                }
-            }
-        });
+        this.model.save();
 
         return false;
     }
 
-    /**
-     * Audio element fields
-     * .duration (seconds)
-     * .onprogress
-     * .onplay
-     * .onpause
-     * .paused
-     * .volume
-     * .ended
-     * .currentTime
-     */
-
-    toggle(event) {
-        var quipId = $(this.el).data("quipId");
-        this.model.url = '/recordings/' + quipId + '.ogg';
-
-        AudioPlayer.trigger("toggle", this.model);
+    togglePlayback(event) {
+        AudioPlayer.trigger("toggle", this.model.attributes);
     }
 
     render() {
-        //this.$el.html(_.template($('#quip-template').html()));
-        //return this;
-        var result = $(this.el).find('.quip-actions').find('.lock-indicator');
-        if (result)
-            result.remove();
-
-        if (this.model.get('isMine')) {
-            var _ = require('underscore');
-            var html = _.template($("#quip-control-privacy").html());
-
-            $(this.el).find(".quip-actions").append(html({
-                isPublic: this.model.get('isPublic'),
-                publicLink: this.publicLink
-            }));
-        }
+        this.$el.html(this.template(this.model.toJSON()));
+        return this;
     }
 }
 

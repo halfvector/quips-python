@@ -1,30 +1,29 @@
 import Backbone from 'backbone'
-import RecordingsList from './homepage'
-import { RecorderView, Recorder } from './recording-control'
+import jQuery from 'jquery'
+import { ListenState, ListenStateCollection } from './models/ListenState'
+import { CurrentUserModel } from './models/CurrentUser'
+import Router from './router'
+
+$ = require('jquery');
 
 class Application {
     constructor() {
+        var router = new Router();
+
         Backbone.$ = $;
-        Backbone.history.start();
+        Backbone.history.start({pushState: true, hashChange: false});
+        //if (!Backbone.history.start({pushState: true, hashChange: false})) router.navigate('404', {trigger: true});
 
-        var view = new RecordingsList();
-        view.render();
+        // load user
+        var model = new CurrentUserModel();
+        model.fetch().then(() => this.onModelLoaded(model));
 
-        var recorder = new RecorderView({
-            el: $('.m-recording-container'),
-            model: new Recorder({recordingTime: -3})
-        });
+        //new ListenStateCollection().fetch().then((state) => console.log("got listen states", state));
+    }
 
-        //// locate any controllers on the page and load their requirements
-        //// this is a part of Angular i really liked, the custom directives
-        //$('[backbone-controller]').each(function(el) {
-        //
-        //    var controllerName = $(el).attr('backbone-controller');
-        //    if(controllerName in App.Loaders)
-        //        App.Loaders[controllerName]();
-        //    else
-        //        console.error("Controller: '" + controllerName + "' not found");
-        //});
+    onModelLoaded(user) {
+        console.log("Loaded current user", user.attributes);
+        this.currentUser = user;
     }
 }
 
@@ -38,19 +37,19 @@ $(() => {
         whitelistUrls: ['staging.couchpod.com', 'couchpod.com'] // production only
     }).install()
 
-    new Application();
+    var app = new Application();
 
     // for production, could wrap domReadyCallback and let raven handle any exceptions
 
     /*
-    try {
-        domReadyCallback();
-    } catch(err) {
-        Raven.captureException(err);
-        console.log("[Error] Unhandled Exception was caught and sent via Raven:");
-        console.dir(err);
-    }
-    */
+     try {
+     domReadyCallback();
+     } catch(err) {
+     Raven.captureException(err);
+     console.log("[Error] Unhandled Exception was caught and sent via Raven:");
+     console.dir(err);
+     }
+     */
 })
 
-export default { Application }
+export default {Application}

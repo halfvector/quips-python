@@ -19,6 +19,8 @@ def index():
 
     for record in recordings:
         record.timestamp = record.postedAt.isoformat()
+
+        # PERF: denormalize dbref into username + userid
         record.isMine = record.user.id == g.user['id']
 
         tiny_id = tinyurl.encode(str(record.id))
@@ -29,7 +31,7 @@ def index():
 
     return render_template(
         'homepage.html',
-        recordings=recordings,
+        # recordings=recordings,
         user=g.user
     )
 

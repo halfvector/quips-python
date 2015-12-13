@@ -1,24 +1,21 @@
 import Backbone from 'backbone'
-import { QuipModel, QuipView, Quips, AudioPlayerView } from './quip-control.js'
+import vagueTime from 'vague-time'
+import { QuipView, Quips, AudioPlayerView } from './quip-control.js'
+import { QuipModel, MyQuipCollection } from './models/Quip'
 
 export default class RecordingsList extends Backbone.View {
     initialize() {
+        var audioPlayer = new AudioPlayerView({el: '#audio-player'});
 
-        var audioPlayer = new AudioPlayerView();
+        // load recordings
+        new MyQuipCollection().fetch().then(quips => this.onQuipsLoaded(quips))
 
-        soundManager.setup({
-            debugMode: true,
-            url: '/assets/swf/',
-            preferFlash: false,
-            onready: function () {
-                console.log("soundManager ready");
-            }
-        });
+        return;
 
         $('.quip').each(elem => {
             var view = new QuipView({
                 el: elem,
-                model: new QuipModel({progress: 0})
+                model: new QuipModel()
             });
 
             Quips.add(view.model);
@@ -29,14 +26,23 @@ export default class RecordingsList extends Backbone.View {
         var vagueTime = require('vague-time');
         var now = new Date();
 
-        $("time[datetime]").each(function generateVagueDate(ele) {
+        $("time[datetime]").each((idx, ele) => {
             ele.textContent = vagueTime.get({from: now, to: new Date(ele.getAttribute('datetime'))});
         });
 
         this.listenTo(Quips, 'add', this.quipAdded);
     }
 
+    onQuipsLoaded(quips) {
+        console.log("loaded quips", quips);
+
+        for( var quip of quips) {
+            var quipView = new QuipView({model: new QuipModel(quip)});
+            this.$el.append(quipView.el);
+        }
+    }
+
     quipAdded(quip) {
     }
-}
+};
 
