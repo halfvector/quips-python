@@ -15,20 +15,6 @@ def index():
         current_app.logger.info("homepage.index(); user not logged in, showing landing login page..")
         return send_from_directory(current_app.config['PATH_PUBLIC'], 'landing.html')
 
-    recordings = Recording.objects(Q(isPublic=True))[:50].order_by('-postedAt')
-
-    for record in recordings:
-        record.timestamp = record.postedAt.isoformat()
-
-        # PERF: denormalize dbref into username + userid
-        record.isMine = record.user.id == g.user['id']
-
-        tiny_id = tinyurl.encode(str(record.id))
-        record.publicUrl = url_for('user.one_recording', recordingId=tiny_id)
-
-        if not record.description:
-            record.description = "(no description)"
-
     return render_template(
         'homepage.html',
         # recordings=recordings,

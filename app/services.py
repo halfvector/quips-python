@@ -37,23 +37,6 @@ def create_app():
     if not path.isdir(app.config['PATH_USER_PROFILE_IMAGE']):
         raise Exception("User profile images path does not exist: " + app.config['PATH_USER_PROFILE_IMAGE'])
 
-    app.config['DEBUG_TB_MONGO'] = {
-        'SHOW_STACKTRACES': True,
-        'HIDE_FLASK_FROM_STACKTRACES': True
-    }
-
-    app.config['DEBUG_TB_PANELS'] = [
-        'flask_debugtoolbar.panels.versions.VersionDebugPanel',
-        'flask_debugtoolbar.panels.timer.TimerDebugPanel',
-        'flask_debugtoolbar.panels.headers.HeaderDebugPanel',
-        'flask_debugtoolbar.panels.request_vars.RequestVarsDebugPanel',
-        'flask_debugtoolbar.panels.template.TemplateDebugPanel',
-        'flask_debugtoolbar.panels.sqlalchemy.SQLAlchemyDebugPanel',
-        'flask_debugtoolbar.panels.logger.LoggingPanel',
-        'flask_debugtoolbar.panels.profiler.ProfilerDebugPanel',
-        'flask_debugtoolbar_mongo.panel.MongoDebugPanel',
-    ]
-
     # app.json_encoder = MongoJsonEncoder
 
     # setup database and session storage
@@ -63,7 +46,7 @@ def create_app():
     mongo.init_app(app)
     app.session_interface = MongoEngineSessionInterface(mongo)
 
-    toolbar = DebugToolbarExtension(app)
+    # toolbar = DebugToolbarExtension(app)
 
     app.logger.info("Recordings path: " + app.config['RECORDINGS_PATH'])
     app.logger.info("User profile images path: " + app.config['PATH_USER_PROFILE_IMAGE'])
