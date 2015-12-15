@@ -14,38 +14,7 @@
     <audio id="audio-player" autoplay="false">
     </audio>
 
-    <div backbone-controller="RecordingsList" id="recordings-container" class="quips-list">
-
-        {% for post in recordings %}
-            <div class="quip" data-quip-id="{{ post.id }}" data-is-mine="{{ post.isMine }}"
-                 data-is-public="{{ post.isPublic }}">
-                <div class="flex-row">
-                    <div class="quip-profile">
-                        <a class="btn" href="/u/{{ post.user.username }}">
-                            <img src="/profile_images{{ post.user.profileImage }}"/>
-                        </a>
-                    </div>
-                    <div class="quip-details">
-                        <div class="flex-row">
-                            <span class="name">{{ post.user.username }}</span>
-                            <time datetime="{{ post.timestamp }}"></time>
-                        </div>
-                        <div class="text">{{ post.description }}</div>
-                    </div>
-                </div>
-                <div class="quip-player">
-                    <div class="progress-bar"></div>
-                    <i class="fa fa-play"></i>
-                </div>
-                <div class="quip-actions">
-                    <a class="button" href="{{ post.publicUrl }}" title="Share">
-                        <i class="fa fa-share-square-o"></i> <span class="caption">Share</span>
-                    </a>
-                </div>
-            </div>
-        {% endfor %}
-
-    </div>
+    <div id="view-container"></div>
 
     <script type="text/html" id="quip-template">
         <div class="quip">
@@ -90,6 +59,60 @@
             <i class="fa fa-lock"></i> <span class="caption">Make Public</span>
             <% } %>
         </a>
+    </script>
+
+    <script type="text/html" id="quip-recorder-template">
+        <audio id="recorded-preview" controls="controls"></audio>
+
+        <div class="m-quips-sample-listing">
+            {% if recording_count == 0 %}
+                <div class="m-recording-motivation">
+                    <h1>Record your first podcast.</h1>
+                    <p>You have 20 seconds, go.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="m-recording-container">
+
+            <div class="card">
+
+                <div id="recorder-full" class="m-recording-screen face">
+                    <div title="toggle recording" class="recording-toggle"><i class="fa fa-microphone"></i></div>
+                    <div class="recording-time">3</div>
+                </div>
+
+                <div id="recorder-uploader" class="m-recording-uploading face disabled">
+                    <div class="upload-progress">
+                        <h4>Uploading</h4>
+
+                        <div class="progress-bar">
+                            <div class="bar"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="recorder-done" class="m-recording-upload face back">
+                    <div class="stats">
+                        <i class="fa fa-play-circle"></i>
+                        <span class="duration"></span>
+                    </div>
+
+                    <div class="description">
+                        <textarea name="description" placeholder="optional description"></textarea>
+                    </div>
+
+                    <div class="controls">
+                        <a href="" class="btn btn-success" id="upload-recording">Upload</a>
+                        <a class="btn btn-success" id="helper-btn">very nice</a>
+                        <a href="" class="btn btn-link" id="cancel-recording">Delete and Try Again</a>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
     </script>
 
 {% endblock %}

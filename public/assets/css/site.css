@@ -834,10 +834,27 @@ body { padding: 0; margin: 0; width: 100%; height: 100%; position: relative; }
 
 .page { z-index: 20; min-height: 100%; position: relative; margin: 0 auto; display: -webkit-box; display: -webkit-flex; display: -ms-flexbox; display: flex; }
 .page .bg { background: url("/assets/img/bg-cityscape.jpeg") center no-repeat; background-attachment: fixed; min-height: 100%; width: 100%; position: absolute; z-index: 22; opacity: 0.1; }
-.page .page-contents { position: relative; z-index: 30; max-width: 1200px; margin: 0 auto; padding-top: 100px; }
+.page .page-contents { position: relative; z-index: 30; width: 100%; max-width: 1200px; margin: 0 auto; padding-top: 100px; }
 
 .changelog { padding: 0 20px; }
 
+#view-container { position: relative; -webkit-perspective: 300px; perspective: 300px; }
+
+.transitionable { position: absolute; width: 100%; -webkit-perspective: 300px; perspective: 300px; -webkit-transform-style: preserve-3d; transform-style: preserve-3d; -webkit-transform-origin: 50% 50%; -ms-transform-origin: 50% 50%; transform-origin: 50% 50%; }
+
+.transition-out { -webkit-animation: animate-out 0.2s 1 forwards; animation: animate-out 0.2s 1 forwards; }
+
+.transition-in { -webkit-animation: animate-in 0.4s 1 forwards; animation: animate-in 0.4s 1 forwards; }
+
+@-webkit-keyframes animate-out { 0% { opacity: 1; -webkit-transform: translate3d(0, 0, 0); transform: translate3d(0, 0, 0); }
+  100% { opacity: 0; -webkit-transform: translate3d(0, 50px, -50px); transform: translate3d(0, 50px, -50px); } }
+
+@keyframes animate-out { 0% { opacity: 1; -webkit-transform: translate3d(0, 0, 0); transform: translate3d(0, 0, 0); }
+  100% { opacity: 0; -webkit-transform: translate3d(0, 50px, -50px); transform: translate3d(0, 50px, -50px); } }
+@-webkit-keyframes animate-in { 0% { opacity: 0; -webkit-transform: translate3d(0px, -30px, 50px); transform: translate3d(0px, -30px, 50px); }
+  100% { opacity: 1; -webkit-transform: translate3d(0, 0, 0); transform: translate3d(0, 0, 0); } }
+@keyframes animate-in { 0% { opacity: 0; -webkit-transform: translate3d(0px, -30px, 50px); transform: translate3d(0px, -30px, 50px); }
+  100% { opacity: 1; -webkit-transform: translate3d(0, 0, 0); transform: translate3d(0, 0, 0); } }
 .quips-list { padding-top: 20px; margin: auto; max-width: 750px; }
 
 .dark-theme .quip { background-color: #303030; border-bottom: 1px solid #222; border-radius: 8px; box-shadow: none; }

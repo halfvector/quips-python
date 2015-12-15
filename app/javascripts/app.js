@@ -14,6 +14,26 @@ class Application {
         Backbone.history.start({pushState: true, hashChange: false});
         //if (!Backbone.history.start({pushState: true, hashChange: false})) router.navigate('404', {trigger: true});
 
+        // Use delegation to avoid initial DOM selection and allow all matching elements to bubble
+        $(document).delegate("a", "click", function(evt) {
+            // Get the anchor href and protcol
+            var href = $(this).attr("href");
+            var protocol = this.protocol + "//";
+
+            var openLinkInTab = false;
+
+            // Ensure the protocol is not part of URL, meaning its relative.
+            // Stop the event bubbling to ensure the link will not cause a page refresh.
+            if (!openLinkInTab && href.slice(protocol.length) !== protocol) {
+                evt.preventDefault();
+
+                // Note by using Backbone.history.navigate, router events will not be
+                // triggered.  If this is a problem, change this to navigate on your
+                // router.
+                Backbone.history.navigate(href, true);
+            }
+        });
+
         // load user
         var model = new CurrentUserModel();
         model.fetch().then(() => this.onModelLoaded(model));

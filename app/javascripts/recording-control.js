@@ -1,4 +1,5 @@
 import Backbone from 'backbone'
+import _ from 'underscore'
 import { QuipModel, QuipView, Quips, AudioPlayerView } from './quip-control.js'
 import { AudioCapture } from './audio-capture'
 
@@ -41,10 +42,17 @@ export class RecorderView extends Backbone.View {
         }
     }
 
+    render() {
+        console.log("rendering recorder control");
+        this.template = _.template($('#quip-recorder-template').html());
+        this.$el.html(this.template(this.model.toJSON()));
+    }
 
     initialize(options) {
         console.log("RecorderView init");
         this.audioCapture = new AudioCapture();
+
+        this.render();
 
         this.audioPlayer = document.getElementById("recorded-preview");
         if (this.audioPlayer == null) {
@@ -64,6 +72,7 @@ export class RecorderView extends Backbone.View {
 
         // attempt to fetch media-stream on page-load
         this.audioCapture.preloadMediaStream();
+
 
         // TODO: a pretty advanced but neat feature may be to store a backup copy of a recording locally in case of a crash or user-error
         /*

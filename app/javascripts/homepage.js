@@ -44,5 +44,9 @@ export default class RecordingsList extends Backbone.View {
 
     quipAdded(quip) {
     }
+
+    render() {
+
+    }
 };
 

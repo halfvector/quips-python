@@ -74,6 +74,7 @@ body
         position: relative
         z-index: 30
         //height: 100%
+        width: 100%
         max-width: 1200px
         margin: 0 auto
         padding-top: 100px
@@ -81,3 +82,37 @@ body
 .changelog
     //max-width: 700px
     padding: 0 20px
+
+#view-container
+    position: relative
+    perspective: 300px
+
+.transitionable
+    position: absolute
+    width: 100%
+    perspective: 300px
+    transform-style: preserve-3d
+    transform-origin: 50% 50%
+
+.transition-out
+    animation: animate-out .2s 1 forwards
+
+.transition-in
+    animation: animate-in .4s 1 forwards
+
+@keyframes animate-out
+    0%
+        opacity: 1
+        transform: translate3d(0, 0, 0)
+    100%
+        opacity: 0
+        transform: translate3d(0, 50px, -50px)
+
+@keyframes animate-in
+    0%
+        opacity: 0
+        transform: translate3d(0px, -30px, 50px)
+    100%
+        opacity: 1
+        transform: translate3d(0, 0, 0)
+

@@ -60,12 +60,12 @@
 <div class="page">
     <div class="bg"></div>
     <audio id="audio-player" autoplay="false"></audio>
-    {% for message in get_flashed_messages() %}
-        <div class="flash">
-            {{ message }}
-        </div>
-    {% endfor %}
     <div class="page-contents">
+        {% for message in get_flashed_messages() %}
+            <div class="flash">
+                {{ message }}
+            </div>
+        {% endfor %}
         {% block body %}{% endblock %}
     </div>
 </div>

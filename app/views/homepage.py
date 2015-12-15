@@ -15,6 +15,8 @@ def index():
         current_app.logger.info("homepage.index(); user not logged in, showing landing login page..")
         return send_from_directory(current_app.config['PATH_PUBLIC'], 'landing.html')
 
+    # return send_from_directory(app.config['PATH_PUBLIC'], 'homepage.html')
+
     return render_template(
         'homepage.html',
         # recordings=recordings,
