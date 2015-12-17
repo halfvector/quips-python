@@ -1,11 +1,11 @@
 import Backbone from 'backbone'
 import vagueTime from 'vague-time'
-import { QuipView, Quips, AudioPlayerView } from './quip-control.js'
+import { QuipView, Quips } from './quip-control.js'
+import { AudioPlayer, AudioPlayerView } from './audio-player'
 import { QuipModel, MyQuipCollection } from './models/Quip'
 
 export default class RecordingsList extends Backbone.View {
     initialize() {
-        var audioPlayer = new AudioPlayerView({el: '#audio-player'});
 
         // load recordings
         new MyQuipCollection().fetch().then(quips => this.onQuipsLoaded(quips))
@@ -33,11 +33,22 @@ export default class RecordingsList extends Backbone.View {
         this.listenTo(Quips, 'add', this.quipAdded);
     }
 
+    shutdown() {
+        if (this.quipViews != null) {
+            for (var quip of this.quipViews) {
+                quip.shutdown();
+            }
+        }
+    }
+
     onQuipsLoaded(quips) {
         console.log("loaded quips", quips);
 
-        for( var quip of quips) {
+        this.quipViews = [];
+
+        for (var quip of quips) {
             var quipView = new QuipView({model: new QuipModel(quip)});
+            this.quipViews.push(quipView);
             this.$el.append(quipView.el);
         }
     }

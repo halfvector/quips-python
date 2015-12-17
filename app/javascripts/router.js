@@ -18,7 +18,7 @@ class Router extends Backbone.Router {
     home() {
         console.log('Router#home called');
 
-        var view = new RecordingsList({className: "transitionable"});
+        var view = new RecordingsList();
         this.switchView(view);
     }
 
@@ -30,7 +30,6 @@ class Router extends Backbone.Router {
         console.log('Router#record called');
 
         var view = new RecorderView({
-            className: "transitionable",
             model: new Recorder({recordingTime: -3})
         })
 
@@ -43,14 +42,16 @@ class Router extends Backbone.Router {
             oldView.$el.removeClass("transition-in");
             oldView.$el.addClass("transition-out");
             oldView.$el.one("animationend", () => {
-                console.log("animation ended");
                 oldView.remove();
+                oldView.unbind();
+                if(oldView.shutdown != null) {
+                    oldView.shutdown();
+                }
             });
         }
 
-        newView.$el.addClass("transition-in");
+        newView.$el.addClass("transitionable transition-in");
         newView.$el.one("animationend", () => {
-            console.log("animation-in ended");
             newView.$el.removeClass("transition-in");
         });
 

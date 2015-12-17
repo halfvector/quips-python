@@ -1,7 +1,8 @@
 import Backbone from 'backbone'
 import _ from 'underscore'
-import { QuipModel, QuipView, Quips, AudioPlayerView } from './quip-control.js'
+import { QuipModel, QuipView, Quips } from './quip-control.js'
 import { AudioCapture } from './audio-capture'
+import { AudioPlayerView } from './audio-player'
 
 export class Recorder extends Backbone.Model {
     defaults() {

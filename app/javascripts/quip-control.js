@@ -1,118 +1,14 @@
 import Backbone from 'backbone'
 import _ from 'underscore'
-import SoundPlayer from './audio-player.js'
+import { AudioPlayer } from './audio-player.js'
 import { QuipModel } from './models/Quip'
 
 
-class AudioPlayerEvents extends Backbone.Model {
-    getPauseUrl(id) {
-        var url = "/" + id + "/paused";
-        console.log("pause url" + url);
-        return url;
-    }
 
-    onPause(id, callback) {
-        this.on(this.getPauseUrl(id), callback);
-    }
-
-    triggerPause(id) {
-        this.trigger(this.getPauseUrl(id));
-    }
-}
-
-var AudioPlayer = new AudioPlayerEvents();
 
 //class AudioPlayerEvents extends Backbone.Events {
 //
 //}
-
-class AudioPlayerView extends Backbone.View {
-    defaults() {
-        return {
-            audioPlayer: null,
-            quipModel: null
-        }
-    }
-
-    initialize() {
-        console.log("AudioPlayerView initialized");
-        this.audioPlayer = document.getElementById("audio-player");
-        AudioPlayer.on("toggle", (quip) => this.onToggle(quip));
-    }
-
-    close() {
-        this.stopPeriodicTimer();
-    }
-
-    startPeriodicTimer() {
-        if(this.periodicTimer == null) {
-            this.periodicTimer = setInterval(() => this.checkProgress(), 100);
-        }
-    }
-
-    stopPeriodicTimer() {
-        if(this.periodicTimer != null) {
-            clearInterval(this.periodicTimer);
-            this.periodicTimer = null;
-        }
-    }
-
-    checkProgress() {
-        if(this.quipModel == null) {
-            return;
-        }
-
-        var progressUpdate = {
-            position: this.audioPlayer.currentTime, // sec
-            duration: this.audioPlayer.duration, // sec
-            progress: 100 * this.audioPlayer.currentTime / this.audioPlayer.duration // %
-        }
-
-        AudioPlayer.trigger("/" + this.quipModel.id + "/progress", progressUpdate);
-    }
-
-    onToggle(quipModel) {
-        this.quipModel = quipModel;
-
-        if(!this.trackIsLoaded(quipModel.url)) {
-            this.loadTrack(quipModel.url);
-        }
-
-        if(!this.trackIsLoaded(quipModel.url)) {
-            return;
-        }
-
-        if(this.audioPlayer.paused) {
-            this.play(quipModel);
-        } else {
-            this.pause(quipModel);
-        }
-    }
-
-    play(quipModel) {
-        this.audioPlayer.currentTime = Math.floor(quipModel.position);
-        this.audioPlayer.play();
-
-        AudioPlayer.trigger("/" + quipModel.id + "/playing");
-        this.startPeriodicTimer();
-    }
-
-    pause(quipModel) {
-        this.audioPlayer.pause();
-        AudioPlayer.trigger("/" + quipModel.id + "/paused");
-        this.stopPeriodicTimer();
-    }
-
-    trackIsLoaded(url) {
-        return ~this.audioPlayer.src.indexOf(url);
-    }
-
-    loadTrack(url) {
-        console.log("Loading audio: " + url);
-        this.audioPlayer.src = url;
-        this.audioPlayer.load();
-    }
-}
 
 class QuipView extends Backbone.View {
     get defaults() {
@@ -161,9 +57,9 @@ class QuipView extends Backbone.View {
 
         var id = this.model.get("id");
 
-        AudioPlayer.on("/" + id + "/paused", () => this.onPause());
-        AudioPlayer.on("/" + id + "/playing", () => this.onPlay());
-        AudioPlayer.on("/" + id + "/progress", (update) => this.onProgress(update));
+        AudioPlayer.on("/" + id + "/paused", () => this.onPause(), this);
+        AudioPlayer.on("/" + id + "/playing", () => this.onPlay(), this);
+        AudioPlayer.on("/" + id + "/progress", (update) => this.onProgress(update), this);
 
         this.render();
 
@@ -175,6 +71,11 @@ class QuipView extends Backbone.View {
         });
 
         //this.on(this.model, "change", this.render);
+    }
+
+    shutdown() {
+        AudioPlayer.off(null, null, this);
+        this.model.off();
     }
 
     loadModel() {
@@ -220,4 +121,4 @@ class QuipList extends Backbone.Collection {
 
 var Quips = new QuipList();
 
-export { QuipModel, QuipView, QuipList, Quips, AudioPlayerView };
+export { QuipModel, QuipView, QuipList, Quips };

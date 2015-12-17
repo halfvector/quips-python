@@ -2,12 +2,17 @@ import Backbone from 'backbone'
 import jQuery from 'jquery'
 import { ListenState, ListenStateCollection } from './models/ListenState'
 import { CurrentUserModel } from './models/CurrentUser'
+import { AudioPlayerView } from './audio-player'
 import Router from './router'
 
 $ = require('jquery');
 
 class Application {
     constructor() {
+
+    }
+
+    initialize() {
         var router = new Router();
 
         Backbone.$ = $;
@@ -15,7 +20,7 @@ class Application {
         //if (!Backbone.history.start({pushState: true, hashChange: false})) router.navigate('404', {trigger: true});
 
         // Use delegation to avoid initial DOM selection and allow all matching elements to bubble
-        $(document).delegate("a", "click", function(evt) {
+        $(document).delegate("a", "click", function (evt) {
             // Get the anchor href and protcol
             var href = $(this).attr("href");
             var protocol = this.protocol + "//";
@@ -34,6 +39,8 @@ class Application {
             }
         });
 
+        var audioPlayer = new AudioPlayerView({el: '#audio-player'});
+
         // load user
         var model = new CurrentUserModel();
         model.fetch().then(() => this.onModelLoaded(model));
@@ -47,6 +54,9 @@ class Application {
     }
 }
 
+export let app = new Application();
+
+
 $(() => {
     // setup raven to push messages to our sentry
     //Raven.config('https://d098712cb7064cf08b74d01b6f3be3da@app.getsentry.com/20973', {
@@ -57,7 +67,7 @@ $(() => {
         whitelistUrls: ['staging.couchpod.com', 'couchpod.com'] // production only
     }).install()
 
-    var app = new Application();
+    app.initialize();
 
     // for production, could wrap domReadyCallback and let raven handle any exceptions
 

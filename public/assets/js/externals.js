@@ -1,8 +1,8 @@
 /*!
   * =============================================================
   * Ender: open module JavaScript framework (https://enderjs.com)
-  * Build: ender build backbone@1.1.2 jquery vague-time
-  * Packages: ender-core@2.0.0 ender-commonjs@1.0.8 underscore@1.8.3 backbone@1.1.2 jquery@2.1.4 vague-time@1.3.0
+  * Build: ender build jquery vague-time backbone@1.2.3
+  * Packages: ender-core@2.0.0 ender-commonjs@1.0.8 jquery@2.1.4 vague-time@1.3.0 underscore@1.8.3 backbone@1.2.3
   * =============================================================
   */
 
@@ -285,3182 +285,6 @@
     ender.expose('Module', Module)
   }
   
-  Module.createPackage('underscore', {
-    'underscore': function (module, exports, require, global) {
-      //     Underscore.js 1.8.3
-      //     http://underscorejs.org
-      //     (c) 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-      //     Underscore may be freely distributed under the MIT license.
-      
-      (function() {
-      
-        // Baseline setup
-        // --------------
-      
-        // Establish the root object, `window` in the browser, or `exports` on the server.
-        var root = this;
-      
-        // Save the previous value of the `_` variable.
-        var previousUnderscore = root._;
-      
-        // Save bytes in the minified (but not gzipped) version:
-        var ArrayProto = Array.prototype, ObjProto = Object.prototype, FuncProto = Function.prototype;
-      
-        // Create quick reference variables for speed access to core prototypes.
-        var
-          push             = ArrayProto.push,
-          slice            = ArrayProto.slice,
-          toString         = ObjProto.toString,
-          hasOwnProperty   = ObjProto.hasOwnProperty;
-      
-        // All **ECMAScript 5** native function implementations that we hope to use
-        // are declared here.
-        var
-          nativeIsArray      = Array.isArray,
-          nativeKeys         = Object.keys,
-          nativeBind         = FuncProto.bind,
-          nativeCreate       = Object.create;
-      
-        // Naked function reference for surrogate-prototype-swapping.
-        var Ctor = function(){};
-      
-        // Create a safe reference to the Underscore object for use below.
-        var _ = function(obj) {
-          if (obj instanceof _) return obj;
-          if (!(this instanceof _)) return new _(obj);
-          this._wrapped = obj;
-        };
-      
-        // Export the Underscore object for **Node.js**, with
-        // backwards-compatibility for the old `require()` API. If we're in
-        // the browser, add `_` as a global object.
-        if (typeof exports !== 'undefined') {
-          if (typeof module !== 'undefined' && module.exports) {
-            exports = module.exports = _;
-          }
-          exports._ = _;
-        } else {
-          root._ = _;
-        }
-      
-        // Current version.
-        _.VERSION = '1.8.3';
-      
-        // Internal function that returns an efficient (for current engines) version
-        // of the passed-in callback, to be repeatedly applied in other Underscore
-        // functions.
-        var optimizeCb = function(func, context, argCount) {
-          if (context === void 0) return func;
-          switch (argCount == null ? 3 : argCount) {
-            case 1: return function(value) {
-              return func.call(context, value);
-            };
-            case 2: return function(value, other) {
-              return func.call(context, value, other);
-            };
-            case 3: return function(value, index, collection) {
-              return func.call(context, value, index, collection);
-            };
-            case 4: return function(accumulator, value, index, collection) {
-              return func.call(context, accumulator, value, index, collection);
-            };
-          }
-          return function() {
-            return func.apply(context, arguments);
-          };
-        };
-      
-        // A mostly-internal function to generate callbacks that can be applied
-        // to each element in a collection, returning the desired result — either
-        // identity, an arbitrary callback, a property matcher, or a property accessor.
-        var cb = function(value, context, argCount) {
-          if (value == null) return _.identity;
-          if (_.isFunction(value)) return optimizeCb(value, context, argCount);
-          if (_.isObject(value)) return _.matcher(value);
-          return _.property(value);
-        };
-        _.iteratee = function(value, context) {
-          return cb(value, context, Infinity);
-        };
-      
-        // An internal function for creating assigner functions.
-        var createAssigner = function(keysFunc, undefinedOnly) {
-          return function(obj) {
-            var length = arguments.length;
-            if (length < 2 || obj == null) return obj;
-            for (var index = 1; index < length; index++) {
-              var source = arguments[index],
-                  keys = keysFunc(source),
-                  l = keys.length;
-              for (var i = 0; i < l; i++) {
-                var key = keys[i];
-                if (!undefinedOnly || obj[key] === void 0) obj[key] = source[key];
-              }
-            }
-            return obj;
-          };
-        };
-      
-        // An internal function for creating a new object that inherits from another.
-        var baseCreate = function(prototype) {
-          if (!_.isObject(prototype)) return {};
-          if (nativeCreate) return nativeCreate(prototype);
-          Ctor.prototype = prototype;
-          var result = new Ctor;
-          Ctor.prototype = null;
-          return result;
-        };
-      
-        var property = function(key) {
-          return function(obj) {
-            return obj == null ? void 0 : obj[key];
-          };
-        };
-      
-        // Helper for collection methods to determine whether a collection
-        // should be iterated as an array or as an object
-        // Related: http://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength
-        // Avoids a very nasty iOS 8 JIT bug on ARM-64. #2094
-        var MAX_ARRAY_INDEX = Math.pow(2, 53) - 1;
-        var getLength = property('length');
-        var isArrayLike = function(collection) {
-          var length = getLength(collection);
-          return typeof length == 'number' && length >= 0 && length <= MAX_ARRAY_INDEX;
-        };
-      
-        // Collection Functions
-        // --------------------
-      
-        // The cornerstone, an `each` implementation, aka `forEach`.
-        // Handles raw objects in addition to array-likes. Treats all
-        // sparse array-likes as if they were dense.
-        _.each = _.forEach = function(obj, iteratee, context) {
-          iteratee = optimizeCb(iteratee, context);
-          var i, length;
-          if (isArrayLike(obj)) {
-            for (i = 0, length = obj.length; i < length; i++) {
-              iteratee(obj[i], i, obj);
-            }
-          } else {
-            var keys = _.keys(obj);
-            for (i = 0, length = keys.length; i < length; i++) {
-              iteratee(obj[keys[i]], keys[i], obj);
-            }
-          }
-          return obj;
-        };
-      
-        // Return the results of applying the iteratee to each element.
-        _.map = _.collect = function(obj, iteratee, context) {
-          iteratee = cb(iteratee, context);
-          var keys = !isArrayLike(obj) && _.keys(obj),
-              length = (keys || obj).length,
-              results = Array(length);
-          for (var index = 0; index < length; index++) {
-            var currentKey = keys ? keys[index] : index;
-            results[index] = iteratee(obj[currentKey], currentKey, obj);
-          }
-          return results;
-        };
-      
-        // Create a reducing function iterating left or right.
-        function createReduce(dir) {
-          // Optimized iterator function as using arguments.length
-          // in the main function will deoptimize the, see #1991.
-          function iterator(obj, iteratee, memo, keys, index, length) {
-            for (; index >= 0 && index < length; index += dir) {
-              var currentKey = keys ? keys[index] : index;
-              memo = iteratee(memo, obj[currentKey], currentKey, obj);
-            }
-            return memo;
-          }
-      
-          return function(obj, iteratee, memo, context) {
-            iteratee = optimizeCb(iteratee, context, 4);
-            var keys = !isArrayLike(obj) && _.keys(obj),
-                length = (keys || obj).length,
-                index = dir > 0 ? 0 : length - 1;
-            // Determine the initial value if none is provided.
-            if (arguments.length < 3) {
-              memo = obj[keys ? keys[index] : index];
-              index += dir;
-            }
-            return iterator(obj, iteratee, memo, keys, index, length);
-          };
-        }
-      
-        // **Reduce** builds up a single result from a list of values, aka `inject`,
-        // or `foldl`.
-        _.reduce = _.foldl = _.inject = createReduce(1);
-      
-        // The right-associative version of reduce, also known as `foldr`.
-        _.reduceRight = _.foldr = createReduce(-1);
-      
-        // Return the first value which passes a truth test. Aliased as `detect`.
-        _.find = _.detect = function(obj, predicate, context) {
-          var key;
-          if (isArrayLike(obj)) {
-            key = _.findIndex(obj, predicate, context);
-          } else {
-            key = _.findKey(obj, predicate, context);
-          }
-          if (key !== void 0 && key !== -1) return obj[key];
-        };
-      
-        // Return all the elements that pass a truth test.
-        // Aliased as `select`.
-        _.filter = _.select = function(obj, predicate, context) {
-          var results = [];
-          predicate = cb(predicate, context);
-          _.each(obj, function(value, index, list) {
-            if (predicate(value, index, list)) results.push(value);
-          });
-          return results;
-        };
-      
-        // Return all the elements for which a truth test fails.
-        _.reject = function(obj, predicate, context) {
-          return _.filter(obj, _.negate(cb(predicate)), context);
-        };
-      
-        // Determine whether all of the elements match a truth test.
-        // Aliased as `all`.
-        _.every = _.all = function(obj, predicate, context) {
-          predicate = cb(predicate, context);
-          var keys = !isArrayLike(obj) && _.keys(obj),
-              length = (keys || obj).length;
-          for (var index = 0; index < length; index++) {
-            var currentKey = keys ? keys[index] : index;
-            if (!predicate(obj[currentKey], currentKey, obj)) return false;
-          }
-          return true;
-        };
-      
-        // Determine if at least one element in the object matches a truth test.
-        // Aliased as `any`.
-        _.some = _.any = function(obj, predicate, context) {
-          predicate = cb(predicate, context);
-          var keys = !isArrayLike(obj) && _.keys(obj),
-              length = (keys || obj).length;
-          for (var index = 0; index < length; index++) {
-            var currentKey = keys ? keys[index] : index;
-            if (predicate(obj[currentKey], currentKey, obj)) return true;
-          }
-          return false;
-        };
-      
-        // Determine if the array or object contains a given item (using `===`).
-        // Aliased as `includes` and `include`.
-        _.contains = _.includes = _.include = function(obj, item, fromIndex, guard) {
-          if (!isArrayLike(obj)) obj = _.values(obj);
-          if (typeof fromIndex != 'number' || guard) fromIndex = 0;
-          return _.indexOf(obj, item, fromIndex) >= 0;
-        };
-      
-        // Invoke a method (with arguments) on every item in a collection.
-        _.invoke = function(obj, method) {
-          var args = slice.call(arguments, 2);
-          var isFunc = _.isFunction(method);
-          return _.map(obj, function(value) {
-            var func = isFunc ? method : value[method];
-            return func == null ? func : func.apply(value, args);
-          });
-        };
-      
-        // Convenience version of a common use case of `map`: fetching a property.
-        _.pluck = function(obj, key) {
-          return _.map(obj, _.property(key));
-        };
-      
-        // Convenience version of a common use case of `filter`: selecting only objects
-        // containing specific `key:value` pairs.
-        _.where = function(obj, attrs) {
-          return _.filter(obj, _.matcher(attrs));
-        };
-      
-        // Convenience version of a common use case of `find`: getting the first object
-        // containing specific `key:value` pairs.
-        _.findWhere = function(obj, attrs) {
-          return _.find(obj, _.matcher(attrs));
-        };
-      
-        // Return the maximum element (or element-based computation).
-        _.max = function(obj, iteratee, context) {
-          var result = -Infinity, lastComputed = -Infinity,
-              value, computed;
-          if (iteratee == null && obj != null) {
-            obj = isArrayLike(obj) ? obj : _.values(obj);
-            for (var i = 0, length = obj.length; i < length; i++) {
-              value = obj[i];
-              if (value > result) {
-                result = value;
-              }
-            }
-          } else {
-            iteratee = cb(iteratee, context);
-            _.each(obj, function(value, index, list) {
-              computed = iteratee(value, index, list);
-              if (computed > lastComputed || computed === -Infinity && result === -Infinity) {
-                result = value;
-                lastComputed = computed;
-              }
-            });
-          }
-          return result;
-        };
-      
-        // Return the minimum element (or element-based computation).
-        _.min = function(obj, iteratee, context) {
-          var result = Infinity, lastComputed = Infinity,
-              value, computed;
-          if (iteratee == null && obj != null) {
-            obj = isArrayLike(obj) ? obj : _.values(obj);
-            for (var i = 0, length = obj.length; i < length; i++) {
-              value = obj[i];
-              if (value < result) {
-                result = value;
-              }
-            }
-          } else {
-            iteratee = cb(iteratee, context);
-            _.each(obj, function(value, index, list) {
-              computed = iteratee(value, index, list);
-              if (computed < lastComputed || computed === Infinity && result === Infinity) {
-                result = value;
-                lastComputed = computed;
-              }
-            });
-          }
-          return result;
-        };
-      
-        // Shuffle a collection, using the modern version of the
-        // [Fisher-Yates shuffle](http://en.wikipedia.org/wiki/Fisher–Yates_shuffle).
-        _.shuffle = function(obj) {
-          var set = isArrayLike(obj) ? obj : _.values(obj);
-          var length = set.length;
-          var shuffled = Array(length);
-          for (var index = 0, rand; index < length; index++) {
-            rand = _.random(0, index);
-            if (rand !== index) shuffled[index] = shuffled[rand];
-            shuffled[rand] = set[index];
-          }
-          return shuffled;
-        };
-      
-        // Sample **n** random values from a collection.
-        // If **n** is not specified, returns a single random element.
-        // The internal `guard` argument allows it to work with `map`.
-        _.sample = function(obj, n, guard) {
-          if (n == null || guard) {
-            if (!isArrayLike(obj)) obj = _.values(obj);
-            return obj[_.random(obj.length - 1)];
-          }
-          return _.shuffle(obj).slice(0, Math.max(0, n));
-        };
-      
-        // Sort the object's values by a criterion produced by an iteratee.
-        _.sortBy = function(obj, iteratee, context) {
-          iteratee = cb(iteratee, context);
-          return _.pluck(_.map(obj, function(value, index, list) {
-            return {
-              value: value,
-              index: index,
-              criteria: iteratee(value, index, list)
-            };
-          }).sort(function(left, right) {
-            var a = left.criteria;
-            var b = right.criteria;
-            if (a !== b) {
-              if (a > b || a === void 0) return 1;
-              if (a < b || b === void 0) return -1;
-            }
-            return left.index - right.index;
-          }), 'value');
-        };
-      
-        // An internal function used for aggregate "group by" operations.
-        var group = function(behavior) {
-          return function(obj, iteratee, context) {
-            var result = {};
-            iteratee = cb(iteratee, context);
-            _.each(obj, function(value, index) {
-              var key = iteratee(value, index, obj);
-              behavior(result, value, key);
-            });
-            return result;
-          };
-        };
-      
-        // Groups the object's values by a criterion. Pass either a string attribute
-        // to group by, or a function that returns the criterion.
-        _.groupBy = group(function(result, value, key) {
-          if (_.has(result, key)) result[key].push(value); else result[key] = [value];
-        });
-      
-        // Indexes the object's values by a criterion, similar to `groupBy`, but for
-        // when you know that your index values will be unique.
-        _.indexBy = group(function(result, value, key) {
-          result[key] = value;
-        });
-      
-        // Counts instances of an object that group by a certain criterion. Pass
-        // either a string attribute to count by, or a function that returns the
-        // criterion.
-        _.countBy = group(function(result, value, key) {
-          if (_.has(result, key)) result[key]++; else result[key] = 1;
-        });
-      
-        // Safely create a real, live array from anything iterable.
-        _.toArray = function(obj) {
-          if (!obj) return [];
-          if (_.isArray(obj)) return slice.call(obj);
-          if (isArrayLike(obj)) return _.map(obj, _.identity);
-          return _.values(obj);
-        };
-      
-        // Return the number of elements in an object.
-        _.size = function(obj) {
-          if (obj == null) return 0;
-          return isArrayLike(obj) ? obj.length : _.keys(obj).length;
-        };
-      
-        // Split a collection into two arrays: one whose elements all satisfy the given
-        // predicate, and one whose elements all do not satisfy the predicate.
-        _.partition = function(obj, predicate, context) {
-          predicate = cb(predicate, context);
-          var pass = [], fail = [];
-          _.each(obj, function(value, key, obj) {
-            (predicate(value, key, obj) ? pass : fail).push(value);
-          });
-          return [pass, fail];
-        };
-      
-        // Array Functions
-        // ---------------
-      
-        // Get the first element of an array. Passing **n** will return the first N
-        // values in the array. Aliased as `head` and `take`. The **guard** check
-        // allows it to work with `_.map`.
-        _.first = _.head = _.take = function(array, n, guard) {
-          if (array == null) return void 0;
-          if (n == null || guard) return array[0];
-          return _.initial(array, array.length - n);
-        };
-      
-        // Returns everything but the last entry of the array. Especially useful on
-        // the arguments object. Passing **n** will return all the values in
-        // the array, excluding the last N.
-        _.initial = function(array, n, guard) {
-          return slice.call(array, 0, Math.max(0, array.length - (n == null || guard ? 1 : n)));
-        };
-      
-        // Get the last element of an array. Passing **n** will return the last N
-        // values in the array.
-        _.last = function(array, n, guard) {
-          if (array == null) return void 0;
-          if (n == null || guard) return array[array.length - 1];
-          return _.rest(array, Math.max(0, array.length - n));
-        };
-      
-        // Returns everything but the first entry of the array. Aliased as `tail` and `drop`.
-        // Especially useful on the arguments object. Passing an **n** will return
-        // the rest N values in the array.
-        _.rest = _.tail = _.drop = function(array, n, guard) {
-          return slice.call(array, n == null || guard ? 1 : n);
-        };
-      
-        // Trim out all falsy values from an array.
-        _.compact = function(array) {
-          return _.filter(array, _.identity);
-        };
-      
-        // Internal implementation of a recursive `flatten` function.
-        var flatten = function(input, shallow, strict, startIndex) {
-          var output = [], idx = 0;
-          for (var i = startIndex || 0, length = getLength(input); i < length; i++) {
-            var value = input[i];
-            if (isArrayLike(value) && (_.isArray(value) || _.isArguments(value))) {
-              //flatten current level of array or arguments object
-              if (!shallow) value = flatten(value, shallow, strict);
-              var j = 0, len = value.length;
-              output.length += len;
-              while (j < len) {
-                output[idx++] = value[j++];
-              }
-            } else if (!strict) {
-              output[idx++] = value;
-            }
-          }
-          return output;
-        };
-      
-        // Flatten out an array, either recursively (by default), or just one level.
-        _.flatten = function(array, shallow) {
-          return flatten(array, shallow, false);
-        };
-      
-        // Return a version of the array that does not contain the specified value(s).
-        _.without = function(array) {
-          return _.difference(array, slice.call(arguments, 1));
-        };
-      
-        // Produce a duplicate-free version of the array. If the array has already
-        // been sorted, you have the option of using a faster algorithm.
-        // Aliased as `unique`.
-        _.uniq = _.unique = function(array, isSorted, iteratee, context) {
-          if (!_.isBoolean(isSorted)) {
-            context = iteratee;
-            iteratee = isSorted;
-            isSorted = false;
-          }
-          if (iteratee != null) iteratee = cb(iteratee, context);
-          var result = [];
-          var seen = [];
-          for (var i = 0, length = getLength(array); i < length; i++) {
-            var value = array[i],
-                computed = iteratee ? iteratee(value, i, array) : value;
-            if (isSorted) {
-              if (!i || seen !== computed) result.push(value);
-              seen = computed;
-            } else if (iteratee) {
-              if (!_.contains(seen, computed)) {
-                seen.push(computed);
-                result.push(value);
-              }
-            } else if (!_.contains(result, value)) {
-              result.push(value);
-            }
-          }
-          return result;
-        };
-      
-        // Produce an array that contains the union: each distinct element from all of
-        // the passed-in arrays.
-        _.union = function() {
-          return _.uniq(flatten(arguments, true, true));
-        };
-      
-        // Produce an array that contains every item shared between all the
-        // passed-in arrays.
-        _.intersection = function(array) {
-          var result = [];
-          var argsLength = arguments.length;
-          for (var i = 0, length = getLength(array); i < length; i++) {
-            var item = array[i];
-            if (_.contains(result, item)) continue;
-            for (var j = 1; j < argsLength; j++) {
-              if (!_.contains(arguments[j], item)) break;
-            }
-            if (j === argsLength) result.push(item);
-          }
-          return result;
-        };
-      
-        // Take the difference between one array and a number of other arrays.
-        // Only the elements present in just the first array will remain.
-        _.difference = function(array) {
-          var rest = flatten(arguments, true, true, 1);
-          return _.filter(array, function(value){
-            return !_.contains(rest, value);
-          });
-        };
-      
-        // Zip together multiple lists into a single array -- elements that share
-        // an index go together.
-        _.zip = function() {
-          return _.unzip(arguments);
-        };
-      
-        // Complement of _.zip. Unzip accepts an array of arrays and groups
-        // each array's elements on shared indices
-        _.unzip = function(array) {
-          var length = array && _.max(array, getLength).length || 0;
-          var result = Array(length);
-      
-          for (var index = 0; index < length; index++) {
-            result[index] = _.pluck(array, index);
-          }
-          return result;
-        };
-      
-        // Converts lists into objects. Pass either a single array of `[key, value]`
-        // pairs, or two parallel arrays of the same length -- one of keys, and one of
-        // the corresponding values.
-        _.object = function(list, values) {
-          var result = {};
-          for (var i = 0, length = getLength(list); i < length; i++) {
-            if (values) {
-              result[list[i]] = values[i];
-            } else {
-              result[list[i][0]] = list[i][1];
-            }
-          }
-          return result;
-        };
-      
-        // Generator function to create the findIndex and findLastIndex functions
-        function createPredicateIndexFinder(dir) {
-          return function(array, predicate, context) {
-            predicate = cb(predicate, context);
-            var length = getLength(array);
-            var index = dir > 0 ? 0 : length - 1;
-            for (; index >= 0 && index < length; index += dir) {
-              if (predicate(array[index], index, array)) return index;
-            }
-            return -1;
-          };
-        }
-      
-        // Returns the first index on an array-like that passes a predicate test
-        _.findIndex = createPredicateIndexFinder(1);
-        _.findLastIndex = createPredicateIndexFinder(-1);
-      
-        // Use a comparator function to figure out the smallest index at which
-        // an object should be inserted so as to maintain order. Uses binary search.
-        _.sortedIndex = function(array, obj, iteratee, context) {
-          iteratee = cb(iteratee, context, 1);
-          var value = iteratee(obj);
-          var low = 0, high = getLength(array);
-          while (low < high) {
-            var mid = Math.floor((low + high) / 2);
-            if (iteratee(array[mid]) < value) low = mid + 1; else high = mid;
-          }
-          return low;
-        };
-      
-        // Generator function to create the indexOf and lastIndexOf functions
-        function createIndexFinder(dir, predicateFind, sortedIndex) {
-          return function(array, item, idx) {
-            var i = 0, length = getLength(array);
-            if (typeof idx == 'number') {
-              if (dir > 0) {
-                  i = idx >= 0 ? idx : Math.max(idx + length, i);
-              } else {
-                  length = idx >= 0 ? Math.min(idx + 1, length) : idx + length + 1;
-              }
-            } else if (sortedIndex && idx && length) {
-              idx = sortedIndex(array, item);
-              return array[idx] === item ? idx : -1;
-            }
-            if (item !== item) {
-              idx = predicateFind(slice.call(array, i, length), _.isNaN);
-              return idx >= 0 ? idx + i : -1;
-            }
-            for (idx = dir > 0 ? i : length - 1; idx >= 0 && idx < length; idx += dir) {
-              if (array[idx] === item) return idx;
-            }
-            return -1;
-          };
-        }
-      
-        // Return the position of the first occurrence of an item in an array,
-        // or -1 if the item is not included in the array.
-        // If the array is large and already in sort order, pass `true`
-        // for **isSorted** to use binary search.
-        _.indexOf = createIndexFinder(1, _.findIndex, _.sortedIndex);
-        _.lastIndexOf = createIndexFinder(-1, _.findLastIndex);
-      
-        // Generate an integer Array containing an arithmetic progression. A port of
-        // the native Python `range()` function. See
-        // [the Python documentation](http://docs.python.org/library/functions.html#range).
-        _.range = function(start, stop, step) {
-          if (stop == null) {
-            stop = start || 0;
-            start = 0;
-          }
-          step = step || 1;
-      
-          var length = Math.max(Math.ceil((stop - start) / step), 0);
-          var range = Array(length);
-      
-          for (var idx = 0; idx < length; idx++, start += step) {
-            range[idx] = start;
-          }
-      
-          return range;
-        };
-      
-        // Function (ahem) Functions
-        // ------------------
-      
-        // Determines whether to execute a function as a constructor
-        // or a normal function with the provided arguments
-        var executeBound = function(sourceFunc, boundFunc, context, callingContext, args) {
-          if (!(callingContext instanceof boundFunc)) return sourceFunc.apply(context, args);
-          var self = baseCreate(sourceFunc.prototype);
-          var result = sourceFunc.apply(self, args);
-          if (_.isObject(result)) return result;
-          return self;
-        };
-      
-        // Create a function bound to a given object (assigning `this`, and arguments,
-        // optionally). Delegates to **ECMAScript 5**'s native `Function.bind` if
-        // available.
-        _.bind = function(func, context) {
-          if (nativeBind && func.bind === nativeBind) return nativeBind.apply(func, slice.call(arguments, 1));
-          if (!_.isFunction(func)) throw new TypeError('Bind must be called on a function');
-          var args = slice.call(arguments, 2);
-          var bound = function() {
-            return executeBound(func, bound, context, this, args.concat(slice.call(arguments)));
-          };
-          return bound;
-        };
-      
-        // Partially apply a function by creating a version that has had some of its
-        // arguments pre-filled, without changing its dynamic `this` context. _ acts
-        // as a placeholder, allowing any combination of arguments to be pre-filled.
-        _.partial = function(func) {
-          var boundArgs = slice.call(arguments, 1);
-          var bound = function() {
-            var position = 0, length = boundArgs.length;
-            var args = Array(length);
-            for (var i = 0; i < length; i++) {
-              args[i] = boundArgs[i] === _ ? arguments[position++] : boundArgs[i];
-            }
-            while (position < arguments.length) args.push(arguments[position++]);
-            return executeBound(func, bound, this, this, args);
-          };
-          return bound;
-        };
-      
-        // Bind a number of an object's methods to that object. Remaining arguments
-        // are the method names to be bound. Useful for ensuring that all callbacks
-        // defined on an object belong to it.
-        _.bindAll = function(obj) {
-          var i, length = arguments.length, key;
-          if (length <= 1) throw new Error('bindAll must be passed function names');
-          for (i = 1; i < length; i++) {
-            key = arguments[i];
-            obj[key] = _.bind(obj[key], obj);
-          }
-          return obj;
-        };
-      
-        // Memoize an expensive function by storing its results.
-        _.memoize = function(func, hasher) {
-          var memoize = function(key) {
-            var cache = memoize.cache;
-            var address = '' + (hasher ? hasher.apply(this, arguments) : key);
-            if (!_.has(cache, address)) cache[address] = func.apply(this, arguments);
-            return cache[address];
-          };
-          memoize.cache = {};
-          return memoize;
-        };
-      
-        // Delays a function for the given number of milliseconds, and then calls
-        // it with the arguments supplied.
-        _.delay = function(func, wait) {
-          var args = slice.call(arguments, 2);
-          return setTimeout(function(){
-            return func.apply(null, args);
-          }, wait);
-        };
-      
-        // Defers a function, scheduling it to run after the current call stack has
-        // cleared.
-        _.defer = _.partial(_.delay, _, 1);
-      
-        // Returns a function, that, when invoked, will only be triggered at most once
-        // during a given window of time. Normally, the throttled function will run
-        // as much as it can, without ever going more than once per `wait` duration;
-        // but if you'd like to disable the execution on the leading edge, pass
-        // `{leading: false}`. To disable execution on the trailing edge, ditto.
-        _.throttle = function(func, wait, options) {
-          var context, args, result;
-          var timeout = null;
-          var previous = 0;
-          if (!options) options = {};
-          var later = function() {
-            previous = options.leading === false ? 0 : _.now();
-            timeout = null;
-            result = func.apply(context, args);
-            if (!timeout) context = args = null;
-          };
-          return function() {
-            var now = _.now();
-            if (!previous && options.leading === false) previous = now;
-            var remaining = wait - (now - previous);
-            context = this;
-            args = arguments;
-            if (remaining <= 0 || remaining > wait) {
-              if (timeout) {
-                clearTimeout(timeout);
-                timeout = null;
-              }
-              previous = now;
-              result = func.apply(context, args);
-              if (!timeout) context = args = null;
-            } else if (!timeout && options.trailing !== false) {
-              timeout = setTimeout(later, remaining);
-            }
-            return result;
-          };
-        };
-      
-        // Returns a function, that, as long as it continues to be invoked, will not
-        // be triggered. The function will be called after it stops being called for
-        // N milliseconds. If `immediate` is passed, trigger the function on the
-        // leading edge, instead of the trailing.
-        _.debounce = function(func, wait, immediate) {
-          var timeout, args, context, timestamp, result;
-      
-          var later = function() {
-            var last = _.now() - timestamp;
-      
-            if (last < wait && last >= 0) {
-              timeout = setTimeout(later, wait - last);
-            } else {
-              timeout = null;
-              if (!immediate) {
-                result = func.apply(context, args);
-                if (!timeout) context = args = null;
-              }
-            }
-          };
-      
-          return function() {
-            context = this;
-            args = arguments;
-            timestamp = _.now();
-            var callNow = immediate && !timeout;
-            if (!timeout) timeout = setTimeout(later, wait);
-            if (callNow) {
-              result = func.apply(context, args);
-              context = args = null;
-            }
-      
-            return result;
-          };
-        };
-      
-        // Returns the first function passed as an argument to the second,
-        // allowing you to adjust arguments, run code before and after, and
-        // conditionally execute the original function.
-        _.wrap = function(func, wrapper) {
-          return _.partial(wrapper, func);
-        };
-      
-        // Returns a negated version of the passed-in predicate.
-        _.negate = function(predicate) {
-          return function() {
-            return !predicate.apply(this, arguments);
-          };
-        };
-      
-        // Returns a function that is the composition of a list of functions, each
-        // consuming the return value of the function that follows.
-        _.compose = function() {
-          var args = arguments;
-          var start = args.length - 1;
-          return function() {
-            var i = start;
-            var result = args[start].apply(this, arguments);
-            while (i--) result = args[i].call(this, result);
-            return result;
-          };
-        };
-      
-        // Returns a function that will only be executed on and after the Nth call.
-        _.after = function(times, func) {
-          return function() {
-            if (--times < 1) {
-              return func.apply(this, arguments);
-            }
-          };
-        };
-      
-        // Returns a function that will only be executed up to (but not including) the Nth call.
-        _.before = function(times, func) {
-          var memo;
-          return function() {
-            if (--times > 0) {
-              memo = func.apply(this, arguments);
-            }
-            if (times <= 1) func = null;
-            return memo;
-          };
-        };
-      
-        // Returns a function that will be executed at most one time, no matter how
-        // often you call it. Useful for lazy initialization.
-        _.once = _.partial(_.before, 2);
-      
-        // Object Functions
-        // ----------------
-      
-        // Keys in IE < 9 that won't be iterated by `for key in ...` and thus missed.
-        var hasEnumBug = !{toString: null}.propertyIsEnumerable('toString');
-        var nonEnumerableProps = ['valueOf', 'isPrototypeOf', 'toString',
-                            'propertyIsEnumerable', 'hasOwnProperty', 'toLocaleString'];
-      
-        function collectNonEnumProps(obj, keys) {
-          var nonEnumIdx = nonEnumerableProps.length;
-          var constructor = obj.constructor;
-          var proto = (_.isFunction(constructor) && constructor.prototype) || ObjProto;
-      
-          // Constructor is a special case.
-          var prop = 'constructor';
-          if (_.has(obj, prop) && !_.contains(keys, prop)) keys.push(prop);
-      
-          while (nonEnumIdx--) {
-            prop = nonEnumerableProps[nonEnumIdx];
-            if (prop in obj && obj[prop] !== proto[prop] && !_.contains(keys, prop)) {
-              keys.push(prop);
-            }
-          }
-        }
-      
-        // Retrieve the names of an object's own properties.
-        // Delegates to **ECMAScript 5**'s native `Object.keys`
-        _.keys = function(obj) {
-          if (!_.isObject(obj)) return [];
-          if (nativeKeys) return nativeKeys(obj);
-          var keys = [];
-          for (var key in obj) if (_.has(obj, key)) keys.push(key);
-          // Ahem, IE < 9.
-          if (hasEnumBug) collectNonEnumProps(obj, keys);
-          return keys;
-        };
-      
-        // Retrieve all the property names of an object.
-        _.allKeys = function(obj) {
-          if (!_.isObject(obj)) return [];
-          var keys = [];
-          for (var key in obj) keys.push(key);
-          // Ahem, IE < 9.
-          if (hasEnumBug) collectNonEnumProps(obj, keys);
-          return keys;
-        };
-      
-        // Retrieve the values of an object's properties.
-        _.values = function(obj) {
-          var keys = _.keys(obj);
-          var length = keys.length;
-          var values = Array(length);
-          for (var i = 0; i < length; i++) {
-            values[i] = obj[keys[i]];
-          }
-          return values;
-        };
-      
-        // Returns the results of applying the iteratee to each element of the object
-        // In contrast to _.map it returns an object
-        _.mapObject = function(obj, iteratee, context) {
-          iteratee = cb(iteratee, context);
-          var keys =  _.keys(obj),
-                length = keys.length,
-                results = {},
-                currentKey;
-            for (var index = 0; index < length; index++) {
-              currentKey = keys[index];
-              results[currentKey] = iteratee(obj[currentKey], currentKey, obj);
-            }
-            return results;
-        };
-      
-        // Convert an object into a list of `[key, value]` pairs.
-        _.pairs = function(obj) {
-          var keys = _.keys(obj);
-          var length = keys.length;
-          var pairs = Array(length);
-          for (var i = 0; i < length; i++) {
-            pairs[i] = [keys[i], obj[keys[i]]];
-          }
-          return pairs;
-        };
-      
-        // Invert the keys and values of an object. The values must be serializable.
-        _.invert = function(obj) {
-          var result = {};
-          var keys = _.keys(obj);
-          for (var i = 0, length = keys.length; i < length; i++) {
-            result[obj[keys[i]]] = keys[i];
-          }
-          return result;
-        };
-      
-        // Return a sorted list of the function names available on the object.
-        // Aliased as `methods`
-        _.functions = _.methods = function(obj) {
-          var names = [];
-          for (var key in obj) {
-            if (_.isFunction(obj[key])) names.push(key);
-          }
-          return names.sort();
-        };
-      
-        // Extend a given object with all the properties in passed-in object(s).
-        _.extend = createAssigner(_.allKeys);
-      
-        // Assigns a given object with all the own properties in the passed-in object(s)
-        // (https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/assign)
-        _.extendOwn = _.assign = createAssigner(_.keys);
-      
-        // Returns the first key on an object that passes a predicate test
-        _.findKey = function(obj, predicate, context) {
-          predicate = cb(predicate, context);
-          var keys = _.keys(obj), key;
-          for (var i = 0, length = keys.length; i < length; i++) {
-            key = keys[i];
-            if (predicate(obj[key], key, obj)) return key;
-          }
-        };
-      
-        // Return a copy of the object only containing the whitelisted properties.
-        _.pick = function(object, oiteratee, context) {
-          var result = {}, obj = object, iteratee, keys;
-          if (obj == null) return result;
-          if (_.isFunction(oiteratee)) {
-            keys = _.allKeys(obj);
-            iteratee = optimizeCb(oiteratee, context);
-          } else {
-            keys = flatten(arguments, false, false, 1);
-            iteratee = function(value, key, obj) { return key in obj; };
-            obj = Object(obj);
-          }
-          for (var i = 0, length = keys.length; i < length; i++) {
-            var key = keys[i];
-            var value = obj[key];
-            if (iteratee(value, key, obj)) result[key] = value;
-          }
-          return result;
-        };
-      
-         // Return a copy of the object without the blacklisted properties.
-        _.omit = function(obj, iteratee, context) {
-          if (_.isFunction(iteratee)) {
-            iteratee = _.negate(iteratee);
-          } else {
-            var keys = _.map(flatten(arguments, false, false, 1), String);
-            iteratee = function(value, key) {
-              return !_.contains(keys, key);
-            };
-          }
-          return _.pick(obj, iteratee, context);
-        };
-      
-        // Fill in a given object with default properties.
-        _.defaults = createAssigner(_.allKeys, true);
-      
-        // Creates an object that inherits from the given prototype object.
-        // If additional properties are provided then they will be added to the
-        // created object.
-        _.create = function(prototype, props) {
-          var result = baseCreate(prototype);
-          if (props) _.extendOwn(result, props);
-          return result;
-        };
-      
-        // Create a (shallow-cloned) duplicate of an object.
-        _.clone = function(obj) {
-          if (!_.isObject(obj)) return obj;
-          return _.isArray(obj) ? obj.slice() : _.extend({}, obj);
-        };
-      
-        // Invokes interceptor with the obj, and then returns obj.
-        // The primary purpose of this method is to "tap into" a method chain, in
-        // order to perform operations on intermediate results within the chain.
-        _.tap = function(obj, interceptor) {
-          interceptor(obj);
-          return obj;
-        };
-      
-        // Returns whether an object has a given set of `key:value` pairs.
-        _.isMatch = function(object, attrs) {
-          var keys = _.keys(attrs), length = keys.length;
-          if (object == null) return !length;
-          var obj = Object(object);
-          for (var i = 0; i < length; i++) {
-            var key = keys[i];
-            if (attrs[key] !== obj[key] || !(key in obj)) return false;
-          }
-          return true;
-        };
-      
-      
-        // Internal recursive comparison function for `isEqual`.
-        var eq = function(a, b, aStack, bStack) {
-          // Identical objects are equal. `0 === -0`, but they aren't identical.
-          // See the [Harmony `egal` proposal](http://wiki.ecmascript.org/doku.php?id=harmony:egal).
-          if (a === b) return a !== 0 || 1 / a === 1 / b;
-          // A strict comparison is necessary because `null == undefined`.
-          if (a == null || b == null) return a === b;
-          // Unwrap any wrapped objects.
-          if (a instanceof _) a = a._wrapped;
-          if (b instanceof _) b = b._wrapped;
-          // Compare `[[Class]]` names.
-          var className = toString.call(a);
-          if (className !== toString.call(b)) return false;
-          switch (className) {
-            // Strings, numbers, regular expressions, dates, and booleans are compared by value.
-            case '[object RegExp]':
-            // RegExps are coerced to strings for comparison (Note: '' + /a/i === '/a/i')
-            case '[object String]':
-              // Primitives and their corresponding object wrappers are equivalent; thus, `"5"` is
-              // equivalent to `new String("5")`.
-              return '' + a === '' + b;
-            case '[object Number]':
-              // `NaN`s are equivalent, but non-reflexive.
-              // Object(NaN) is equivalent to NaN
-              if (+a !== +a) return +b !== +b;
-              // An `egal` comparison is performed for other numeric values.
-              return +a === 0 ? 1 / +a === 1 / b : +a === +b;
-            case '[object Date]':
-            case '[object Boolean]':
-              // Coerce dates and booleans to numeric primitive values. Dates are compared by their
-              // millisecond representations. Note that invalid dates with millisecond representations
-              // of `NaN` are not equivalent.
-              return +a === +b;
-          }
-      
-          var areArrays = className === '[object Array]';
-          if (!areArrays) {
-            if (typeof a != 'object' || typeof b != 'object') return false;
-      
-            // Objects with different constructors are not equivalent, but `Object`s or `Array`s
-            // from different frames are.
-            var aCtor = a.constructor, bCtor = b.constructor;
-            if (aCtor !== bCtor && !(_.isFunction(aCtor) && aCtor instanceof aCtor &&
-                                     _.isFunction(bCtor) && bCtor instanceof bCtor)
-                                && ('constructor' in a && 'constructor' in b)) {
-              return false;
-            }
-          }
-          // Assume equality for cyclic structures. The algorithm for detecting cyclic
-          // structures is adapted from ES 5.1 section 15.12.3, abstract operation `JO`.
-      
-          // Initializing stack of traversed objects.
-          // It's done here since we only need them for objects and arrays comparison.
-          aStack = aStack || [];
-          bStack = bStack || [];
-          var length = aStack.length;
-          while (length--) {
-            // Linear search. Performance is inversely proportional to the number of
-            // unique nested structures.
-            if (aStack[length] === a) return bStack[length] === b;
-          }
-      
-          // Add the first object to the stack of traversed objects.
-          aStack.push(a);
-          bStack.push(b);
-      
-          // Recursively compare objects and arrays.
-          if (areArrays) {
-            // Compare array lengths to determine if a deep comparison is necessary.
-            length = a.length;
-            if (length !== b.length) return false;
-            // Deep compare the contents, ignoring non-numeric properties.
-            while (length--) {
-              if (!eq(a[length], b[length], aStack, bStack)) return false;
-            }
-          } else {
-            // Deep compare objects.
-            var keys = _.keys(a), key;
-            length = keys.length;
-            // Ensure that both objects contain the same number of properties before comparing deep equality.
-            if (_.keys(b).length !== length) return false;
-            while (length--) {
-              // Deep compare each member
-              key = keys[length];
-              if (!(_.has(b, key) && eq(a[key], b[key], aStack, bStack))) return false;
-            }
-          }
-          // Remove the first object from the stack of traversed objects.
-          aStack.pop();
-          bStack.pop();
-          return true;
-        };
-      
-        // Perform a deep comparison to check if two objects are equal.
-        _.isEqual = function(a, b) {
-          return eq(a, b);
-        };
-      
-        // Is a given array, string, or object empty?
-        // An "empty" object has no enumerable own-properties.
-        _.isEmpty = function(obj) {
-          if (obj == null) return true;
-          if (isArrayLike(obj) && (_.isArray(obj) || _.isString(obj) || _.isArguments(obj))) return obj.length === 0;
-          return _.keys(obj).length === 0;
-        };
-      
-        // Is a given value a DOM element?
-        _.isElement = function(obj) {
-          return !!(obj && obj.nodeType === 1);
-        };
-      
-        // Is a given value an array?
-        // Delegates to ECMA5's native Array.isArray
-        _.isArray = nativeIsArray || function(obj) {
-          return toString.call(obj) === '[object Array]';
-        };
-      
-        // Is a given variable an object?
-        _.isObject = function(obj) {
-          var type = typeof obj;
-          return type === 'function' || type === 'object' && !!obj;
-        };
-      
-        // Add some isType methods: isArguments, isFunction, isString, isNumber, isDate, isRegExp, isError.
-        _.each(['Arguments', 'Function', 'String', 'Number', 'Date', 'RegExp', 'Error'], function(name) {
-          _['is' + name] = function(obj) {
-            return toString.call(obj) === '[object ' + name + ']';
-          };
-        });
-      
-        // Define a fallback version of the method in browsers (ahem, IE < 9), where
-        // there isn't any inspectable "Arguments" type.
-        if (!_.isArguments(arguments)) {
-          _.isArguments = function(obj) {
-            return _.has(obj, 'callee');
-          };
-        }
-      
-        // Optimize `isFunction` if appropriate. Work around some typeof bugs in old v8,
-        // IE 11 (#1621), and in Safari 8 (#1929).
-        if (typeof /./ != 'function' && typeof Int8Array != 'object') {
-          _.isFunction = function(obj) {
-            return typeof obj == 'function' || false;
-          };
-        }
-      
-        // Is a given object a finite number?
-        _.isFinite = function(obj) {
-          return isFinite(obj) && !isNaN(parseFloat(obj));
-        };
-      
-        // Is the given value `NaN`? (NaN is the only number which does not equal itself).
-        _.isNaN = function(obj) {
-          return _.isNumber(obj) && obj !== +obj;
-        };
-      
-        // Is a given value a boolean?
-        _.isBoolean = function(obj) {
-          return obj === true || obj === false || toString.call(obj) === '[object Boolean]';
-        };
-      
-        // Is a given value equal to null?
-        _.isNull = function(obj) {
-          return obj === null;
-        };
-      
-        // Is a given variable undefined?
-        _.isUndefined = function(obj) {
-          return obj === void 0;
-        };
-      
-        // Shortcut function for checking if an object has a given property directly
-        // on itself (in other words, not on a prototype).
-        _.has = function(obj, key) {
-          return obj != null && hasOwnProperty.call(obj, key);
-        };
-      
-        // Utility Functions
-        // -----------------
-      
-        // Run Underscore.js in *noConflict* mode, returning the `_` variable to its
-        // previous owner. Returns a reference to the Underscore object.
-        _.noConflict = function() {
-          root._ = previousUnderscore;
-          return this;
-        };
-      
-        // Keep the identity function around for default iteratees.
-        _.identity = function(value) {
-          return value;
-        };
-      
-        // Predicate-generating functions. Often useful outside of Underscore.
-        _.constant = function(value) {
-          return function() {
-            return value;
-          };
-        };
-      
-        _.noop = function(){};
-      
-        _.property = property;
-      
-        // Generates a function for a given object that returns a given property.
-        _.propertyOf = function(obj) {
-          return obj == null ? function(){} : function(key) {
-            return obj[key];
-          };
-        };
-      
-        // Returns a predicate for checking whether an object has a given set of
-        // `key:value` pairs.
-        _.matcher = _.matches = function(attrs) {
-          attrs = _.extendOwn({}, attrs);
-          return function(obj) {
-            return _.isMatch(obj, attrs);
-          };
-        };
-      
-        // Run a function **n** times.
-        _.times = function(n, iteratee, context) {
-          var accum = Array(Math.max(0, n));
-          iteratee = optimizeCb(iteratee, context, 1);
-          for (var i = 0; i < n; i++) accum[i] = iteratee(i);
-          return accum;
-        };
-      
-        // Return a random integer between min and max (inclusive).
-        _.random = function(min, max) {
-          if (max == null) {
-            max = min;
-            min = 0;
-          }
-          return min + Math.floor(Math.random() * (max - min + 1));
-        };
-      
-        // A (possibly faster) way to get the current timestamp as an integer.
-        _.now = Date.now || function() {
-          return new Date().getTime();
-        };
-      
-         // List of HTML entities for escaping.
-        var escapeMap = {
-          '&': '&amp;',
-          '<': '&lt;',
-          '>': '&gt;',
-          '"': '&quot;',
-          "'": '&#x27;',
-          '`': '&#x60;'
-        };
-        var unescapeMap = _.invert(escapeMap);
-      
-        // Functions for escaping and unescaping strings to/from HTML interpolation.
-        var createEscaper = function(map) {
-          var escaper = function(match) {
-            return map[match];
-          };
-          // Regexes for identifying a key that needs to be escaped
-          var source = '(?:' + _.keys(map).join('|') + ')';
-          var testRegexp = RegExp(source);
-          var replaceRegexp = RegExp(source, 'g');
-          return function(string) {
-            string = string == null ? '' : '' + string;
-            return testRegexp.test(string) ? string.replace(replaceRegexp, escaper) : string;
-          };
-        };
-        _.escape = createEscaper(escapeMap);
-        _.unescape = createEscaper(unescapeMap);
-      
-        // If the value of the named `property` is a function then invoke it with the
-        // `object` as context; otherwise, return it.
-        _.result = function(object, property, fallback) {
-          var value = object == null ? void 0 : object[property];
-          if (value === void 0) {
-            value = fallback;
-          }
-          return _.isFunction(value) ? value.call(object) : value;
-        };
-      
-        // Generate a unique integer id (unique within the entire client session).
-        // Useful for temporary DOM ids.
-        var idCounter = 0;
-        _.uniqueId = function(prefix) {
-          var id = ++idCounter + '';
-          return prefix ? prefix + id : id;
-        };
-      
-        // By default, Underscore uses ERB-style template delimiters, change the
-        // following template settings to use alternative delimiters.
-        _.templateSettings = {
-          evaluate    : /<%([\s\S]+?)%>/g,
-          interpolate : /<%=([\s\S]+?)%>/g,
-          escape      : /<%-([\s\S]+?)%>/g
-        };
-      
-        // When customizing `templateSettings`, if you don't want to define an
-        // interpolation, evaluation or escaping regex, we need one that is
-        // guaranteed not to match.
-        var noMatch = /(.)^/;
-      
-        // Certain characters need to be escaped so that they can be put into a
-        // string literal.
-        var escapes = {
-          "'":      "'",
-          '\\':     '\\',
-          '\r':     'r',
-          '\n':     'n',
-          '\u2028': 'u2028',
-          '\u2029': 'u2029'
-        };
-      
-        var escaper = /\\|'|\r|\n|\u2028|\u2029/g;
-      
-        var escapeChar = function(match) {
-          return '\\' + escapes[match];
-        };
-      
-        // JavaScript micro-templating, similar to John Resig's implementation.
-        // Underscore templating handles arbitrary delimiters, preserves whitespace,
-        // and correctly escapes quotes within interpolated code.
-        // NB: `oldSettings` only exists for backwards compatibility.
-        _.template = function(text, settings, oldSettings) {
-          if (!settings && oldSettings) settings = oldSettings;
-          settings = _.defaults({}, settings, _.templateSettings);
-      
-          // Combine delimiters into one regular expression via alternation.
-          var matcher = RegExp([
-            (settings.escape || noMatch).source,
-            (settings.interpolate || noMatch).source,
-            (settings.evaluate || noMatch).source
-          ].join('|') + '|$', 'g');
-      
-          // Compile the template source, escaping string literals appropriately.
-          var index = 0;
-          var source = "__p+='";
-          text.replace(matcher, function(match, escape, interpolate, evaluate, offset) {
-            source += text.slice(index, offset).replace(escaper, escapeChar);
-            index = offset + match.length;
-      
-            if (escape) {
-              source += "'+\n((__t=(" + escape + "))==null?'':_.escape(__t))+\n'";
-            } else if (interpolate) {
-              source += "'+\n((__t=(" + interpolate + "))==null?'':__t)+\n'";
-            } else if (evaluate) {
-              source += "';\n" + evaluate + "\n__p+='";
-            }
-      
-            // Adobe VMs need the match returned to produce the correct offest.
-            return match;
-          });
-          source += "';\n";
-      
-          // If a variable is not specified, place data values in local scope.
-          if (!settings.variable) source = 'with(obj||{}){\n' + source + '}\n';
-      
-          source = "var __t,__p='',__j=Array.prototype.join," +
-            "print=function(){__p+=__j.call(arguments,'');};\n" +
-            source + 'return __p;\n';
-      
-          try {
-            var render = new Function(settings.variable || 'obj', '_', source);
-          } catch (e) {
-            e.source = source;
-            throw e;
-          }
-      
-          var template = function(data) {
-            return render.call(this, data, _);
-          };
-      
-          // Provide the compiled source as a convenience for precompilation.
-          var argument = settings.variable || 'obj';
-          template.source = 'function(' + argument + '){\n' + source + '}';
-      
-          return template;
-        };
-      
-        // Add a "chain" function. Start chaining a wrapped Underscore object.
-        _.chain = function(obj) {
-          var instance = _(obj);
-          instance._chain = true;
-          return instance;
-        };
-      
-        // OOP
-        // ---------------
-        // If Underscore is called as a function, it returns a wrapped object that
-        // can be used OO-style. This wrapper holds altered versions of all the
-        // underscore functions. Wrapped objects may be chained.
-      
-        // Helper function to continue chaining intermediate results.
-        var result = function(instance, obj) {
-          return instance._chain ? _(obj).chain() : obj;
-        };
-      
-        // Add your own custom functions to the Underscore object.
-        _.mixin = function(obj) {
-          _.each(_.functions(obj), function(name) {
-            var func = _[name] = obj[name];
-            _.prototype[name] = function() {
-              var args = [this._wrapped];
-              push.apply(args, arguments);
-              return result(this, func.apply(_, args));
-            };
-          });
-        };
-      
-        // Add all of the Underscore functions to the wrapper object.
-        _.mixin(_);
-      
-        // Add all mutator Array functions to the wrapper.
-        _.each(['pop', 'push', 'reverse', 'shift', 'sort', 'splice', 'unshift'], function(name) {
-          var method = ArrayProto[name];
-          _.prototype[name] = function() {
-            var obj = this._wrapped;
-            method.apply(obj, arguments);
-            if ((name === 'shift' || name === 'splice') && obj.length === 0) delete obj[0];
-            return result(this, obj);
-          };
-        });
-      
-        // Add all accessor Array functions to the wrapper.
-        _.each(['concat', 'join', 'slice'], function(name) {
-          var method = ArrayProto[name];
-          _.prototype[name] = function() {
-            return result(this, method.apply(this._wrapped, arguments));
-          };
-        });
-      
-        // Extracts the result from a wrapped and chained object.
-        _.prototype.value = function() {
-          return this._wrapped;
-        };
-      
-        // Provide unwrapping proxy for some methods used in engine operations
-        // such as arithmetic and JSON stringification.
-        _.prototype.valueOf = _.prototype.toJSON = _.prototype.value;
-      
-        _.prototype.toString = function() {
-          return '' + this._wrapped;
-        };
-      
-        // AMD registration happens at the end for compatibility with AMD loaders
-        // that may not enforce next-turn semantics on modules. Even though general
-        // practice for AMD registration is to be anonymous, underscore registers
-        // as a named module because, like jQuery, it is a base library that is
-        // popular enough to be bundled in a third party lib, but not be part of
-        // an AMD load request. Those cases could generate an error when an
-        // anonymous define() is called outside of a loader request.
-        if (typeof define === 'function' && define.amd) {
-          define('underscore', [], function() {
-            return _;
-          });
-        }
-      }.call(this));
-      
-    },
-    'underscore-min': function (module, exports, require, global) {
-      //     Underscore.js 1.8.3
-      //     http://underscorejs.org
-      //     (c) 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-      //     Underscore may be freely distributed under the MIT license.
-      (function(){function n(n){function t(t,r,e,u,i,o){for(;i>=0&&o>i;i+=n){var a=u?u[i]:i;e=r(e,t[a],a,t)}return e}return function(r,e,u,i){e=b(e,i,4);var o=!k(r)&&m.keys(r),a=(o||r).length,c=n>0?0:a-1;return arguments.length<3&&(u=r[o?o[c]:c],c+=n),t(r,e,u,o,c,a)}}function t(n){return function(t,r,e){r=x(r,e);for(var u=O(t),i=n>0?0:u-1;i>=0&&u>i;i+=n)if(r(t[i],i,t))return i;return-1}}function r(n,t,r){return function(e,u,i){var o=0,a=O(e);if("number"==typeof i)n>0?o=i>=0?i:Math.max(i+a,o):a=i>=0?Math.min(i+1,a):i+a+1;else if(r&&i&&a)return i=r(e,u),e[i]===u?i:-1;if(u!==u)return i=t(l.call(e,o,a),m.isNaN),i>=0?i+o:-1;for(i=n>0?o:a-1;i>=0&&a>i;i+=n)if(e[i]===u)return i;return-1}}function e(n,t){var r=I.length,e=n.constructor,u=m.isFunction(e)&&e.prototype||a,i="constructor";for(m.has(n,i)&&!m.contains(t,i)&&t.push(i);r--;)i=I[r],i in n&&n[i]!==u[i]&&!m.contains(t,i)&&t.push(i)}var u=this,i=u._,o=Array.prototype,a=Object.prototype,c=Function.prototype,f=o.push,l=o.slice,s=a.toString,p=a.hasOwnProperty,h=Array.isArray,v=Object.keys,g=c.bind,y=Object.create,d=function(){},m=function(n){return n instanceof m?n:this instanceof m?void(this._wrapped=n):new m(n)};"undefined"!=typeof exports?("undefined"!=typeof module&&module.exports&&(exports=module.exports=m),exports._=m):u._=m,m.VERSION="1.8.3";var b=function(n,t,r){if(t===void 0)return n;switch(null==r?3:r){case 1:return function(r){return n.call(t,r)};case 2:return function(r,e){return n.call(t,r,e)};case 3:return function(r,e,u){return n.call(t,r,e,u)};case 4:return function(r,e,u,i){return n.call(t,r,e,u,i)}}return function(){return n.apply(t,arguments)}},x=function(n,t,r){return null==n?m.identity:m.isFunction(n)?b(n,t,r):m.isObject(n)?m.matcher(n):m.property(n)};m.iteratee=function(n,t){return x(n,t,1/0)};var _=function(n,t){return function(r){var e=arguments.length;if(2>e||null==r)return r;for(var u=1;e>u;u++)for(var i=arguments[u],o=n(i),a=o.length,c=0;a>c;c++){var f=o[c];t&&r[f]!==void 0||(r[f]=i[f])}return r}},j=function(n){if(!m.isObject(n))return{};if(y)return y(n);d.prototype=n;var t=new d;return d.prototype=null,t},w=function(n){return function(t){return null==t?void 0:t[n]}},A=Math.pow(2,53)-1,O=w("length"),k=function(n){var t=O(n);return"number"==typeof t&&t>=0&&A>=t};m.each=m.forEach=function(n,t,r){t=b(t,r);var e,u;if(k(n))for(e=0,u=n.length;u>e;e++)t(n[e],e,n);else{var i=m.keys(n);for(e=0,u=i.length;u>e;e++)t(n[i[e]],i[e],n)}return n},m.map=m.collect=function(n,t,r){t=x(t,r);for(var e=!k(n)&&m.keys(n),u=(e||n).length,i=Array(u),o=0;u>o;o++){var a=e?e[o]:o;i[o]=t(n[a],a,n)}return i},m.reduce=m.foldl=m.inject=n(1),m.reduceRight=m.foldr=n(-1),m.find=m.detect=function(n,t,r){var e;return e=k(n)?m.findIndex(n,t,r):m.findKey(n,t,r),e!==void 0&&e!==-1?n[e]:void 0},m.filter=m.select=function(n,t,r){var e=[];return t=x(t,r),m.each(n,function(n,r,u){t(n,r,u)&&e.push(n)}),e},m.reject=function(n,t,r){return m.filter(n,m.negate(x(t)),r)},m.every=m.all=function(n,t,r){t=x(t,r);for(var e=!k(n)&&m.keys(n),u=(e||n).length,i=0;u>i;i++){var o=e?e[i]:i;if(!t(n[o],o,n))return!1}return!0},m.some=m.any=function(n,t,r){t=x(t,r);for(var e=!k(n)&&m.keys(n),u=(e||n).length,i=0;u>i;i++){var o=e?e[i]:i;if(t(n[o],o,n))return!0}return!1},m.contains=m.includes=m.include=function(n,t,r,e){return k(n)||(n=m.values(n)),("number"!=typeof r||e)&&(r=0),m.indexOf(n,t,r)>=0},m.invoke=function(n,t){var r=l.call(arguments,2),e=m.isFunction(t);return m.map(n,function(n){var u=e?t:n[t];return null==u?u:u.apply(n,r)})},m.pluck=function(n,t){return m.map(n,m.property(t))},m.where=function(n,t){return m.filter(n,m.matcher(t))},m.findWhere=function(n,t){return m.find(n,m.matcher(t))},m.max=function(n,t,r){var e,u,i=-1/0,o=-1/0;if(null==t&&null!=n){n=k(n)?n:m.values(n);for(var a=0,c=n.length;c>a;a++)e=n[a],e>i&&(i=e)}else t=x(t,r),m.each(n,function(n,r,e){u=t(n,r,e),(u>o||u===-1/0&&i===-1/0)&&(i=n,o=u)});return i},m.min=function(n,t,r){var e,u,i=1/0,o=1/0;if(null==t&&null!=n){n=k(n)?n:m.values(n);for(var a=0,c=n.length;c>a;a++)e=n[a],i>e&&(i=e)}else t=x(t,r),m.each(n,function(n,r,e){u=t(n,r,e),(o>u||1/0===u&&1/0===i)&&(i=n,o=u)});return i},m.shuffle=function(n){for(var t,r=k(n)?n:m.values(n),e=r.length,u=Array(e),i=0;e>i;i++)t=m.random(0,i),t!==i&&(u[i]=u[t]),u[t]=r[i];return u},m.sample=function(n,t,r){return null==t||r?(k(n)||(n=m.values(n)),n[m.random(n.length-1)]):m.shuffle(n).slice(0,Math.max(0,t))},m.sortBy=function(n,t,r){return t=x(t,r),m.pluck(m.map(n,function(n,r,e){return{value:n,index:r,criteria:t(n,r,e)}}).sort(function(n,t){var r=n.criteria,e=t.criteria;if(r!==e){if(r>e||r===void 0)return 1;if(e>r||e===void 0)return-1}return n.index-t.index}),"value")};var F=function(n){return function(t,r,e){var u={};return r=x(r,e),m.each(t,function(e,i){var o=r(e,i,t);n(u,e,o)}),u}};m.groupBy=F(function(n,t,r){m.has(n,r)?n[r].push(t):n[r]=[t]}),m.indexBy=F(function(n,t,r){n[r]=t}),m.countBy=F(function(n,t,r){m.has(n,r)?n[r]++:n[r]=1}),m.toArray=function(n){return n?m.isArray(n)?l.call(n):k(n)?m.map(n,m.identity):m.values(n):[]},m.size=function(n){return null==n?0:k(n)?n.length:m.keys(n).length},m.partition=function(n,t,r){t=x(t,r);var e=[],u=[];return m.each(n,function(n,r,i){(t(n,r,i)?e:u).push(n)}),[e,u]},m.first=m.head=m.take=function(n,t,r){return null==n?void 0:null==t||r?n[0]:m.initial(n,n.length-t)},m.initial=function(n,t,r){return l.call(n,0,Math.max(0,n.length-(null==t||r?1:t)))},m.last=function(n,t,r){return null==n?void 0:null==t||r?n[n.length-1]:m.rest(n,Math.max(0,n.length-t))},m.rest=m.tail=m.drop=function(n,t,r){return l.call(n,null==t||r?1:t)},m.compact=function(n){return m.filter(n,m.identity)};var S=function(n,t,r,e){for(var u=[],i=0,o=e||0,a=O(n);a>o;o++){var c=n[o];if(k(c)&&(m.isArray(c)||m.isArguments(c))){t||(c=S(c,t,r));var f=0,l=c.length;for(u.length+=l;l>f;)u[i++]=c[f++]}else r||(u[i++]=c)}return u};m.flatten=function(n,t){return S(n,t,!1)},m.without=function(n){return m.difference(n,l.call(arguments,1))},m.uniq=m.unique=function(n,t,r,e){m.isBoolean(t)||(e=r,r=t,t=!1),null!=r&&(r=x(r,e));for(var u=[],i=[],o=0,a=O(n);a>o;o++){var c=n[o],f=r?r(c,o,n):c;t?(o&&i===f||u.push(c),i=f):r?m.contains(i,f)||(i.push(f),u.push(c)):m.contains(u,c)||u.push(c)}return u},m.union=function(){return m.uniq(S(arguments,!0,!0))},m.intersection=function(n){for(var t=[],r=arguments.length,e=0,u=O(n);u>e;e++){var i=n[e];if(!m.contains(t,i)){for(var o=1;r>o&&m.contains(arguments[o],i);o++);o===r&&t.push(i)}}return t},m.difference=function(n){var t=S(arguments,!0,!0,1);return m.filter(n,function(n){return!m.contains(t,n)})},m.zip=function(){return m.unzip(arguments)},m.unzip=function(n){for(var t=n&&m.max(n,O).length||0,r=Array(t),e=0;t>e;e++)r[e]=m.pluck(n,e);return r},m.object=function(n,t){for(var r={},e=0,u=O(n);u>e;e++)t?r[n[e]]=t[e]:r[n[e][0]]=n[e][1];return r},m.findIndex=t(1),m.findLastIndex=t(-1),m.sortedIndex=function(n,t,r,e){r=x(r,e,1);for(var u=r(t),i=0,o=O(n);o>i;){var a=Math.floor((i+o)/2);r(n[a])<u?i=a+1:o=a}return i},m.indexOf=r(1,m.findIndex,m.sortedIndex),m.lastIndexOf=r(-1,m.findLastIndex),m.range=function(n,t,r){null==t&&(t=n||0,n=0),r=r||1;for(var e=Math.max(Math.ceil((t-n)/r),0),u=Array(e),i=0;e>i;i++,n+=r)u[i]=n;return u};var E=function(n,t,r,e,u){if(!(e instanceof t))return n.apply(r,u);var i=j(n.prototype),o=n.apply(i,u);return m.isObject(o)?o:i};m.bind=function(n,t){if(g&&n.bind===g)return g.apply(n,l.call(arguments,1));if(!m.isFunction(n))throw new TypeError("Bind must be called on a function");var r=l.call(arguments,2),e=function(){return E(n,e,t,this,r.concat(l.call(arguments)))};return e},m.partial=function(n){var t=l.call(arguments,1),r=function(){for(var e=0,u=t.length,i=Array(u),o=0;u>o;o++)i[o]=t[o]===m?arguments[e++]:t[o];for(;e<arguments.length;)i.push(arguments[e++]);return E(n,r,this,this,i)};return r},m.bindAll=function(n){var t,r,e=arguments.length;if(1>=e)throw new Error("bindAll must be passed function names");for(t=1;e>t;t++)r=arguments[t],n[r]=m.bind(n[r],n);return n},m.memoize=function(n,t){var r=function(e){var u=r.cache,i=""+(t?t.apply(this,arguments):e);return m.has(u,i)||(u[i]=n.apply(this,arguments)),u[i]};return r.cache={},r},m.delay=function(n,t){var r=l.call(arguments,2);return setTimeout(function(){return n.apply(null,r)},t)},m.defer=m.partial(m.delay,m,1),m.throttle=function(n,t,r){var e,u,i,o=null,a=0;r||(r={});var c=function(){a=r.leading===!1?0:m.now(),o=null,i=n.apply(e,u),o||(e=u=null)};return function(){var f=m.now();a||r.leading!==!1||(a=f);var l=t-(f-a);return e=this,u=arguments,0>=l||l>t?(o&&(clearTimeout(o),o=null),a=f,i=n.apply(e,u),o||(e=u=null)):o||r.trailing===!1||(o=setTimeout(c,l)),i}},m.debounce=function(n,t,r){var e,u,i,o,a,c=function(){var f=m.now()-o;t>f&&f>=0?e=setTimeout(c,t-f):(e=null,r||(a=n.apply(i,u),e||(i=u=null)))};return function(){i=this,u=arguments,o=m.now();var f=r&&!e;return e||(e=setTimeout(c,t)),f&&(a=n.apply(i,u),i=u=null),a}},m.wrap=function(n,t){return m.partial(t,n)},m.negate=function(n){return function(){return!n.apply(this,arguments)}},m.compose=function(){var n=arguments,t=n.length-1;return function(){for(var r=t,e=n[t].apply(this,arguments);r--;)e=n[r].call(this,e);return e}},m.after=function(n,t){return function(){return--n<1?t.apply(this,arguments):void 0}},m.before=function(n,t){var r;return function(){return--n>0&&(r=t.apply(this,arguments)),1>=n&&(t=null),r}},m.once=m.partial(m.before,2);var M=!{toString:null}.propertyIsEnumerable("toString"),I=["valueOf","isPrototypeOf","toString","propertyIsEnumerable","hasOwnProperty","toLocaleString"];m.keys=function(n){if(!m.isObject(n))return[];if(v)return v(n);var t=[];for(var r in n)m.has(n,r)&&t.push(r);return M&&e(n,t),t},m.allKeys=function(n){if(!m.isObject(n))return[];var t=[];for(var r in n)t.push(r);return M&&e(n,t),t},m.values=function(n){for(var t=m.keys(n),r=t.length,e=Array(r),u=0;r>u;u++)e[u]=n[t[u]];return e},m.mapObject=function(n,t,r){t=x(t,r);for(var e,u=m.keys(n),i=u.length,o={},a=0;i>a;a++)e=u[a],o[e]=t(n[e],e,n);return o},m.pairs=function(n){for(var t=m.keys(n),r=t.length,e=Array(r),u=0;r>u;u++)e[u]=[t[u],n[t[u]]];return e},m.invert=function(n){for(var t={},r=m.keys(n),e=0,u=r.length;u>e;e++)t[n[r[e]]]=r[e];return t},m.functions=m.methods=function(n){var t=[];for(var r in n)m.isFunction(n[r])&&t.push(r);return t.sort()},m.extend=_(m.allKeys),m.extendOwn=m.assign=_(m.keys),m.findKey=function(n,t,r){t=x(t,r);for(var e,u=m.keys(n),i=0,o=u.length;o>i;i++)if(e=u[i],t(n[e],e,n))return e},m.pick=function(n,t,r){var e,u,i={},o=n;if(null==o)return i;m.isFunction(t)?(u=m.allKeys(o),e=b(t,r)):(u=S(arguments,!1,!1,1),e=function(n,t,r){return t in r},o=Object(o));for(var a=0,c=u.length;c>a;a++){var f=u[a],l=o[f];e(l,f,o)&&(i[f]=l)}return i},m.omit=function(n,t,r){if(m.isFunction(t))t=m.negate(t);else{var e=m.map(S(arguments,!1,!1,1),String);t=function(n,t){return!m.contains(e,t)}}return m.pick(n,t,r)},m.defaults=_(m.allKeys,!0),m.create=function(n,t){var r=j(n);return t&&m.extendOwn(r,t),r},m.clone=function(n){return m.isObject(n)?m.isArray(n)?n.slice():m.extend({},n):n},m.tap=function(n,t){return t(n),n},m.isMatch=function(n,t){var r=m.keys(t),e=r.length;if(null==n)return!e;for(var u=Object(n),i=0;e>i;i++){var o=r[i];if(t[o]!==u[o]||!(o in u))return!1}return!0};var N=function(n,t,r,e){if(n===t)return 0!==n||1/n===1/t;if(null==n||null==t)return n===t;n instanceof m&&(n=n._wrapped),t instanceof m&&(t=t._wrapped);var u=s.call(n);if(u!==s.call(t))return!1;switch(u){case"[object RegExp]":case"[object String]":return""+n==""+t;case"[object Number]":return+n!==+n?+t!==+t:0===+n?1/+n===1/t:+n===+t;case"[object Date]":case"[object Boolean]":return+n===+t}var i="[object Array]"===u;if(!i){if("object"!=typeof n||"object"!=typeof t)return!1;var o=n.constructor,a=t.constructor;if(o!==a&&!(m.isFunction(o)&&o instanceof o&&m.isFunction(a)&&a instanceof a)&&"constructor"in n&&"constructor"in t)return!1}r=r||[],e=e||[];for(var c=r.length;c--;)if(r[c]===n)return e[c]===t;if(r.push(n),e.push(t),i){if(c=n.length,c!==t.length)return!1;for(;c--;)if(!N(n[c],t[c],r,e))return!1}else{var f,l=m.keys(n);if(c=l.length,m.keys(t).length!==c)return!1;for(;c--;)if(f=l[c],!m.has(t,f)||!N(n[f],t[f],r,e))return!1}return r.pop(),e.pop(),!0};m.isEqual=function(n,t){return N(n,t)},m.isEmpty=function(n){return null==n?!0:k(n)&&(m.isArray(n)||m.isString(n)||m.isArguments(n))?0===n.length:0===m.keys(n).length},m.isElement=function(n){return!(!n||1!==n.nodeType)},m.isArray=h||function(n){return"[object Array]"===s.call(n)},m.isObject=function(n){var t=typeof n;return"function"===t||"object"===t&&!!n},m.each(["Arguments","Function","String","Number","Date","RegExp","Error"],function(n){m["is"+n]=function(t){return s.call(t)==="[object "+n+"]"}}),m.isArguments(arguments)||(m.isArguments=function(n){return m.has(n,"callee")}),"function"!=typeof/./&&"object"!=typeof Int8Array&&(m.isFunction=function(n){return"function"==typeof n||!1}),m.isFinite=function(n){return isFinite(n)&&!isNaN(parseFloat(n))},m.isNaN=function(n){return m.isNumber(n)&&n!==+n},m.isBoolean=function(n){return n===!0||n===!1||"[object Boolean]"===s.call(n)},m.isNull=function(n){return null===n},m.isUndefined=function(n){return n===void 0},m.has=function(n,t){return null!=n&&p.call(n,t)},m.noConflict=function(){return u._=i,this},m.identity=function(n){return n},m.constant=function(n){return function(){return n}},m.noop=function(){},m.property=w,m.propertyOf=function(n){return null==n?function(){}:function(t){return n[t]}},m.matcher=m.matches=function(n){return n=m.extendOwn({},n),function(t){return m.isMatch(t,n)}},m.times=function(n,t,r){var e=Array(Math.max(0,n));t=b(t,r,1);for(var u=0;n>u;u++)e[u]=t(u);return e},m.random=function(n,t){return null==t&&(t=n,n=0),n+Math.floor(Math.random()*(t-n+1))},m.now=Date.now||function(){return(new Date).getTime()};var B={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#x27;","`":"&#x60;"},T=m.invert(B),R=function(n){var t=function(t){return n[t]},r="(?:"+m.keys(n).join("|")+")",e=RegExp(r),u=RegExp(r,"g");return function(n){return n=null==n?"":""+n,e.test(n)?n.replace(u,t):n}};m.escape=R(B),m.unescape=R(T),m.result=function(n,t,r){var e=null==n?void 0:n[t];return e===void 0&&(e=r),m.isFunction(e)?e.call(n):e};var q=0;m.uniqueId=function(n){var t=++q+"";return n?n+t:t},m.templateSettings={evaluate:/<%([\s\S]+?)%>/g,interpolate:/<%=([\s\S]+?)%>/g,escape:/<%-([\s\S]+?)%>/g};var K=/(.)^/,z={"'":"'","\\":"\\","\r":"r","\n":"n","\u2028":"u2028","\u2029":"u2029"},D=/\\|'|\r|\n|\u2028|\u2029/g,L=function(n){return"\\"+z[n]};m.template=function(n,t,r){!t&&r&&(t=r),t=m.defaults({},t,m.templateSettings);var e=RegExp([(t.escape||K).source,(t.interpolate||K).source,(t.evaluate||K).source].join("|")+"|$","g"),u=0,i="__p+='";n.replace(e,function(t,r,e,o,a){return i+=n.slice(u,a).replace(D,L),u=a+t.length,r?i+="'+\n((__t=("+r+"))==null?'':_.escape(__t))+\n'":e?i+="'+\n((__t=("+e+"))==null?'':__t)+\n'":o&&(i+="';\n"+o+"\n__p+='"),t}),i+="';\n",t.variable||(i="with(obj||{}){\n"+i+"}\n"),i="var __t,__p='',__j=Array.prototype.join,"+"print=function(){__p+=__j.call(arguments,'');};\n"+i+"return __p;\n";try{var o=new Function(t.variable||"obj","_",i)}catch(a){throw a.source=i,a}var c=function(n){return o.call(this,n,m)},f=t.variable||"obj";return c.source="function("+f+"){\n"+i+"}",c},m.chain=function(n){var t=m(n);return t._chain=!0,t};var P=function(n,t){return n._chain?m(t).chain():t};m.mixin=function(n){m.each(m.functions(n),function(t){var r=m[t]=n[t];m.prototype[t]=function(){var n=[this._wrapped];return f.apply(n,arguments),P(this,r.apply(m,n))}})},m.mixin(m),m.each(["pop","push","reverse","shift","sort","splice","unshift"],function(n){var t=o[n];m.prototype[n]=function(){var r=this._wrapped;return t.apply(r,arguments),"shift"!==n&&"splice"!==n||0!==r.length||delete r[0],P(this,r)}}),m.each(["concat","join","slice"],function(n){var t=o[n];m.prototype[n]=function(){return P(this,t.apply(this._wrapped,arguments))}}),m.prototype.value=function(){return this._wrapped},m.prototype.valueOf=m.prototype.toJSON=m.prototype.value,m.prototype.toString=function(){return""+this._wrapped},"function"==typeof define&&define.amd&&define("underscore",[],function(){return m})}).call(this);
-      //# sourceMappingURL=underscore-min.map
-    }
-  }, 'underscore');
-
-  Module.createPackage('backbone', {
-    'backbone': function (module, exports, require, global) {
-      //     Backbone.js 1.1.2
-      
-      //     (c) 2010-2014 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-      //     Backbone may be freely distributed under the MIT license.
-      //     For all details and documentation:
-      //     http://backbonejs.org
-      
-      (function(root, factory) {
-      
-        // Set up Backbone appropriately for the environment. Start with AMD.
-        if (typeof define === 'function' && define.amd) {
-          define(['underscore', 'jquery', 'exports'], function(_, $, exports) {
-            // Export global even in AMD case in case this script is loaded with
-            // others that may still expect a global Backbone.
-            root.Backbone = factory(root, exports, _, $);
-          });
-      
-        // Next for Node.js or CommonJS. jQuery may not be needed as a module.
-        } else if (typeof exports !== 'undefined') {
-          var _ = require('underscore');
-          factory(root, exports, _);
-      
-        // Finally, as a browser global.
-        } else {
-          root.Backbone = factory(root, {}, root._, (root.jQuery || root.Zepto || root.ender || root.$));
-        }
-      
-      }(this, function(root, Backbone, _, $) {
-      
-        // Initial Setup
-        // -------------
-      
-        // Save the previous value of the `Backbone` variable, so that it can be
-        // restored later on, if `noConflict` is used.
-        var previousBackbone = root.Backbone;
-      
-        // Create local references to array methods we'll want to use later.
-        var array = [];
-        var push = array.push;
-        var slice = array.slice;
-        var splice = array.splice;
-      
-        // Current version of the library. Keep in sync with `package.json`.
-        Backbone.VERSION = '1.1.2';
-      
-        // For Backbone's purposes, jQuery, Zepto, Ender, or My Library (kidding) owns
-        // the `$` variable.
-        Backbone.$ = $;
-      
-        // Runs Backbone.js in *noConflict* mode, returning the `Backbone` variable
-        // to its previous owner. Returns a reference to this Backbone object.
-        Backbone.noConflict = function() {
-          root.Backbone = previousBackbone;
-          return this;
-        };
-      
-        // Turn on `emulateHTTP` to support legacy HTTP servers. Setting this option
-        // will fake `"PATCH"`, `"PUT"` and `"DELETE"` requests via the `_method` parameter and
-        // set a `X-Http-Method-Override` header.
-        Backbone.emulateHTTP = false;
-      
-        // Turn on `emulateJSON` to support legacy servers that can't deal with direct
-        // `application/json` requests ... will encode the body as
-        // `application/x-www-form-urlencoded` instead and will send the model in a
-        // form param named `model`.
-        Backbone.emulateJSON = false;
-      
-        // Backbone.Events
-        // ---------------
-      
-        // A module that can be mixed in to *any object* in order to provide it with
-        // custom events. You may bind with `on` or remove with `off` callback
-        // functions to an event; `trigger`-ing an event fires all callbacks in
-        // succession.
-        //
-        //     var object = {};
-        //     _.extend(object, Backbone.Events);
-        //     object.on('expand', function(){ alert('expanded'); });
-        //     object.trigger('expand');
-        //
-        var Events = Backbone.Events = {
-      
-          // Bind an event to a `callback` function. Passing `"all"` will bind
-          // the callback to all events fired.
-          on: function(name, callback, context) {
-            if (!eventsApi(this, 'on', name, [callback, context]) || !callback) return this;
-            this._events || (this._events = {});
-            var events = this._events[name] || (this._events[name] = []);
-            events.push({callback: callback, context: context, ctx: context || this});
-            return this;
-          },
-      
-          // Bind an event to only be triggered a single time. After the first time
-          // the callback is invoked, it will be removed.
-          once: function(name, callback, context) {
-            if (!eventsApi(this, 'once', name, [callback, context]) || !callback) return this;
-            var self = this;
-            var once = _.once(function() {
-              self.off(name, once);
-              callback.apply(this, arguments);
-            });
-            once._callback = callback;
-            return this.on(name, once, context);
-          },
-      
-          // Remove one or many callbacks. If `context` is null, removes all
-          // callbacks with that function. If `callback` is null, removes all
-          // callbacks for the event. If `name` is null, removes all bound
-          // callbacks for all events.
-          off: function(name, callback, context) {
-            var retain, ev, events, names, i, l, j, k;
-            if (!this._events || !eventsApi(this, 'off', name, [callback, context])) return this;
-            if (!name && !callback && !context) {
-              this._events = void 0;
-              return this;
-            }
-            names = name ? [name] : _.keys(this._events);
-            for (i = 0, l = names.length; i < l; i++) {
-              name = names[i];
-              if (events = this._events[name]) {
-                this._events[name] = retain = [];
-                if (callback || context) {
-                  for (j = 0, k = events.length; j < k; j++) {
-                    ev = events[j];
-                    if ((callback && callback !== ev.callback && callback !== ev.callback._callback) ||
-                        (context && context !== ev.context)) {
-                      retain.push(ev);
-                    }
-                  }
-                }
-                if (!retain.length) delete this._events[name];
-              }
-            }
-      
-            return this;
-          },
-      
-          // Trigger one or many events, firing all bound callbacks. Callbacks are
-          // passed the same arguments as `trigger` is, apart from the event name
-          // (unless you're listening on `"all"`, which will cause your callback to
-          // receive the true name of the event as the first argument).
-          trigger: function(name) {
-            if (!this._events) return this;
-            var args = slice.call(arguments, 1);
-            if (!eventsApi(this, 'trigger', name, args)) return this;
-            var events = this._events[name];
-            var allEvents = this._events.all;
-            if (events) triggerEvents(events, args);
-            if (allEvents) triggerEvents(allEvents, arguments);
-            return this;
-          },
-      
-          // Tell this object to stop listening to either specific events ... or
-          // to every object it's currently listening to.
-          stopListening: function(obj, name, callback) {
-            var listeningTo = this._listeningTo;
-            if (!listeningTo) return this;
-            var remove = !name && !callback;
-            if (!callback && typeof name === 'object') callback = this;
-            if (obj) (listeningTo = {})[obj._listenId] = obj;
-            for (var id in listeningTo) {
-              obj = listeningTo[id];
-              obj.off(name, callback, this);
-              if (remove || _.isEmpty(obj._events)) delete this._listeningTo[id];
-            }
-            return this;
-          }
-      
-        };
-      
-        // Regular expression used to split event strings.
-        var eventSplitter = /\s+/;
-      
-        // Implement fancy features of the Events API such as multiple event
-        // names `"change blur"` and jQuery-style event maps `{change: action}`
-        // in terms of the existing API.
-        var eventsApi = function(obj, action, name, rest) {
-          if (!name) return true;
-      
-          // Handle event maps.
-          if (typeof name === 'object') {
-            for (var key in name) {
-              obj[action].apply(obj, [key, name[key]].concat(rest));
-            }
-            return false;
-          }
-      
-          // Handle space separated event names.
-          if (eventSplitter.test(name)) {
-            var names = name.split(eventSplitter);
-            for (var i = 0, l = names.length; i < l; i++) {
-              obj[action].apply(obj, [names[i]].concat(rest));
-            }
-            return false;
-          }
-      
-          return true;
-        };
-      
-        // A difficult-to-believe, but optimized internal dispatch function for
-        // triggering events. Tries to keep the usual cases speedy (most internal
-        // Backbone events have 3 arguments).
-        var triggerEvents = function(events, args) {
-          var ev, i = -1, l = events.length, a1 = args[0], a2 = args[1], a3 = args[2];
-          switch (args.length) {
-            case 0: while (++i < l) (ev = events[i]).callback.call(ev.ctx); return;
-            case 1: while (++i < l) (ev = events[i]).callback.call(ev.ctx, a1); return;
-            case 2: while (++i < l) (ev = events[i]).callback.call(ev.ctx, a1, a2); return;
-            case 3: while (++i < l) (ev = events[i]).callback.call(ev.ctx, a1, a2, a3); return;
-            default: while (++i < l) (ev = events[i]).callback.apply(ev.ctx, args); return;
-          }
-        };
-      
-        var listenMethods = {listenTo: 'on', listenToOnce: 'once'};
-      
-        // Inversion-of-control versions of `on` and `once`. Tell *this* object to
-        // listen to an event in another object ... keeping track of what it's
-        // listening to.
-        _.each(listenMethods, function(implementation, method) {
-          Events[method] = function(obj, name, callback) {
-            var listeningTo = this._listeningTo || (this._listeningTo = {});
-            var id = obj._listenId || (obj._listenId = _.uniqueId('l'));
-            listeningTo[id] = obj;
-            if (!callback && typeof name === 'object') callback = this;
-            obj[implementation](name, callback, this);
-            return this;
-          };
-        });
-      
-        // Aliases for backwards compatibility.
-        Events.bind   = Events.on;
-        Events.unbind = Events.off;
-      
-        // Allow the `Backbone` object to serve as a global event bus, for folks who
-        // want global "pubsub" in a convenient place.
-        _.extend(Backbone, Events);
-      
-        // Backbone.Model
-        // --------------
-      
-        // Backbone **Models** are the basic data object in the framework --
-        // frequently representing a row in a table in a database on your server.
-        // A discrete chunk of data and a bunch of useful, related methods for
-        // performing computations and transformations on that data.
-      
-        // Create a new model with the specified attributes. A client id (`cid`)
-        // is automatically generated and assigned for you.
-        var Model = Backbone.Model = function(attributes, options) {
-          var attrs = attributes || {};
-          options || (options = {});
-          this.cid = _.uniqueId('c');
-          this.attributes = {};
-          if (options.collection) this.collection = options.collection;
-          if (options.parse) attrs = this.parse(attrs, options) || {};
-          attrs = _.defaults({}, attrs, _.result(this, 'defaults'));
-          this.set(attrs, options);
-          this.changed = {};
-          this.initialize.apply(this, arguments);
-        };
-      
-        // Attach all inheritable methods to the Model prototype.
-        _.extend(Model.prototype, Events, {
-      
-          // A hash of attributes whose current and previous value differ.
-          changed: null,
-      
-          // The value returned during the last failed validation.
-          validationError: null,
-      
-          // The default name for the JSON `id` attribute is `"id"`. MongoDB and
-          // CouchDB users may want to set this to `"_id"`.
-          idAttribute: 'id',
-      
-          // Initialize is an empty function by default. Override it with your own
-          // initialization logic.
-          initialize: function(){},
-      
-          // Return a copy of the model's `attributes` object.
-          toJSON: function(options) {
-            return _.clone(this.attributes);
-          },
-      
-          // Proxy `Backbone.sync` by default -- but override this if you need
-          // custom syncing semantics for *this* particular model.
-          sync: function() {
-            return Backbone.sync.apply(this, arguments);
-          },
-      
-          // Get the value of an attribute.
-          get: function(attr) {
-            return this.attributes[attr];
-          },
-      
-          // Get the HTML-escaped value of an attribute.
-          escape: function(attr) {
-            return _.escape(this.get(attr));
-          },
-      
-          // Returns `true` if the attribute contains a value that is not null
-          // or undefined.
-          has: function(attr) {
-            return this.get(attr) != null;
-          },
-      
-          // Set a hash of model attributes on the object, firing `"change"`. This is
-          // the core primitive operation of a model, updating the data and notifying
-          // anyone who needs to know about the change in state. The heart of the beast.
-          set: function(key, val, options) {
-            var attr, attrs, unset, changes, silent, changing, prev, current;
-            if (key == null) return this;
-      
-            // Handle both `"key", value` and `{key: value}` -style arguments.
-            if (typeof key === 'object') {
-              attrs = key;
-              options = val;
-            } else {
-              (attrs = {})[key] = val;
-            }
-      
-            options || (options = {});
-      
-            // Run validation.
-            if (!this._validate(attrs, options)) return false;
-      
-            // Extract attributes and options.
-            unset           = options.unset;
-            silent          = options.silent;
-            changes         = [];
-            changing        = this._changing;
-            this._changing  = true;
-      
-            if (!changing) {
-              this._previousAttributes = _.clone(this.attributes);
-              this.changed = {};
-            }
-            current = this.attributes, prev = this._previousAttributes;
-      
-            // Check for changes of `id`.
-            if (this.idAttribute in attrs) this.id = attrs[this.idAttribute];
-      
-            // For each `set` attribute, update or delete the current value.
-            for (attr in attrs) {
-              val = attrs[attr];
-              if (!_.isEqual(current[attr], val)) changes.push(attr);
-              if (!_.isEqual(prev[attr], val)) {
-                this.changed[attr] = val;
-              } else {
-                delete this.changed[attr];
-              }
-              unset ? delete current[attr] : current[attr] = val;
-            }
-      
-            // Trigger all relevant attribute changes.
-            if (!silent) {
-              if (changes.length) this._pending = options;
-              for (var i = 0, l = changes.length; i < l; i++) {
-                this.trigger('change:' + changes[i], this, current[changes[i]], options);
-              }
-            }
-      
-            // You might be wondering why there's a `while` loop here. Changes can
-            // be recursively nested within `"change"` events.
-            if (changing) return this;
-            if (!silent) {
-              while (this._pending) {
-                options = this._pending;
-                this._pending = false;
-                this.trigger('change', this, options);
-              }
-            }
-            this._pending = false;
-            this._changing = false;
-            return this;
-          },
-      
-          // Remove an attribute from the model, firing `"change"`. `unset` is a noop
-          // if the attribute doesn't exist.
-          unset: function(attr, options) {
-            return this.set(attr, void 0, _.extend({}, options, {unset: true}));
-          },
-      
-          // Clear all attributes on the model, firing `"change"`.
-          clear: function(options) {
-            var attrs = {};
-            for (var key in this.attributes) attrs[key] = void 0;
-            return this.set(attrs, _.extend({}, options, {unset: true}));
-          },
-      
-          // Determine if the model has changed since the last `"change"` event.
-          // If you specify an attribute name, determine if that attribute has changed.
-          hasChanged: function(attr) {
-            if (attr == null) return !_.isEmpty(this.changed);
-            return _.has(this.changed, attr);
-          },
-      
-          // Return an object containing all the attributes that have changed, or
-          // false if there are no changed attributes. Useful for determining what
-          // parts of a view need to be updated and/or what attributes need to be
-          // persisted to the server. Unset attributes will be set to undefined.
-          // You can also pass an attributes object to diff against the model,
-          // determining if there *would be* a change.
-          changedAttributes: function(diff) {
-            if (!diff) return this.hasChanged() ? _.clone(this.changed) : false;
-            var val, changed = false;
-            var old = this._changing ? this._previousAttributes : this.attributes;
-            for (var attr in diff) {
-              if (_.isEqual(old[attr], (val = diff[attr]))) continue;
-              (changed || (changed = {}))[attr] = val;
-            }
-            return changed;
-          },
-      
-          // Get the previous value of an attribute, recorded at the time the last
-          // `"change"` event was fired.
-          previous: function(attr) {
-            if (attr == null || !this._previousAttributes) return null;
-            return this._previousAttributes[attr];
-          },
-      
-          // Get all of the attributes of the model at the time of the previous
-          // `"change"` event.
-          previousAttributes: function() {
-            return _.clone(this._previousAttributes);
-          },
-      
-          // Fetch the model from the server. If the server's representation of the
-          // model differs from its current attributes, they will be overridden,
-          // triggering a `"change"` event.
-          fetch: function(options) {
-            options = options ? _.clone(options) : {};
-            if (options.parse === void 0) options.parse = true;
-            var model = this;
-            var success = options.success;
-            options.success = function(resp) {
-              if (!model.set(model.parse(resp, options), options)) return false;
-              if (success) success(model, resp, options);
-              model.trigger('sync', model, resp, options);
-            };
-            wrapError(this, options);
-            return this.sync('read', this, options);
-          },
-      
-          // Set a hash of model attributes, and sync the model to the server.
-          // If the server returns an attributes hash that differs, the model's
-          // state will be `set` again.
-          save: function(key, val, options) {
-            var attrs, method, xhr, attributes = this.attributes;
-      
-            // Handle both `"key", value` and `{key: value}` -style arguments.
-            if (key == null || typeof key === 'object') {
-              attrs = key;
-              options = val;
-            } else {
-              (attrs = {})[key] = val;
-            }
-      
-            options = _.extend({validate: true}, options);
-      
-            // If we're not waiting and attributes exist, save acts as
-            // `set(attr).save(null, opts)` with validation. Otherwise, check if
-            // the model will be valid when the attributes, if any, are set.
-            if (attrs && !options.wait) {
-              if (!this.set(attrs, options)) return false;
-            } else {
-              if (!this._validate(attrs, options)) return false;
-            }
-      
-            // Set temporary attributes if `{wait: true}`.
-            if (attrs && options.wait) {
-              this.attributes = _.extend({}, attributes, attrs);
-            }
-      
-            // After a successful server-side save, the client is (optionally)
-            // updated with the server-side state.
-            if (options.parse === void 0) options.parse = true;
-            var model = this;
-            var success = options.success;
-            options.success = function(resp) {
-              // Ensure attributes are restored during synchronous saves.
-              model.attributes = attributes;
-              var serverAttrs = model.parse(resp, options);
-              if (options.wait) serverAttrs = _.extend(attrs || {}, serverAttrs);
-              if (_.isObject(serverAttrs) && !model.set(serverAttrs, options)) {
-                return false;
-              }
-              if (success) success(model, resp, options);
-              model.trigger('sync', model, resp, options);
-            };
-            wrapError(this, options);
-      
-            method = this.isNew() ? 'create' : (options.patch ? 'patch' : 'update');
-            if (method === 'patch') options.attrs = attrs;
-            xhr = this.sync(method, this, options);
-      
-            // Restore attributes.
-            if (attrs && options.wait) this.attributes = attributes;
-      
-            return xhr;
-          },
-      
-          // Destroy this model on the server if it was already persisted.
-          // Optimistically removes the model from its collection, if it has one.
-          // If `wait: true` is passed, waits for the server to respond before removal.
-          destroy: function(options) {
-            options = options ? _.clone(options) : {};
-            var model = this;
-            var success = options.success;
-      
-            var destroy = function() {
-              model.trigger('destroy', model, model.collection, options);
-            };
-      
-            options.success = function(resp) {
-              if (options.wait || model.isNew()) destroy();
-              if (success) success(model, resp, options);
-              if (!model.isNew()) model.trigger('sync', model, resp, options);
-            };
-      
-            if (this.isNew()) {
-              options.success();
-              return false;
-            }
-            wrapError(this, options);
-      
-            var xhr = this.sync('delete', this, options);
-            if (!options.wait) destroy();
-            return xhr;
-          },
-      
-          // Default URL for the model's representation on the server -- if you're
-          // using Backbone's restful methods, override this to change the endpoint
-          // that will be called.
-          url: function() {
-            var base =
-              _.result(this, 'urlRoot') ||
-              _.result(this.collection, 'url') ||
-              urlError();
-            if (this.isNew()) return base;
-            return base.replace(/([^\/])$/, '$1/') + encodeURIComponent(this.id);
-          },
-      
-          // **parse** converts a response into the hash of attributes to be `set` on
-          // the model. The default implementation is just to pass the response along.
-          parse: function(resp, options) {
-            return resp;
-          },
-      
-          // Create a new model with identical attributes to this one.
-          clone: function() {
-            return new this.constructor(this.attributes);
-          },
-      
-          // A model is new if it has never been saved to the server, and lacks an id.
-          isNew: function() {
-            return !this.has(this.idAttribute);
-          },
-      
-          // Check if the model is currently in a valid state.
-          isValid: function(options) {
-            return this._validate({}, _.extend(options || {}, { validate: true }));
-          },
-      
-          // Run validation against the next complete set of model attributes,
-          // returning `true` if all is well. Otherwise, fire an `"invalid"` event.
-          _validate: function(attrs, options) {
-            if (!options.validate || !this.validate) return true;
-            attrs = _.extend({}, this.attributes, attrs);
-            var error = this.validationError = this.validate(attrs, options) || null;
-            if (!error) return true;
-            this.trigger('invalid', this, error, _.extend(options, {validationError: error}));
-            return false;
-          }
-      
-        });
-      
-        // Underscore methods that we want to implement on the Model.
-        var modelMethods = ['keys', 'values', 'pairs', 'invert', 'pick', 'omit'];
-      
-        // Mix in each Underscore method as a proxy to `Model#attributes`.
-        _.each(modelMethods, function(method) {
-          Model.prototype[method] = function() {
-            var args = slice.call(arguments);
-            args.unshift(this.attributes);
-            return _[method].apply(_, args);
-          };
-        });
-      
-        // Backbone.Collection
-        // -------------------
-      
-        // If models tend to represent a single row of data, a Backbone Collection is
-        // more analagous to a table full of data ... or a small slice or page of that
-        // table, or a collection of rows that belong together for a particular reason
-        // -- all of the messages in this particular folder, all of the documents
-        // belonging to this particular author, and so on. Collections maintain
-        // indexes of their models, both in order, and for lookup by `id`.
-      
-        // Create a new **Collection**, perhaps to contain a specific type of `model`.
-        // If a `comparator` is specified, the Collection will maintain
-        // its models in sort order, as they're added and removed.
-        var Collection = Backbone.Collection = function(models, options) {
-          options || (options = {});
-          if (options.model) this.model = options.model;
-          if (options.comparator !== void 0) this.comparator = options.comparator;
-          this._reset();
-          this.initialize.apply(this, arguments);
-          if (models) this.reset(models, _.extend({silent: true}, options));
-        };
-      
-        // Default options for `Collection#set`.
-        var setOptions = {add: true, remove: true, merge: true};
-        var addOptions = {add: true, remove: false};
-      
-        // Define the Collection's inheritable methods.
-        _.extend(Collection.prototype, Events, {
-      
-          // The default model for a collection is just a **Backbone.Model**.
-          // This should be overridden in most cases.
-          model: Model,
-      
-          // Initialize is an empty function by default. Override it with your own
-          // initialization logic.
-          initialize: function(){},
-      
-          // The JSON representation of a Collection is an array of the
-          // models' attributes.
-          toJSON: function(options) {
-            return this.map(function(model){ return model.toJSON(options); });
-          },
-      
-          // Proxy `Backbone.sync` by default.
-          sync: function() {
-            return Backbone.sync.apply(this, arguments);
-          },
-      
-          // Add a model, or list of models to the set.
-          add: function(models, options) {
-            return this.set(models, _.extend({merge: false}, options, addOptions));
-          },
-      
-          // Remove a model, or a list of models from the set.
-          remove: function(models, options) {
-            var singular = !_.isArray(models);
-            models = singular ? [models] : _.clone(models);
-            options || (options = {});
-            var i, l, index, model;
-            for (i = 0, l = models.length; i < l; i++) {
-              model = models[i] = this.get(models[i]);
-              if (!model) continue;
-              delete this._byId[model.id];
-              delete this._byId[model.cid];
-              index = this.indexOf(model);
-              this.models.splice(index, 1);
-              this.length--;
-              if (!options.silent) {
-                options.index = index;
-                model.trigger('remove', model, this, options);
-              }
-              this._removeReference(model, options);
-            }
-            return singular ? models[0] : models;
-          },
-      
-          // Update a collection by `set`-ing a new list of models, adding new ones,
-          // removing models that are no longer present, and merging models that
-          // already exist in the collection, as necessary. Similar to **Model#set**,
-          // the core operation for updating the data contained by the collection.
-          set: function(models, options) {
-            options = _.defaults({}, options, setOptions);
-            if (options.parse) models = this.parse(models, options);
-            var singular = !_.isArray(models);
-            models = singular ? (models ? [models] : []) : _.clone(models);
-            var i, l, id, model, attrs, existing, sort;
-            var at = options.at;
-            var targetModel = this.model;
-            var sortable = this.comparator && (at == null) && options.sort !== false;
-            var sortAttr = _.isString(this.comparator) ? this.comparator : null;
-            var toAdd = [], toRemove = [], modelMap = {};
-            var add = options.add, merge = options.merge, remove = options.remove;
-            var order = !sortable && add && remove ? [] : false;
-      
-            // Turn bare objects into model references, and prevent invalid models
-            // from being added.
-            for (i = 0, l = models.length; i < l; i++) {
-              attrs = models[i] || {};
-              if (attrs instanceof Model) {
-                id = model = attrs;
-              } else {
-                id = attrs[targetModel.prototype.idAttribute || 'id'];
-              }
-      
-              // If a duplicate is found, prevent it from being added and
-              // optionally merge it into the existing model.
-              if (existing = this.get(id)) {
-                if (remove) modelMap[existing.cid] = true;
-                if (merge) {
-                  attrs = attrs === model ? model.attributes : attrs;
-                  if (options.parse) attrs = existing.parse(attrs, options);
-                  existing.set(attrs, options);
-                  if (sortable && !sort && existing.hasChanged(sortAttr)) sort = true;
-                }
-                models[i] = existing;
-      
-              // If this is a new, valid model, push it to the `toAdd` list.
-              } else if (add) {
-                model = models[i] = this._prepareModel(attrs, options);
-                if (!model) continue;
-                toAdd.push(model);
-                this._addReference(model, options);
-              }
-      
-              // Do not add multiple models with the same `id`.
-              model = existing || model;
-              if (order && (model.isNew() || !modelMap[model.id])) order.push(model);
-              modelMap[model.id] = true;
-            }
-      
-            // Remove nonexistent models if appropriate.
-            if (remove) {
-              for (i = 0, l = this.length; i < l; ++i) {
-                if (!modelMap[(model = this.models[i]).cid]) toRemove.push(model);
-              }
-              if (toRemove.length) this.remove(toRemove, options);
-            }
-      
-            // See if sorting is needed, update `length` and splice in new models.
-            if (toAdd.length || (order && order.length)) {
-              if (sortable) sort = true;
-              this.length += toAdd.length;
-              if (at != null) {
-                for (i = 0, l = toAdd.length; i < l; i++) {
-                  this.models.splice(at + i, 0, toAdd[i]);
-                }
-              } else {
-                if (order) this.models.length = 0;
-                var orderedModels = order || toAdd;
-                for (i = 0, l = orderedModels.length; i < l; i++) {
-                  this.models.push(orderedModels[i]);
-                }
-              }
-            }
-      
-            // Silently sort the collection if appropriate.
-            if (sort) this.sort({silent: true});
-      
-            // Unless silenced, it's time to fire all appropriate add/sort events.
-            if (!options.silent) {
-              for (i = 0, l = toAdd.length; i < l; i++) {
-                (model = toAdd[i]).trigger('add', model, this, options);
-              }
-              if (sort || (order && order.length)) this.trigger('sort', this, options);
-            }
-      
-            // Return the added (or merged) model (or models).
-            return singular ? models[0] : models;
-          },
-      
-          // When you have more items than you want to add or remove individually,
-          // you can reset the entire set with a new list of models, without firing
-          // any granular `add` or `remove` events. Fires `reset` when finished.
-          // Useful for bulk operations and optimizations.
-          reset: function(models, options) {
-            options || (options = {});
-            for (var i = 0, l = this.models.length; i < l; i++) {
-              this._removeReference(this.models[i], options);
-            }
-            options.previousModels = this.models;
-            this._reset();
-            models = this.add(models, _.extend({silent: true}, options));
-            if (!options.silent) this.trigger('reset', this, options);
-            return models;
-          },
-      
-          // Add a model to the end of the collection.
-          push: function(model, options) {
-            return this.add(model, _.extend({at: this.length}, options));
-          },
-      
-          // Remove a model from the end of the collection.
-          pop: function(options) {
-            var model = this.at(this.length - 1);
-            this.remove(model, options);
-            return model;
-          },
-      
-          // Add a model to the beginning of the collection.
-          unshift: function(model, options) {
-            return this.add(model, _.extend({at: 0}, options));
-          },
-      
-          // Remove a model from the beginning of the collection.
-          shift: function(options) {
-            var model = this.at(0);
-            this.remove(model, options);
-            return model;
-          },
-      
-          // Slice out a sub-array of models from the collection.
-          slice: function() {
-            return slice.apply(this.models, arguments);
-          },
-      
-          // Get a model from the set by id.
-          get: function(obj) {
-            if (obj == null) return void 0;
-            return this._byId[obj] || this._byId[obj.id] || this._byId[obj.cid];
-          },
-      
-          // Get the model at the given index.
-          at: function(index) {
-            return this.models[index];
-          },
-      
-          // Return models with matching attributes. Useful for simple cases of
-          // `filter`.
-          where: function(attrs, first) {
-            if (_.isEmpty(attrs)) return first ? void 0 : [];
-            return this[first ? 'find' : 'filter'](function(model) {
-              for (var key in attrs) {
-                if (attrs[key] !== model.get(key)) return false;
-              }
-              return true;
-            });
-          },
-      
-          // Return the first model with matching attributes. Useful for simple cases
-          // of `find`.
-          findWhere: function(attrs) {
-            return this.where(attrs, true);
-          },
-      
-          // Force the collection to re-sort itself. You don't need to call this under
-          // normal circumstances, as the set will maintain sort order as each item
-          // is added.
-          sort: function(options) {
-            if (!this.comparator) throw new Error('Cannot sort a set without a comparator');
-            options || (options = {});
-      
-            // Run sort based on type of `comparator`.
-            if (_.isString(this.comparator) || this.comparator.length === 1) {
-              this.models = this.sortBy(this.comparator, this);
-            } else {
-              this.models.sort(_.bind(this.comparator, this));
-            }
-      
-            if (!options.silent) this.trigger('sort', this, options);
-            return this;
-          },
-      
-          // Pluck an attribute from each model in the collection.
-          pluck: function(attr) {
-            return _.invoke(this.models, 'get', attr);
-          },
-      
-          // Fetch the default set of models for this collection, resetting the
-          // collection when they arrive. If `reset: true` is passed, the response
-          // data will be passed through the `reset` method instead of `set`.
-          fetch: function(options) {
-            options = options ? _.clone(options) : {};
-            if (options.parse === void 0) options.parse = true;
-            var success = options.success;
-            var collection = this;
-            options.success = function(resp) {
-              var method = options.reset ? 'reset' : 'set';
-              collection[method](resp, options);
-              if (success) success(collection, resp, options);
-              collection.trigger('sync', collection, resp, options);
-            };
-            wrapError(this, options);
-            return this.sync('read', this, options);
-          },
-      
-          // Create a new instance of a model in this collection. Add the model to the
-          // collection immediately, unless `wait: true` is passed, in which case we
-          // wait for the server to agree.
-          create: function(model, options) {
-            options = options ? _.clone(options) : {};
-            if (!(model = this._prepareModel(model, options))) return false;
-            if (!options.wait) this.add(model, options);
-            var collection = this;
-            var success = options.success;
-            options.success = function(model, resp) {
-              if (options.wait) collection.add(model, options);
-              if (success) success(model, resp, options);
-            };
-            model.save(null, options);
-            return model;
-          },
-      
-          // **parse** converts a response into a list of models to be added to the
-          // collection. The default implementation is just to pass it through.
-          parse: function(resp, options) {
-            return resp;
-          },
-      
-          // Create a new collection with an identical list of models as this one.
-          clone: function() {
-            return new this.constructor(this.models);
-          },
-      
-          // Private method to reset all internal state. Called when the collection
-          // is first initialized or reset.
-          _reset: function() {
-            this.length = 0;
-            this.models = [];
-            this._byId  = {};
-          },
-      
-          // Prepare a hash of attributes (or other model) to be added to this
-          // collection.
-          _prepareModel: function(attrs, options) {
-            if (attrs instanceof Model) return attrs;
-            options = options ? _.clone(options) : {};
-            options.collection = this;
-            var model = new this.model(attrs, options);
-            if (!model.validationError) return model;
-            this.trigger('invalid', this, model.validationError, options);
-            return false;
-          },
-      
-          // Internal method to create a model's ties to a collection.
-          _addReference: function(model, options) {
-            this._byId[model.cid] = model;
-            if (model.id != null) this._byId[model.id] = model;
-            if (!model.collection) model.collection = this;
-            model.on('all', this._onModelEvent, this);
-          },
-      
-          // Internal method to sever a model's ties to a collection.
-          _removeReference: function(model, options) {
-            if (this === model.collection) delete model.collection;
-            model.off('all', this._onModelEvent, this);
-          },
-      
-          // Internal method called every time a model in the set fires an event.
-          // Sets need to update their indexes when models change ids. All other
-          // events simply proxy through. "add" and "remove" events that originate
-          // in other collections are ignored.
-          _onModelEvent: function(event, model, collection, options) {
-            if ((event === 'add' || event === 'remove') && collection !== this) return;
-            if (event === 'destroy') this.remove(model, options);
-            if (model && event === 'change:' + model.idAttribute) {
-              delete this._byId[model.previous(model.idAttribute)];
-              if (model.id != null) this._byId[model.id] = model;
-            }
-            this.trigger.apply(this, arguments);
-          }
-      
-        });
-      
-        // Underscore methods that we want to implement on the Collection.
-        // 90% of the core usefulness of Backbone Collections is actually implemented
-        // right here:
-        var methods = ['forEach', 'each', 'map', 'collect', 'reduce', 'foldl',
-          'inject', 'reduceRight', 'foldr', 'find', 'detect', 'filter', 'select',
-          'reject', 'every', 'all', 'some', 'any', 'include', 'contains', 'invoke',
-          'max', 'min', 'toArray', 'size', 'first', 'head', 'take', 'initial', 'rest',
-          'tail', 'drop', 'last', 'without', 'difference', 'indexOf', 'shuffle',
-          'lastIndexOf', 'isEmpty', 'chain', 'sample'];
-      
-        // Mix in each Underscore method as a proxy to `Collection#models`.
-        _.each(methods, function(method) {
-          Collection.prototype[method] = function() {
-            var args = slice.call(arguments);
-            args.unshift(this.models);
-            return _[method].apply(_, args);
-          };
-        });
-      
-        // Underscore methods that take a property name as an argument.
-        var attributeMethods = ['groupBy', 'countBy', 'sortBy', 'indexBy'];
-      
-        // Use attributes instead of properties.
-        _.each(attributeMethods, function(method) {
-          Collection.prototype[method] = function(value, context) {
-            var iterator = _.isFunction(value) ? value : function(model) {
-              return model.get(value);
-            };
-            return _[method](this.models, iterator, context);
-          };
-        });
-      
-        // Backbone.View
-        // -------------
-      
-        // Backbone Views are almost more convention than they are actual code. A View
-        // is simply a JavaScript object that represents a logical chunk of UI in the
-        // DOM. This might be a single item, an entire list, a sidebar or panel, or
-        // even the surrounding frame which wraps your whole app. Defining a chunk of
-        // UI as a **View** allows you to define your DOM events declaratively, without
-        // having to worry about render order ... and makes it easy for the view to
-        // react to specific changes in the state of your models.
-      
-        // Creating a Backbone.View creates its initial element outside of the DOM,
-        // if an existing element is not provided...
-        var View = Backbone.View = function(options) {
-          this.cid = _.uniqueId('view');
-          options || (options = {});
-          _.extend(this, _.pick(options, viewOptions));
-          this._ensureElement();
-          this.initialize.apply(this, arguments);
-          this.delegateEvents();
-        };
-      
-        // Cached regex to split keys for `delegate`.
-        var delegateEventSplitter = /^(\S+)\s*(.*)$/;
-      
-        // List of view options to be merged as properties.
-        var viewOptions = ['model', 'collection', 'el', 'id', 'attributes', 'className', 'tagName', 'events'];
-      
-        // Set up all inheritable **Backbone.View** properties and methods.
-        _.extend(View.prototype, Events, {
-      
-          // The default `tagName` of a View's element is `"div"`.
-          tagName: 'div',
-      
-          // jQuery delegate for element lookup, scoped to DOM elements within the
-          // current view. This should be preferred to global lookups where possible.
-          $: function(selector) {
-            return this.$el.find(selector);
-          },
-      
-          // Initialize is an empty function by default. Override it with your own
-          // initialization logic.
-          initialize: function(){},
-      
-          // **render** is the core function that your view should override, in order
-          // to populate its element (`this.el`), with the appropriate HTML. The
-          // convention is for **render** to always return `this`.
-          render: function() {
-            return this;
-          },
-      
-          // Remove this view by taking the element out of the DOM, and removing any
-          // applicable Backbone.Events listeners.
-          remove: function() {
-            this.$el.remove();
-            this.stopListening();
-            return this;
-          },
-      
-          // Change the view's element (`this.el` property), including event
-          // re-delegation.
-          setElement: function(element, delegate) {
-            if (this.$el) this.undelegateEvents();
-            this.$el = element instanceof Backbone.$ ? element : Backbone.$(element);
-            this.el = this.$el[0];
-            if (delegate !== false) this.delegateEvents();
-            return this;
-          },
-      
-          // Set callbacks, where `this.events` is a hash of
-          //
-          // *{"event selector": "callback"}*
-          //
-          //     {
-          //       'mousedown .title':  'edit',
-          //       'click .button':     'save',
-          //       'click .open':       function(e) { ... }
-          //     }
-          //
-          // pairs. Callbacks will be bound to the view, with `this` set properly.
-          // Uses event delegation for efficiency.
-          // Omitting the selector binds the event to `this.el`.
-          // This only works for delegate-able events: not `focus`, `blur`, and
-          // not `change`, `submit`, and `reset` in Internet Explorer.
-          delegateEvents: function(events) {
-            if (!(events || (events = _.result(this, 'events')))) return this;
-            this.undelegateEvents();
-            for (var key in events) {
-              var method = events[key];
-              if (!_.isFunction(method)) method = this[events[key]];
-              if (!method) continue;
-      
-              var match = key.match(delegateEventSplitter);
-              var eventName = match[1], selector = match[2];
-              method = _.bind(method, this);
-              eventName += '.delegateEvents' + this.cid;
-              if (selector === '') {
-                this.$el.on(eventName, method);
-              } else {
-                this.$el.on(eventName, selector, method);
-              }
-            }
-            return this;
-          },
-      
-          // Clears all callbacks previously bound to the view with `delegateEvents`.
-          // You usually don't need to use this, but may wish to if you have multiple
-          // Backbone views attached to the same DOM element.
-          undelegateEvents: function() {
-            this.$el.off('.delegateEvents' + this.cid);
-            return this;
-          },
-      
-          // Ensure that the View has a DOM element to render into.
-          // If `this.el` is a string, pass it through `$()`, take the first
-          // matching element, and re-assign it to `el`. Otherwise, create
-          // an element from the `id`, `className` and `tagName` properties.
-          _ensureElement: function() {
-            if (!this.el) {
-              var attrs = _.extend({}, _.result(this, 'attributes'));
-              if (this.id) attrs.id = _.result(this, 'id');
-              if (this.className) attrs['class'] = _.result(this, 'className');
-              var $el = Backbone.$('<' + _.result(this, 'tagName') + '>').attr(attrs);
-              this.setElement($el, false);
-            } else {
-              this.setElement(_.result(this, 'el'), false);
-            }
-          }
-      
-        });
-      
-        // Backbone.sync
-        // -------------
-      
-        // Override this function to change the manner in which Backbone persists
-        // models to the server. You will be passed the type of request, and the
-        // model in question. By default, makes a RESTful Ajax request
-        // to the model's `url()`. Some possible customizations could be:
-        //
-        // * Use `setTimeout` to batch rapid-fire updates into a single request.
-        // * Send up the models as XML instead of JSON.
-        // * Persist models via WebSockets instead of Ajax.
-        //
-        // Turn on `Backbone.emulateHTTP` in order to send `PUT` and `DELETE` requests
-        // as `POST`, with a `_method` parameter containing the true HTTP method,
-        // as well as all requests with the body as `application/x-www-form-urlencoded`
-        // instead of `application/json` with the model in a param named `model`.
-        // Useful when interfacing with server-side languages like **PHP** that make
-        // it difficult to read the body of `PUT` requests.
-        Backbone.sync = function(method, model, options) {
-          var type = methodMap[method];
-      
-          // Default options, unless specified.
-          _.defaults(options || (options = {}), {
-            emulateHTTP: Backbone.emulateHTTP,
-            emulateJSON: Backbone.emulateJSON
-          });
-      
-          // Default JSON-request options.
-          var params = {type: type, dataType: 'json'};
-      
-          // Ensure that we have a URL.
-          if (!options.url) {
-            params.url = _.result(model, 'url') || urlError();
-          }
-      
-          // Ensure that we have the appropriate request data.
-          if (options.data == null && model && (method === 'create' || method === 'update' || method === 'patch')) {
-            params.contentType = 'application/json';
-            params.data = JSON.stringify(options.attrs || model.toJSON(options));
-          }
-      
-          // For older servers, emulate JSON by encoding the request into an HTML-form.
-          if (options.emulateJSON) {
-            params.contentType = 'application/x-www-form-urlencoded';
-            params.data = params.data ? {model: params.data} : {};
-          }
-      
-          // For older servers, emulate HTTP by mimicking the HTTP method with `_method`
-          // And an `X-HTTP-Method-Override` header.
-          if (options.emulateHTTP && (type === 'PUT' || type === 'DELETE' || type === 'PATCH')) {
-            params.type = 'POST';
-            if (options.emulateJSON) params.data._method = type;
-            var beforeSend = options.beforeSend;
-            options.beforeSend = function(xhr) {
-              xhr.setRequestHeader('X-HTTP-Method-Override', type);
-              if (beforeSend) return beforeSend.apply(this, arguments);
-            };
-          }
-      
-          // Don't process data on a non-GET request.
-          if (params.type !== 'GET' && !options.emulateJSON) {
-            params.processData = false;
-          }
-      
-          // If we're sending a `PATCH` request, and we're in an old Internet Explorer
-          // that still has ActiveX enabled by default, override jQuery to use that
-          // for XHR instead. Remove this line when jQuery supports `PATCH` on IE8.
-          if (params.type === 'PATCH' && noXhrPatch) {
-            params.xhr = function() {
-              return new ActiveXObject("Microsoft.XMLHTTP");
-            };
-          }
-      
-          // Make the request, allowing the user to override any Ajax options.
-          var xhr = options.xhr = Backbone.ajax(_.extend(params, options));
-          model.trigger('request', model, xhr, options);
-          return xhr;
-        };
-      
-        var noXhrPatch =
-          typeof window !== 'undefined' && !!window.ActiveXObject &&
-            !(window.XMLHttpRequest && (new XMLHttpRequest).dispatchEvent);
-      
-        // Map from CRUD to HTTP for our default `Backbone.sync` implementation.
-        var methodMap = {
-          'create': 'POST',
-          'update': 'PUT',
-          'patch':  'PATCH',
-          'delete': 'DELETE',
-          'read':   'GET'
-        };
-      
-        // Set the default implementation of `Backbone.ajax` to proxy through to `$`.
-        // Override this if you'd like to use a different library.
-        Backbone.ajax = function() {
-          return Backbone.$.ajax.apply(Backbone.$, arguments);
-        };
-      
-        // Backbone.Router
-        // ---------------
-      
-        // Routers map faux-URLs to actions, and fire events when routes are
-        // matched. Creating a new one sets its `routes` hash, if not set statically.
-        var Router = Backbone.Router = function(options) {
-          options || (options = {});
-          if (options.routes) this.routes = options.routes;
-          this._bindRoutes();
-          this.initialize.apply(this, arguments);
-        };
-      
-        // Cached regular expressions for matching named param parts and splatted
-        // parts of route strings.
-        var optionalParam = /\((.*?)\)/g;
-        var namedParam    = /(\(\?)?:\w+/g;
-        var splatParam    = /\*\w+/g;
-        var escapeRegExp  = /[\-{}\[\]+?.,\\\^$|#\s]/g;
-      
-        // Set up all inheritable **Backbone.Router** properties and methods.
-        _.extend(Router.prototype, Events, {
-      
-          // Initialize is an empty function by default. Override it with your own
-          // initialization logic.
-          initialize: function(){},
-      
-          // Manually bind a single named route to a callback. For example:
-          //
-          //     this.route('search/:query/p:num', 'search', function(query, num) {
-          //       ...
-          //     });
-          //
-          route: function(route, name, callback) {
-            if (!_.isRegExp(route)) route = this._routeToRegExp(route);
-            if (_.isFunction(name)) {
-              callback = name;
-              name = '';
-            }
-            if (!callback) callback = this[name];
-            var router = this;
-            Backbone.history.route(route, function(fragment) {
-              var args = router._extractParameters(route, fragment);
-              router.execute(callback, args);
-              router.trigger.apply(router, ['route:' + name].concat(args));
-              router.trigger('route', name, args);
-              Backbone.history.trigger('route', router, name, args);
-            });
-            return this;
-          },
-      
-          // Execute a route handler with the provided parameters.  This is an
-          // excellent place to do pre-route setup or post-route cleanup.
-          execute: function(callback, args) {
-            if (callback) callback.apply(this, args);
-          },
-      
-          // Simple proxy to `Backbone.history` to save a fragment into the history.
-          navigate: function(fragment, options) {
-            Backbone.history.navigate(fragment, options);
-            return this;
-          },
-      
-          // Bind all defined routes to `Backbone.history`. We have to reverse the
-          // order of the routes here to support behavior where the most general
-          // routes can be defined at the bottom of the route map.
-          _bindRoutes: function() {
-            if (!this.routes) return;
-            this.routes = _.result(this, 'routes');
-            var route, routes = _.keys(this.routes);
-            while ((route = routes.pop()) != null) {
-              this.route(route, this.routes[route]);
-            }
-          },
-      
-          // Convert a route string into a regular expression, suitable for matching
-          // against the current location hash.
-          _routeToRegExp: function(route) {
-            route = route.replace(escapeRegExp, '\\$&')
-                         .replace(optionalParam, '(?:$1)?')
-                         .replace(namedParam, function(match, optional) {
-                           return optional ? match : '([^/?]+)';
-                         })
-                         .replace(splatParam, '([^?]*?)');
-            return new RegExp('^' + route + '(?:\\?([\\s\\S]*))?$');
-          },
-      
-          // Given a route, and a URL fragment that it matches, return the array of
-          // extracted decoded parameters. Empty or unmatched parameters will be
-          // treated as `null` to normalize cross-browser behavior.
-          _extractParameters: function(route, fragment) {
-            var params = route.exec(fragment).slice(1);
-            return _.map(params, function(param, i) {
-              // Don't decode the search params.
-              if (i === params.length - 1) return param || null;
-              return param ? decodeURIComponent(param) : null;
-            });
-          }
-      
-        });
-      
-        // Backbone.History
-        // ----------------
-      
-        // Handles cross-browser history management, based on either
-        // [pushState](http://diveintohtml5.info/history.html) and real URLs, or
-        // [onhashchange](https://developer.mozilla.org/en-US/docs/DOM/window.onhashchange)
-        // and URL fragments. If the browser supports neither (old IE, natch),
-        // falls back to polling.
-        var History = Backbone.History = function() {
-          this.handlers = [];
-          _.bindAll(this, 'checkUrl');
-      
-          // Ensure that `History` can be used outside of the browser.
-          if (typeof window !== 'undefined') {
-            this.location = window.location;
-            this.history = window.history;
-          }
-        };
-      
-        // Cached regex for stripping a leading hash/slash and trailing space.
-        var routeStripper = /^[#\/]|\s+$/g;
-      
-        // Cached regex for stripping leading and trailing slashes.
-        var rootStripper = /^\/+|\/+$/g;
-      
-        // Cached regex for detecting MSIE.
-        var isExplorer = /msie [\w.]+/;
-      
-        // Cached regex for removing a trailing slash.
-        var trailingSlash = /\/$/;
-      
-        // Cached regex for stripping urls of hash.
-        var pathStripper = /#.*$/;
-      
-        // Has the history handling already been started?
-        History.started = false;
-      
-        // Set up all inheritable **Backbone.History** properties and methods.
-        _.extend(History.prototype, Events, {
-      
-          // The default interval to poll for hash changes, if necessary, is
-          // twenty times a second.
-          interval: 50,
-      
-          // Are we at the app root?
-          atRoot: function() {
-            return this.location.pathname.replace(/[^\/]$/, '$&/') === this.root;
-          },
-      
-          // Gets the true hash value. Cannot use location.hash directly due to bug
-          // in Firefox where location.hash will always be decoded.
-          getHash: function(window) {
-            var match = (window || this).location.href.match(/#(.*)$/);
-            return match ? match[1] : '';
-          },
-      
-          // Get the cross-browser normalized URL fragment, either from the URL,
-          // the hash, or the override.
-          getFragment: function(fragment, forcePushState) {
-            if (fragment == null) {
-              if (this._hasPushState || !this._wantsHashChange || forcePushState) {
-                fragment = decodeURI(this.location.pathname + this.location.search);
-                var root = this.root.replace(trailingSlash, '');
-                if (!fragment.indexOf(root)) fragment = fragment.slice(root.length);
-              } else {
-                fragment = this.getHash();
-              }
-            }
-            return fragment.replace(routeStripper, '');
-          },
-      
-          // Start the hash change handling, returning `true` if the current URL matches
-          // an existing route, and `false` otherwise.
-          start: function(options) {
-            if (History.started) throw new Error("Backbone.history has already been started");
-            History.started = true;
-      
-            // Figure out the initial configuration. Do we need an iframe?
-            // Is pushState desired ... is it available?
-            this.options          = _.extend({root: '/'}, this.options, options);
-            this.root             = this.options.root;
-            this._wantsHashChange = this.options.hashChange !== false;
-            this._wantsPushState  = !!this.options.pushState;
-            this._hasPushState    = !!(this.options.pushState && this.history && this.history.pushState);
-            var fragment          = this.getFragment();
-            var docMode           = document.documentMode;
-            var oldIE             = (isExplorer.exec(navigator.userAgent.toLowerCase()) && (!docMode || docMode <= 7));
-      
-            // Normalize root to always include a leading and trailing slash.
-            this.root = ('/' + this.root + '/').replace(rootStripper, '/');
-      
-            if (oldIE && this._wantsHashChange) {
-              var frame = Backbone.$('<iframe src="javascript:0" tabindex="-1">');
-              this.iframe = frame.hide().appendTo('body')[0].contentWindow;
-              this.navigate(fragment);
-            }
-      
-            // Depending on whether we're using pushState or hashes, and whether
-            // 'onhashchange' is supported, determine how we check the URL state.
-            if (this._hasPushState) {
-              Backbone.$(window).on('popstate', this.checkUrl);
-            } else if (this._wantsHashChange && ('onhashchange' in window) && !oldIE) {
-              Backbone.$(window).on('hashchange', this.checkUrl);
-            } else if (this._wantsHashChange) {
-              this._checkUrlInterval = setInterval(this.checkUrl, this.interval);
-            }
-      
-            // Determine if we need to change the base url, for a pushState link
-            // opened by a non-pushState browser.
-            this.fragment = fragment;
-            var loc = this.location;
-      
-            // Transition from hashChange to pushState or vice versa if both are
-            // requested.
-            if (this._wantsHashChange && this._wantsPushState) {
-      
-              // If we've started off with a route from a `pushState`-enabled
-              // browser, but we're currently in a browser that doesn't support it...
-              if (!this._hasPushState && !this.atRoot()) {
-                this.fragment = this.getFragment(null, true);
-                this.location.replace(this.root + '#' + this.fragment);
-                // Return immediately as browser will do redirect to new url
-                return true;
-      
-              // Or if we've started out with a hash-based route, but we're currently
-              // in a browser where it could be `pushState`-based instead...
-              } else if (this._hasPushState && this.atRoot() && loc.hash) {
-                this.fragment = this.getHash().replace(routeStripper, '');
-                this.history.replaceState({}, document.title, this.root + this.fragment);
-              }
-      
-            }
-      
-            if (!this.options.silent) return this.loadUrl();
-          },
-      
-          // Disable Backbone.history, perhaps temporarily. Not useful in a real app,
-          // but possibly useful for unit testing Routers.
-          stop: function() {
-            Backbone.$(window).off('popstate', this.checkUrl).off('hashchange', this.checkUrl);
-            if (this._checkUrlInterval) clearInterval(this._checkUrlInterval);
-            History.started = false;
-          },
-      
-          // Add a route to be tested when the fragment changes. Routes added later
-          // may override previous routes.
-          route: function(route, callback) {
-            this.handlers.unshift({route: route, callback: callback});
-          },
-      
-          // Checks the current URL to see if it has changed, and if it has,
-          // calls `loadUrl`, normalizing across the hidden iframe.
-          checkUrl: function(e) {
-            var current = this.getFragment();
-            if (current === this.fragment && this.iframe) {
-              current = this.getFragment(this.getHash(this.iframe));
-            }
-            if (current === this.fragment) return false;
-            if (this.iframe) this.navigate(current);
-            this.loadUrl();
-          },
-      
-          // Attempt to load the current URL fragment. If a route succeeds with a
-          // match, returns `true`. If no defined routes matches the fragment,
-          // returns `false`.
-          loadUrl: function(fragment) {
-            fragment = this.fragment = this.getFragment(fragment);
-            return _.any(this.handlers, function(handler) {
-              if (handler.route.test(fragment)) {
-                handler.callback(fragment);
-                return true;
-              }
-            });
-          },
-      
-          // Save a fragment into the hash history, or replace the URL state if the
-          // 'replace' option is passed. You are responsible for properly URL-encoding
-          // the fragment in advance.
-          //
-          // The options object can contain `trigger: true` if you wish to have the
-          // route callback be fired (not usually desirable), or `replace: true`, if
-          // you wish to modify the current URL without adding an entry to the history.
-          navigate: function(fragment, options) {
-            if (!History.started) return false;
-            if (!options || options === true) options = {trigger: !!options};
-      
-            var url = this.root + (fragment = this.getFragment(fragment || ''));
-      
-            // Strip the hash for matching.
-            fragment = fragment.replace(pathStripper, '');
-      
-            if (this.fragment === fragment) return;
-            this.fragment = fragment;
-      
-            // Don't include a trailing slash on the root.
-            if (fragment === '' && url !== '/') url = url.slice(0, -1);
-      
-            // If pushState is available, we use it to set the fragment as a real URL.
-            if (this._hasPushState) {
-              this.history[options.replace ? 'replaceState' : 'pushState']({}, document.title, url);
-      
-            // If hash changes haven't been explicitly disabled, update the hash
-            // fragment to store history.
-            } else if (this._wantsHashChange) {
-              this._updateHash(this.location, fragment, options.replace);
-              if (this.iframe && (fragment !== this.getFragment(this.getHash(this.iframe)))) {
-                // Opening and closing the iframe tricks IE7 and earlier to push a
-                // history entry on hash-tag change.  When replace is true, we don't
-                // want this.
-                if(!options.replace) this.iframe.document.open().close();
-                this._updateHash(this.iframe.location, fragment, options.replace);
-              }
-      
-            // If you've told us that you explicitly don't want fallback hashchange-
-            // based history, then `navigate` becomes a page refresh.
-            } else {
-              return this.location.assign(url);
-            }
-            if (options.trigger) return this.loadUrl(fragment);
-          },
-      
-          // Update the hash location, either replacing the current entry, or adding
-          // a new one to the browser history.
-          _updateHash: function(location, fragment, replace) {
-            if (replace) {
-              var href = location.href.replace(/(javascript:|#).*$/, '');
-              location.replace(href + '#' + fragment);
-            } else {
-              // Some browsers require that `hash` contains a leading #.
-              location.hash = '#' + fragment;
-            }
-          }
-      
-        });
-      
-        // Create the default Backbone.history.
-        Backbone.history = new History;
-      
-        // Helpers
-        // -------
-      
-        // Helper function to correctly set up the prototype chain, for subclasses.
-        // Similar to `goog.inherits`, but uses a hash of prototype properties and
-        // class properties to be extended.
-        var extend = function(protoProps, staticProps) {
-          var parent = this;
-          var child;
-      
-          // The constructor function for the new subclass is either defined by you
-          // (the "constructor" property in your `extend` definition), or defaulted
-          // by us to simply call the parent's constructor.
-          if (protoProps && _.has(protoProps, 'constructor')) {
-            child = protoProps.constructor;
-          } else {
-            child = function(){ return parent.apply(this, arguments); };
-          }
-      
-          // Add static properties to the constructor function, if supplied.
-          _.extend(child, parent, staticProps);
-      
-          // Set the prototype chain to inherit from `parent`, without calling
-          // `parent`'s constructor function.
-          var Surrogate = function(){ this.constructor = child; };
-          Surrogate.prototype = parent.prototype;
-          child.prototype = new Surrogate;
-      
-          // Add prototype properties (instance properties) to the subclass,
-          // if supplied.
-          if (protoProps) _.extend(child.prototype, protoProps);
-      
-          // Set a convenience property in case the parent's prototype is needed
-          // later.
-          child.__super__ = parent.prototype;
-      
-          return child;
-        };
-      
-        // Set up inheritance for the model, collection, router, view and history.
-        Model.extend = Collection.extend = Router.extend = View.extend = History.extend = extend;
-      
-        // Throw an error when a URL is needed, and none is supplied.
-        var urlError = function() {
-          throw new Error('A "url" property or function must be specified');
-        };
-      
-        // Wrap an optional error callback with a fallback error event.
-        var wrapError = function(model, options) {
-          var error = options.error;
-          options.error = function(resp) {
-            if (error) error(model, resp, options);
-            model.trigger('error', model, resp, options);
-          };
-        };
-      
-        return Backbone;
-      
-      }));
-      
-    }
-  }, 'backbone');
-
   Module.createPackage('jquery', {
     'dist/jquery': function (module, exports, require, global) {
       /*!
@@ -13023,14 +9847,3525 @@
     }
   }, 'lib/vagueTime');
 
-  require('underscore');
-  require('backbone');
+  Module.createPackage('underscore', {
+    'underscore': function (module, exports, require, global) {
+      //     Underscore.js 1.8.3
+      //     http://underscorejs.org
+      //     (c) 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+      //     Underscore may be freely distributed under the MIT license.
+      
+      (function() {
+      
+        // Baseline setup
+        // --------------
+      
+        // Establish the root object, `window` in the browser, or `exports` on the server.
+        var root = this;
+      
+        // Save the previous value of the `_` variable.
+        var previousUnderscore = root._;
+      
+        // Save bytes in the minified (but not gzipped) version:
+        var ArrayProto = Array.prototype, ObjProto = Object.prototype, FuncProto = Function.prototype;
+      
+        // Create quick reference variables for speed access to core prototypes.
+        var
+          push             = ArrayProto.push,
+          slice            = ArrayProto.slice,
+          toString         = ObjProto.toString,
+          hasOwnProperty   = ObjProto.hasOwnProperty;
+      
+        // All **ECMAScript 5** native function implementations that we hope to use
+        // are declared here.
+        var
+          nativeIsArray      = Array.isArray,
+          nativeKeys         = Object.keys,
+          nativeBind         = FuncProto.bind,
+          nativeCreate       = Object.create;
+      
+        // Naked function reference for surrogate-prototype-swapping.
+        var Ctor = function(){};
+      
+        // Create a safe reference to the Underscore object for use below.
+        var _ = function(obj) {
+          if (obj instanceof _) return obj;
+          if (!(this instanceof _)) return new _(obj);
+          this._wrapped = obj;
+        };
+      
+        // Export the Underscore object for **Node.js**, with
+        // backwards-compatibility for the old `require()` API. If we're in
+        // the browser, add `_` as a global object.
+        if (typeof exports !== 'undefined') {
+          if (typeof module !== 'undefined' && module.exports) {
+            exports = module.exports = _;
+          }
+          exports._ = _;
+        } else {
+          root._ = _;
+        }
+      
+        // Current version.
+        _.VERSION = '1.8.3';
+      
+        // Internal function that returns an efficient (for current engines) version
+        // of the passed-in callback, to be repeatedly applied in other Underscore
+        // functions.
+        var optimizeCb = function(func, context, argCount) {
+          if (context === void 0) return func;
+          switch (argCount == null ? 3 : argCount) {
+            case 1: return function(value) {
+              return func.call(context, value);
+            };
+            case 2: return function(value, other) {
+              return func.call(context, value, other);
+            };
+            case 3: return function(value, index, collection) {
+              return func.call(context, value, index, collection);
+            };
+            case 4: return function(accumulator, value, index, collection) {
+              return func.call(context, accumulator, value, index, collection);
+            };
+          }
+          return function() {
+            return func.apply(context, arguments);
+          };
+        };
+      
+        // A mostly-internal function to generate callbacks that can be applied
+        // to each element in a collection, returning the desired result — either
+        // identity, an arbitrary callback, a property matcher, or a property accessor.
+        var cb = function(value, context, argCount) {
+          if (value == null) return _.identity;
+          if (_.isFunction(value)) return optimizeCb(value, context, argCount);
+          if (_.isObject(value)) return _.matcher(value);
+          return _.property(value);
+        };
+        _.iteratee = function(value, context) {
+          return cb(value, context, Infinity);
+        };
+      
+        // An internal function for creating assigner functions.
+        var createAssigner = function(keysFunc, undefinedOnly) {
+          return function(obj) {
+            var length = arguments.length;
+            if (length < 2 || obj == null) return obj;
+            for (var index = 1; index < length; index++) {
+              var source = arguments[index],
+                  keys = keysFunc(source),
+                  l = keys.length;
+              for (var i = 0; i < l; i++) {
+                var key = keys[i];
+                if (!undefinedOnly || obj[key] === void 0) obj[key] = source[key];
+              }
+            }
+            return obj;
+          };
+        };
+      
+        // An internal function for creating a new object that inherits from another.
+        var baseCreate = function(prototype) {
+          if (!_.isObject(prototype)) return {};
+          if (nativeCreate) return nativeCreate(prototype);
+          Ctor.prototype = prototype;
+          var result = new Ctor;
+          Ctor.prototype = null;
+          return result;
+        };
+      
+        var property = function(key) {
+          return function(obj) {
+            return obj == null ? void 0 : obj[key];
+          };
+        };
+      
+        // Helper for collection methods to determine whether a collection
+        // should be iterated as an array or as an object
+        // Related: http://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength
+        // Avoids a very nasty iOS 8 JIT bug on ARM-64. #2094
+        var MAX_ARRAY_INDEX = Math.pow(2, 53) - 1;
+        var getLength = property('length');
+        var isArrayLike = function(collection) {
+          var length = getLength(collection);
+          return typeof length == 'number' && length >= 0 && length <= MAX_ARRAY_INDEX;
+        };
+      
+        // Collection Functions
+        // --------------------
+      
+        // The cornerstone, an `each` implementation, aka `forEach`.
+        // Handles raw objects in addition to array-likes. Treats all
+        // sparse array-likes as if they were dense.
+        _.each = _.forEach = function(obj, iteratee, context) {
+          iteratee = optimizeCb(iteratee, context);
+          var i, length;
+          if (isArrayLike(obj)) {
+            for (i = 0, length = obj.length; i < length; i++) {
+              iteratee(obj[i], i, obj);
+            }
+          } else {
+            var keys = _.keys(obj);
+            for (i = 0, length = keys.length; i < length; i++) {
+              iteratee(obj[keys[i]], keys[i], obj);
+            }
+          }
+          return obj;
+        };
+      
+        // Return the results of applying the iteratee to each element.
+        _.map = _.collect = function(obj, iteratee, context) {
+          iteratee = cb(iteratee, context);
+          var keys = !isArrayLike(obj) && _.keys(obj),
+              length = (keys || obj).length,
+              results = Array(length);
+          for (var index = 0; index < length; index++) {
+            var currentKey = keys ? keys[index] : index;
+            results[index] = iteratee(obj[currentKey], currentKey, obj);
+          }
+          return results;
+        };
+      
+        // Create a reducing function iterating left or right.
+        function createReduce(dir) {
+          // Optimized iterator function as using arguments.length
+          // in the main function will deoptimize the, see #1991.
+          function iterator(obj, iteratee, memo, keys, index, length) {
+            for (; index >= 0 && index < length; index += dir) {
+              var currentKey = keys ? keys[index] : index;
+              memo = iteratee(memo, obj[currentKey], currentKey, obj);
+            }
+            return memo;
+          }
+      
+          return function(obj, iteratee, memo, context) {
+            iteratee = optimizeCb(iteratee, context, 4);
+            var keys = !isArrayLike(obj) && _.keys(obj),
+                length = (keys || obj).length,
+                index = dir > 0 ? 0 : length - 1;
+            // Determine the initial value if none is provided.
+            if (arguments.length < 3) {
+              memo = obj[keys ? keys[index] : index];
+              index += dir;
+            }
+            return iterator(obj, iteratee, memo, keys, index, length);
+          };
+        }
+      
+        // **Reduce** builds up a single result from a list of values, aka `inject`,
+        // or `foldl`.
+        _.reduce = _.foldl = _.inject = createReduce(1);
+      
+        // The right-associative version of reduce, also known as `foldr`.
+        _.reduceRight = _.foldr = createReduce(-1);
+      
+        // Return the first value which passes a truth test. Aliased as `detect`.
+        _.find = _.detect = function(obj, predicate, context) {
+          var key;
+          if (isArrayLike(obj)) {
+            key = _.findIndex(obj, predicate, context);
+          } else {
+            key = _.findKey(obj, predicate, context);
+          }
+          if (key !== void 0 && key !== -1) return obj[key];
+        };
+      
+        // Return all the elements that pass a truth test.
+        // Aliased as `select`.
+        _.filter = _.select = function(obj, predicate, context) {
+          var results = [];
+          predicate = cb(predicate, context);
+          _.each(obj, function(value, index, list) {
+            if (predicate(value, index, list)) results.push(value);
+          });
+          return results;
+        };
+      
+        // Return all the elements for which a truth test fails.
+        _.reject = function(obj, predicate, context) {
+          return _.filter(obj, _.negate(cb(predicate)), context);
+        };
+      
+        // Determine whether all of the elements match a truth test.
+        // Aliased as `all`.
+        _.every = _.all = function(obj, predicate, context) {
+          predicate = cb(predicate, context);
+          var keys = !isArrayLike(obj) && _.keys(obj),
+              length = (keys || obj).length;
+          for (var index = 0; index < length; index++) {
+            var currentKey = keys ? keys[index] : index;
+            if (!predicate(obj[currentKey], currentKey, obj)) return false;
+          }
+          return true;
+        };
+      
+        // Determine if at least one element in the object matches a truth test.
+        // Aliased as `any`.
+        _.some = _.any = function(obj, predicate, context) {
+          predicate = cb(predicate, context);
+          var keys = !isArrayLike(obj) && _.keys(obj),
+              length = (keys || obj).length;
+          for (var index = 0; index < length; index++) {
+            var currentKey = keys ? keys[index] : index;
+            if (predicate(obj[currentKey], currentKey, obj)) return true;
+          }
+          return false;
+        };
+      
+        // Determine if the array or object contains a given item (using `===`).
+        // Aliased as `includes` and `include`.
+        _.contains = _.includes = _.include = function(obj, item, fromIndex, guard) {
+          if (!isArrayLike(obj)) obj = _.values(obj);
+          if (typeof fromIndex != 'number' || guard) fromIndex = 0;
+          return _.indexOf(obj, item, fromIndex) >= 0;
+        };
+      
+        // Invoke a method (with arguments) on every item in a collection.
+        _.invoke = function(obj, method) {
+          var args = slice.call(arguments, 2);
+          var isFunc = _.isFunction(method);
+          return _.map(obj, function(value) {
+            var func = isFunc ? method : value[method];
+            return func == null ? func : func.apply(value, args);
+          });
+        };
+      
+        // Convenience version of a common use case of `map`: fetching a property.
+        _.pluck = function(obj, key) {
+          return _.map(obj, _.property(key));
+        };
+      
+        // Convenience version of a common use case of `filter`: selecting only objects
+        // containing specific `key:value` pairs.
+        _.where = function(obj, attrs) {
+          return _.filter(obj, _.matcher(attrs));
+        };
+      
+        // Convenience version of a common use case of `find`: getting the first object
+        // containing specific `key:value` pairs.
+        _.findWhere = function(obj, attrs) {
+          return _.find(obj, _.matcher(attrs));
+        };
+      
+        // Return the maximum element (or element-based computation).
+        _.max = function(obj, iteratee, context) {
+          var result = -Infinity, lastComputed = -Infinity,
+              value, computed;
+          if (iteratee == null && obj != null) {
+            obj = isArrayLike(obj) ? obj : _.values(obj);
+            for (var i = 0, length = obj.length; i < length; i++) {
+              value = obj[i];
+              if (value > result) {
+                result = value;
+              }
+            }
+          } else {
+            iteratee = cb(iteratee, context);
+            _.each(obj, function(value, index, list) {
+              computed = iteratee(value, index, list);
+              if (computed > lastComputed || computed === -Infinity && result === -Infinity) {
+                result = value;
+                lastComputed = computed;
+              }
+            });
+          }
+          return result;
+        };
+      
+        // Return the minimum element (or element-based computation).
+        _.min = function(obj, iteratee, context) {
+          var result = Infinity, lastComputed = Infinity,
+              value, computed;
+          if (iteratee == null && obj != null) {
+            obj = isArrayLike(obj) ? obj : _.values(obj);
+            for (var i = 0, length = obj.length; i < length; i++) {
+              value = obj[i];
+              if (value < result) {
+                result = value;
+              }
+            }
+          } else {
+            iteratee = cb(iteratee, context);
+            _.each(obj, function(value, index, list) {
+              computed = iteratee(value, index, list);
+              if (computed < lastComputed || computed === Infinity && result === Infinity) {
+                result = value;
+                lastComputed = computed;
+              }
+            });
+          }
+          return result;
+        };
+      
+        // Shuffle a collection, using the modern version of the
+        // [Fisher-Yates shuffle](http://en.wikipedia.org/wiki/Fisher–Yates_shuffle).
+        _.shuffle = function(obj) {
+          var set = isArrayLike(obj) ? obj : _.values(obj);
+          var length = set.length;
+          var shuffled = Array(length);
+          for (var index = 0, rand; index < length; index++) {
+            rand = _.random(0, index);
+            if (rand !== index) shuffled[index] = shuffled[rand];
+            shuffled[rand] = set[index];
+          }
+          return shuffled;
+        };
+      
+        // Sample **n** random values from a collection.
+        // If **n** is not specified, returns a single random element.
+        // The internal `guard` argument allows it to work with `map`.
+        _.sample = function(obj, n, guard) {
+          if (n == null || guard) {
+            if (!isArrayLike(obj)) obj = _.values(obj);
+            return obj[_.random(obj.length - 1)];
+          }
+          return _.shuffle(obj).slice(0, Math.max(0, n));
+        };
+      
+        // Sort the object's values by a criterion produced by an iteratee.
+        _.sortBy = function(obj, iteratee, context) {
+          iteratee = cb(iteratee, context);
+          return _.pluck(_.map(obj, function(value, index, list) {
+            return {
+              value: value,
+              index: index,
+              criteria: iteratee(value, index, list)
+            };
+          }).sort(function(left, right) {
+            var a = left.criteria;
+            var b = right.criteria;
+            if (a !== b) {
+              if (a > b || a === void 0) return 1;
+              if (a < b || b === void 0) return -1;
+            }
+            return left.index - right.index;
+          }), 'value');
+        };
+      
+        // An internal function used for aggregate "group by" operations.
+        var group = function(behavior) {
+          return function(obj, iteratee, context) {
+            var result = {};
+            iteratee = cb(iteratee, context);
+            _.each(obj, function(value, index) {
+              var key = iteratee(value, index, obj);
+              behavior(result, value, key);
+            });
+            return result;
+          };
+        };
+      
+        // Groups the object's values by a criterion. Pass either a string attribute
+        // to group by, or a function that returns the criterion.
+        _.groupBy = group(function(result, value, key) {
+          if (_.has(result, key)) result[key].push(value); else result[key] = [value];
+        });
+      
+        // Indexes the object's values by a criterion, similar to `groupBy`, but for
+        // when you know that your index values will be unique.
+        _.indexBy = group(function(result, value, key) {
+          result[key] = value;
+        });
+      
+        // Counts instances of an object that group by a certain criterion. Pass
+        // either a string attribute to count by, or a function that returns the
+        // criterion.
+        _.countBy = group(function(result, value, key) {
+          if (_.has(result, key)) result[key]++; else result[key] = 1;
+        });
+      
+        // Safely create a real, live array from anything iterable.
+        _.toArray = function(obj) {
+          if (!obj) return [];
+          if (_.isArray(obj)) return slice.call(obj);
+          if (isArrayLike(obj)) return _.map(obj, _.identity);
+          return _.values(obj);
+        };
+      
+        // Return the number of elements in an object.
+        _.size = function(obj) {
+          if (obj == null) return 0;
+          return isArrayLike(obj) ? obj.length : _.keys(obj).length;
+        };
+      
+        // Split a collection into two arrays: one whose elements all satisfy the given
+        // predicate, and one whose elements all do not satisfy the predicate.
+        _.partition = function(obj, predicate, context) {
+          predicate = cb(predicate, context);
+          var pass = [], fail = [];
+          _.each(obj, function(value, key, obj) {
+            (predicate(value, key, obj) ? pass : fail).push(value);
+          });
+          return [pass, fail];
+        };
+      
+        // Array Functions
+        // ---------------
+      
+        // Get the first element of an array. Passing **n** will return the first N
+        // values in the array. Aliased as `head` and `take`. The **guard** check
+        // allows it to work with `_.map`.
+        _.first = _.head = _.take = function(array, n, guard) {
+          if (array == null) return void 0;
+          if (n == null || guard) return array[0];
+          return _.initial(array, array.length - n);
+        };
+      
+        // Returns everything but the last entry of the array. Especially useful on
+        // the arguments object. Passing **n** will return all the values in
+        // the array, excluding the last N.
+        _.initial = function(array, n, guard) {
+          return slice.call(array, 0, Math.max(0, array.length - (n == null || guard ? 1 : n)));
+        };
+      
+        // Get the last element of an array. Passing **n** will return the last N
+        // values in the array.
+        _.last = function(array, n, guard) {
+          if (array == null) return void 0;
+          if (n == null || guard) return array[array.length - 1];
+          return _.rest(array, Math.max(0, array.length - n));
+        };
+      
+        // Returns everything but the first entry of the array. Aliased as `tail` and `drop`.
+        // Especially useful on the arguments object. Passing an **n** will return
+        // the rest N values in the array.
+        _.rest = _.tail = _.drop = function(array, n, guard) {
+          return slice.call(array, n == null || guard ? 1 : n);
+        };
+      
+        // Trim out all falsy values from an array.
+        _.compact = function(array) {
+          return _.filter(array, _.identity);
+        };
+      
+        // Internal implementation of a recursive `flatten` function.
+        var flatten = function(input, shallow, strict, startIndex) {
+          var output = [], idx = 0;
+          for (var i = startIndex || 0, length = getLength(input); i < length; i++) {
+            var value = input[i];
+            if (isArrayLike(value) && (_.isArray(value) || _.isArguments(value))) {
+              //flatten current level of array or arguments object
+              if (!shallow) value = flatten(value, shallow, strict);
+              var j = 0, len = value.length;
+              output.length += len;
+              while (j < len) {
+                output[idx++] = value[j++];
+              }
+            } else if (!strict) {
+              output[idx++] = value;
+            }
+          }
+          return output;
+        };
+      
+        // Flatten out an array, either recursively (by default), or just one level.
+        _.flatten = function(array, shallow) {
+          return flatten(array, shallow, false);
+        };
+      
+        // Return a version of the array that does not contain the specified value(s).
+        _.without = function(array) {
+          return _.difference(array, slice.call(arguments, 1));
+        };
+      
+        // Produce a duplicate-free version of the array. If the array has already
+        // been sorted, you have the option of using a faster algorithm.
+        // Aliased as `unique`.
+        _.uniq = _.unique = function(array, isSorted, iteratee, context) {
+          if (!_.isBoolean(isSorted)) {
+            context = iteratee;
+            iteratee = isSorted;
+            isSorted = false;
+          }
+          if (iteratee != null) iteratee = cb(iteratee, context);
+          var result = [];
+          var seen = [];
+          for (var i = 0, length = getLength(array); i < length; i++) {
+            var value = array[i],
+                computed = iteratee ? iteratee(value, i, array) : value;
+            if (isSorted) {
+              if (!i || seen !== computed) result.push(value);
+              seen = computed;
+            } else if (iteratee) {
+              if (!_.contains(seen, computed)) {
+                seen.push(computed);
+                result.push(value);
+              }
+            } else if (!_.contains(result, value)) {
+              result.push(value);
+            }
+          }
+          return result;
+        };
+      
+        // Produce an array that contains the union: each distinct element from all of
+        // the passed-in arrays.
+        _.union = function() {
+          return _.uniq(flatten(arguments, true, true));
+        };
+      
+        // Produce an array that contains every item shared between all the
+        // passed-in arrays.
+        _.intersection = function(array) {
+          var result = [];
+          var argsLength = arguments.length;
+          for (var i = 0, length = getLength(array); i < length; i++) {
+            var item = array[i];
+            if (_.contains(result, item)) continue;
+            for (var j = 1; j < argsLength; j++) {
+              if (!_.contains(arguments[j], item)) break;
+            }
+            if (j === argsLength) result.push(item);
+          }
+          return result;
+        };
+      
+        // Take the difference between one array and a number of other arrays.
+        // Only the elements present in just the first array will remain.
+        _.difference = function(array) {
+          var rest = flatten(arguments, true, true, 1);
+          return _.filter(array, function(value){
+            return !_.contains(rest, value);
+          });
+        };
+      
+        // Zip together multiple lists into a single array -- elements that share
+        // an index go together.
+        _.zip = function() {
+          return _.unzip(arguments);
+        };
+      
+        // Complement of _.zip. Unzip accepts an array of arrays and groups
+        // each array's elements on shared indices
+        _.unzip = function(array) {
+          var length = array && _.max(array, getLength).length || 0;
+          var result = Array(length);
+      
+          for (var index = 0; index < length; index++) {
+            result[index] = _.pluck(array, index);
+          }
+          return result;
+        };
+      
+        // Converts lists into objects. Pass either a single array of `[key, value]`
+        // pairs, or two parallel arrays of the same length -- one of keys, and one of
+        // the corresponding values.
+        _.object = function(list, values) {
+          var result = {};
+          for (var i = 0, length = getLength(list); i < length; i++) {
+            if (values) {
+              result[list[i]] = values[i];
+            } else {
+              result[list[i][0]] = list[i][1];
+            }
+          }
+          return result;
+        };
+      
+        // Generator function to create the findIndex and findLastIndex functions
+        function createPredicateIndexFinder(dir) {
+          return function(array, predicate, context) {
+            predicate = cb(predicate, context);
+            var length = getLength(array);
+            var index = dir > 0 ? 0 : length - 1;
+            for (; index >= 0 && index < length; index += dir) {
+              if (predicate(array[index], index, array)) return index;
+            }
+            return -1;
+          };
+        }
+      
+        // Returns the first index on an array-like that passes a predicate test
+        _.findIndex = createPredicateIndexFinder(1);
+        _.findLastIndex = createPredicateIndexFinder(-1);
+      
+        // Use a comparator function to figure out the smallest index at which
+        // an object should be inserted so as to maintain order. Uses binary search.
+        _.sortedIndex = function(array, obj, iteratee, context) {
+          iteratee = cb(iteratee, context, 1);
+          var value = iteratee(obj);
+          var low = 0, high = getLength(array);
+          while (low < high) {
+            var mid = Math.floor((low + high) / 2);
+            if (iteratee(array[mid]) < value) low = mid + 1; else high = mid;
+          }
+          return low;
+        };
+      
+        // Generator function to create the indexOf and lastIndexOf functions
+        function createIndexFinder(dir, predicateFind, sortedIndex) {
+          return function(array, item, idx) {
+            var i = 0, length = getLength(array);
+            if (typeof idx == 'number') {
+              if (dir > 0) {
+                  i = idx >= 0 ? idx : Math.max(idx + length, i);
+              } else {
+                  length = idx >= 0 ? Math.min(idx + 1, length) : idx + length + 1;
+              }
+            } else if (sortedIndex && idx && length) {
+              idx = sortedIndex(array, item);
+              return array[idx] === item ? idx : -1;
+            }
+            if (item !== item) {
+              idx = predicateFind(slice.call(array, i, length), _.isNaN);
+              return idx >= 0 ? idx + i : -1;
+            }
+            for (idx = dir > 0 ? i : length - 1; idx >= 0 && idx < length; idx += dir) {
+              if (array[idx] === item) return idx;
+            }
+            return -1;
+          };
+        }
+      
+        // Return the position of the first occurrence of an item in an array,
+        // or -1 if the item is not included in the array.
+        // If the array is large and already in sort order, pass `true`
+        // for **isSorted** to use binary search.
+        _.indexOf = createIndexFinder(1, _.findIndex, _.sortedIndex);
+        _.lastIndexOf = createIndexFinder(-1, _.findLastIndex);
+      
+        // Generate an integer Array containing an arithmetic progression. A port of
+        // the native Python `range()` function. See
+        // [the Python documentation](http://docs.python.org/library/functions.html#range).
+        _.range = function(start, stop, step) {
+          if (stop == null) {
+            stop = start || 0;
+            start = 0;
+          }
+          step = step || 1;
+      
+          var length = Math.max(Math.ceil((stop - start) / step), 0);
+          var range = Array(length);
+      
+          for (var idx = 0; idx < length; idx++, start += step) {
+            range[idx] = start;
+          }
+      
+          return range;
+        };
+      
+        // Function (ahem) Functions
+        // ------------------
+      
+        // Determines whether to execute a function as a constructor
+        // or a normal function with the provided arguments
+        var executeBound = function(sourceFunc, boundFunc, context, callingContext, args) {
+          if (!(callingContext instanceof boundFunc)) return sourceFunc.apply(context, args);
+          var self = baseCreate(sourceFunc.prototype);
+          var result = sourceFunc.apply(self, args);
+          if (_.isObject(result)) return result;
+          return self;
+        };
+      
+        // Create a function bound to a given object (assigning `this`, and arguments,
+        // optionally). Delegates to **ECMAScript 5**'s native `Function.bind` if
+        // available.
+        _.bind = function(func, context) {
+          if (nativeBind && func.bind === nativeBind) return nativeBind.apply(func, slice.call(arguments, 1));
+          if (!_.isFunction(func)) throw new TypeError('Bind must be called on a function');
+          var args = slice.call(arguments, 2);
+          var bound = function() {
+            return executeBound(func, bound, context, this, args.concat(slice.call(arguments)));
+          };
+          return bound;
+        };
+      
+        // Partially apply a function by creating a version that has had some of its
+        // arguments pre-filled, without changing its dynamic `this` context. _ acts
+        // as a placeholder, allowing any combination of arguments to be pre-filled.
+        _.partial = function(func) {
+          var boundArgs = slice.call(arguments, 1);
+          var bound = function() {
+            var position = 0, length = boundArgs.length;
+            var args = Array(length);
+            for (var i = 0; i < length; i++) {
+              args[i] = boundArgs[i] === _ ? arguments[position++] : boundArgs[i];
+            }
+            while (position < arguments.length) args.push(arguments[position++]);
+            return executeBound(func, bound, this, this, args);
+          };
+          return bound;
+        };
+      
+        // Bind a number of an object's methods to that object. Remaining arguments
+        // are the method names to be bound. Useful for ensuring that all callbacks
+        // defined on an object belong to it.
+        _.bindAll = function(obj) {
+          var i, length = arguments.length, key;
+          if (length <= 1) throw new Error('bindAll must be passed function names');
+          for (i = 1; i < length; i++) {
+            key = arguments[i];
+            obj[key] = _.bind(obj[key], obj);
+          }
+          return obj;
+        };
+      
+        // Memoize an expensive function by storing its results.
+        _.memoize = function(func, hasher) {
+          var memoize = function(key) {
+            var cache = memoize.cache;
+            var address = '' + (hasher ? hasher.apply(this, arguments) : key);
+            if (!_.has(cache, address)) cache[address] = func.apply(this, arguments);
+            return cache[address];
+          };
+          memoize.cache = {};
+          return memoize;
+        };
+      
+        // Delays a function for the given number of milliseconds, and then calls
+        // it with the arguments supplied.
+        _.delay = function(func, wait) {
+          var args = slice.call(arguments, 2);
+          return setTimeout(function(){
+            return func.apply(null, args);
+          }, wait);
+        };
+      
+        // Defers a function, scheduling it to run after the current call stack has
+        // cleared.
+        _.defer = _.partial(_.delay, _, 1);
+      
+        // Returns a function, that, when invoked, will only be triggered at most once
+        // during a given window of time. Normally, the throttled function will run
+        // as much as it can, without ever going more than once per `wait` duration;
+        // but if you'd like to disable the execution on the leading edge, pass
+        // `{leading: false}`. To disable execution on the trailing edge, ditto.
+        _.throttle = function(func, wait, options) {
+          var context, args, result;
+          var timeout = null;
+          var previous = 0;
+          if (!options) options = {};
+          var later = function() {
+            previous = options.leading === false ? 0 : _.now();
+            timeout = null;
+            result = func.apply(context, args);
+            if (!timeout) context = args = null;
+          };
+          return function() {
+            var now = _.now();
+            if (!previous && options.leading === false) previous = now;
+            var remaining = wait - (now - previous);
+            context = this;
+            args = arguments;
+            if (remaining <= 0 || remaining > wait) {
+              if (timeout) {
+                clearTimeout(timeout);
+                timeout = null;
+              }
+              previous = now;
+              result = func.apply(context, args);
+              if (!timeout) context = args = null;
+            } else if (!timeout && options.trailing !== false) {
+              timeout = setTimeout(later, remaining);
+            }
+            return result;
+          };
+        };
+      
+        // Returns a function, that, as long as it continues to be invoked, will not
+        // be triggered. The function will be called after it stops being called for
+        // N milliseconds. If `immediate` is passed, trigger the function on the
+        // leading edge, instead of the trailing.
+        _.debounce = function(func, wait, immediate) {
+          var timeout, args, context, timestamp, result;
+      
+          var later = function() {
+            var last = _.now() - timestamp;
+      
+            if (last < wait && last >= 0) {
+              timeout = setTimeout(later, wait - last);
+            } else {
+              timeout = null;
+              if (!immediate) {
+                result = func.apply(context, args);
+                if (!timeout) context = args = null;
+              }
+            }
+          };
+      
+          return function() {
+            context = this;
+            args = arguments;
+            timestamp = _.now();
+            var callNow = immediate && !timeout;
+            if (!timeout) timeout = setTimeout(later, wait);
+            if (callNow) {
+              result = func.apply(context, args);
+              context = args = null;
+            }
+      
+            return result;
+          };
+        };
+      
+        // Returns the first function passed as an argument to the second,
+        // allowing you to adjust arguments, run code before and after, and
+        // conditionally execute the original function.
+        _.wrap = function(func, wrapper) {
+          return _.partial(wrapper, func);
+        };
+      
+        // Returns a negated version of the passed-in predicate.
+        _.negate = function(predicate) {
+          return function() {
+            return !predicate.apply(this, arguments);
+          };
+        };
+      
+        // Returns a function that is the composition of a list of functions, each
+        // consuming the return value of the function that follows.
+        _.compose = function() {
+          var args = arguments;
+          var start = args.length - 1;
+          return function() {
+            var i = start;
+            var result = args[start].apply(this, arguments);
+            while (i--) result = args[i].call(this, result);
+            return result;
+          };
+        };
+      
+        // Returns a function that will only be executed on and after the Nth call.
+        _.after = function(times, func) {
+          return function() {
+            if (--times < 1) {
+              return func.apply(this, arguments);
+            }
+          };
+        };
+      
+        // Returns a function that will only be executed up to (but not including) the Nth call.
+        _.before = function(times, func) {
+          var memo;
+          return function() {
+            if (--times > 0) {
+              memo = func.apply(this, arguments);
+            }
+            if (times <= 1) func = null;
+            return memo;
+          };
+        };
+      
+        // Returns a function that will be executed at most one time, no matter how
+        // often you call it. Useful for lazy initialization.
+        _.once = _.partial(_.before, 2);
+      
+        // Object Functions
+        // ----------------
+      
+        // Keys in IE < 9 that won't be iterated by `for key in ...` and thus missed.
+        var hasEnumBug = !{toString: null}.propertyIsEnumerable('toString');
+        var nonEnumerableProps = ['valueOf', 'isPrototypeOf', 'toString',
+                            'propertyIsEnumerable', 'hasOwnProperty', 'toLocaleString'];
+      
+        function collectNonEnumProps(obj, keys) {
+          var nonEnumIdx = nonEnumerableProps.length;
+          var constructor = obj.constructor;
+          var proto = (_.isFunction(constructor) && constructor.prototype) || ObjProto;
+      
+          // Constructor is a special case.
+          var prop = 'constructor';
+          if (_.has(obj, prop) && !_.contains(keys, prop)) keys.push(prop);
+      
+          while (nonEnumIdx--) {
+            prop = nonEnumerableProps[nonEnumIdx];
+            if (prop in obj && obj[prop] !== proto[prop] && !_.contains(keys, prop)) {
+              keys.push(prop);
+            }
+          }
+        }
+      
+        // Retrieve the names of an object's own properties.
+        // Delegates to **ECMAScript 5**'s native `Object.keys`
+        _.keys = function(obj) {
+          if (!_.isObject(obj)) return [];
+          if (nativeKeys) return nativeKeys(obj);
+          var keys = [];
+          for (var key in obj) if (_.has(obj, key)) keys.push(key);
+          // Ahem, IE < 9.
+          if (hasEnumBug) collectNonEnumProps(obj, keys);
+          return keys;
+        };
+      
+        // Retrieve all the property names of an object.
+        _.allKeys = function(obj) {
+          if (!_.isObject(obj)) return [];
+          var keys = [];
+          for (var key in obj) keys.push(key);
+          // Ahem, IE < 9.
+          if (hasEnumBug) collectNonEnumProps(obj, keys);
+          return keys;
+        };
+      
+        // Retrieve the values of an object's properties.
+        _.values = function(obj) {
+          var keys = _.keys(obj);
+          var length = keys.length;
+          var values = Array(length);
+          for (var i = 0; i < length; i++) {
+            values[i] = obj[keys[i]];
+          }
+          return values;
+        };
+      
+        // Returns the results of applying the iteratee to each element of the object
+        // In contrast to _.map it returns an object
+        _.mapObject = function(obj, iteratee, context) {
+          iteratee = cb(iteratee, context);
+          var keys =  _.keys(obj),
+                length = keys.length,
+                results = {},
+                currentKey;
+            for (var index = 0; index < length; index++) {
+              currentKey = keys[index];
+              results[currentKey] = iteratee(obj[currentKey], currentKey, obj);
+            }
+            return results;
+        };
+      
+        // Convert an object into a list of `[key, value]` pairs.
+        _.pairs = function(obj) {
+          var keys = _.keys(obj);
+          var length = keys.length;
+          var pairs = Array(length);
+          for (var i = 0; i < length; i++) {
+            pairs[i] = [keys[i], obj[keys[i]]];
+          }
+          return pairs;
+        };
+      
+        // Invert the keys and values of an object. The values must be serializable.
+        _.invert = function(obj) {
+          var result = {};
+          var keys = _.keys(obj);
+          for (var i = 0, length = keys.length; i < length; i++) {
+            result[obj[keys[i]]] = keys[i];
+          }
+          return result;
+        };
+      
+        // Return a sorted list of the function names available on the object.
+        // Aliased as `methods`
+        _.functions = _.methods = function(obj) {
+          var names = [];
+          for (var key in obj) {
+            if (_.isFunction(obj[key])) names.push(key);
+          }
+          return names.sort();
+        };
+      
+        // Extend a given object with all the properties in passed-in object(s).
+        _.extend = createAssigner(_.allKeys);
+      
+        // Assigns a given object with all the own properties in the passed-in object(s)
+        // (https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/assign)
+        _.extendOwn = _.assign = createAssigner(_.keys);
+      
+        // Returns the first key on an object that passes a predicate test
+        _.findKey = function(obj, predicate, context) {
+          predicate = cb(predicate, context);
+          var keys = _.keys(obj), key;
+          for (var i = 0, length = keys.length; i < length; i++) {
+            key = keys[i];
+            if (predicate(obj[key], key, obj)) return key;
+          }
+        };
+      
+        // Return a copy of the object only containing the whitelisted properties.
+        _.pick = function(object, oiteratee, context) {
+          var result = {}, obj = object, iteratee, keys;
+          if (obj == null) return result;
+          if (_.isFunction(oiteratee)) {
+            keys = _.allKeys(obj);
+            iteratee = optimizeCb(oiteratee, context);
+          } else {
+            keys = flatten(arguments, false, false, 1);
+            iteratee = function(value, key, obj) { return key in obj; };
+            obj = Object(obj);
+          }
+          for (var i = 0, length = keys.length; i < length; i++) {
+            var key = keys[i];
+            var value = obj[key];
+            if (iteratee(value, key, obj)) result[key] = value;
+          }
+          return result;
+        };
+      
+         // Return a copy of the object without the blacklisted properties.
+        _.omit = function(obj, iteratee, context) {
+          if (_.isFunction(iteratee)) {
+            iteratee = _.negate(iteratee);
+          } else {
+            var keys = _.map(flatten(arguments, false, false, 1), String);
+            iteratee = function(value, key) {
+              return !_.contains(keys, key);
+            };
+          }
+          return _.pick(obj, iteratee, context);
+        };
+      
+        // Fill in a given object with default properties.
+        _.defaults = createAssigner(_.allKeys, true);
+      
+        // Creates an object that inherits from the given prototype object.
+        // If additional properties are provided then they will be added to the
+        // created object.
+        _.create = function(prototype, props) {
+          var result = baseCreate(prototype);
+          if (props) _.extendOwn(result, props);
+          return result;
+        };
+      
+        // Create a (shallow-cloned) duplicate of an object.
+        _.clone = function(obj) {
+          if (!_.isObject(obj)) return obj;
+          return _.isArray(obj) ? obj.slice() : _.extend({}, obj);
+        };
+      
+        // Invokes interceptor with the obj, and then returns obj.
+        // The primary purpose of this method is to "tap into" a method chain, in
+        // order to perform operations on intermediate results within the chain.
+        _.tap = function(obj, interceptor) {
+          interceptor(obj);
+          return obj;
+        };
+      
+        // Returns whether an object has a given set of `key:value` pairs.
+        _.isMatch = function(object, attrs) {
+          var keys = _.keys(attrs), length = keys.length;
+          if (object == null) return !length;
+          var obj = Object(object);
+          for (var i = 0; i < length; i++) {
+            var key = keys[i];
+            if (attrs[key] !== obj[key] || !(key in obj)) return false;
+          }
+          return true;
+        };
+      
+      
+        // Internal recursive comparison function for `isEqual`.
+        var eq = function(a, b, aStack, bStack) {
+          // Identical objects are equal. `0 === -0`, but they aren't identical.
+          // See the [Harmony `egal` proposal](http://wiki.ecmascript.org/doku.php?id=harmony:egal).
+          if (a === b) return a !== 0 || 1 / a === 1 / b;
+          // A strict comparison is necessary because `null == undefined`.
+          if (a == null || b == null) return a === b;
+          // Unwrap any wrapped objects.
+          if (a instanceof _) a = a._wrapped;
+          if (b instanceof _) b = b._wrapped;
+          // Compare `[[Class]]` names.
+          var className = toString.call(a);
+          if (className !== toString.call(b)) return false;
+          switch (className) {
+            // Strings, numbers, regular expressions, dates, and booleans are compared by value.
+            case '[object RegExp]':
+            // RegExps are coerced to strings for comparison (Note: '' + /a/i === '/a/i')
+            case '[object String]':
+              // Primitives and their corresponding object wrappers are equivalent; thus, `"5"` is
+              // equivalent to `new String("5")`.
+              return '' + a === '' + b;
+            case '[object Number]':
+              // `NaN`s are equivalent, but non-reflexive.
+              // Object(NaN) is equivalent to NaN
+              if (+a !== +a) return +b !== +b;
+              // An `egal` comparison is performed for other numeric values.
+              return +a === 0 ? 1 / +a === 1 / b : +a === +b;
+            case '[object Date]':
+            case '[object Boolean]':
+              // Coerce dates and booleans to numeric primitive values. Dates are compared by their
+              // millisecond representations. Note that invalid dates with millisecond representations
+              // of `NaN` are not equivalent.
+              return +a === +b;
+          }
+      
+          var areArrays = className === '[object Array]';
+          if (!areArrays) {
+            if (typeof a != 'object' || typeof b != 'object') return false;
+      
+            // Objects with different constructors are not equivalent, but `Object`s or `Array`s
+            // from different frames are.
+            var aCtor = a.constructor, bCtor = b.constructor;
+            if (aCtor !== bCtor && !(_.isFunction(aCtor) && aCtor instanceof aCtor &&
+                                     _.isFunction(bCtor) && bCtor instanceof bCtor)
+                                && ('constructor' in a && 'constructor' in b)) {
+              return false;
+            }
+          }
+          // Assume equality for cyclic structures. The algorithm for detecting cyclic
+          // structures is adapted from ES 5.1 section 15.12.3, abstract operation `JO`.
+      
+          // Initializing stack of traversed objects.
+          // It's done here since we only need them for objects and arrays comparison.
+          aStack = aStack || [];
+          bStack = bStack || [];
+          var length = aStack.length;
+          while (length--) {
+            // Linear search. Performance is inversely proportional to the number of
+            // unique nested structures.
+            if (aStack[length] === a) return bStack[length] === b;
+          }
+      
+          // Add the first object to the stack of traversed objects.
+          aStack.push(a);
+          bStack.push(b);
+      
+          // Recursively compare objects and arrays.
+          if (areArrays) {
+            // Compare array lengths to determine if a deep comparison is necessary.
+            length = a.length;
+            if (length !== b.length) return false;
+            // Deep compare the contents, ignoring non-numeric properties.
+            while (length--) {
+              if (!eq(a[length], b[length], aStack, bStack)) return false;
+            }
+          } else {
+            // Deep compare objects.
+            var keys = _.keys(a), key;
+            length = keys.length;
+            // Ensure that both objects contain the same number of properties before comparing deep equality.
+            if (_.keys(b).length !== length) return false;
+            while (length--) {
+              // Deep compare each member
+              key = keys[length];
+              if (!(_.has(b, key) && eq(a[key], b[key], aStack, bStack))) return false;
+            }
+          }
+          // Remove the first object from the stack of traversed objects.
+          aStack.pop();
+          bStack.pop();
+          return true;
+        };
+      
+        // Perform a deep comparison to check if two objects are equal.
+        _.isEqual = function(a, b) {
+          return eq(a, b);
+        };
+      
+        // Is a given array, string, or object empty?
+        // An "empty" object has no enumerable own-properties.
+        _.isEmpty = function(obj) {
+          if (obj == null) return true;
+          if (isArrayLike(obj) && (_.isArray(obj) || _.isString(obj) || _.isArguments(obj))) return obj.length === 0;
+          return _.keys(obj).length === 0;
+        };
+      
+        // Is a given value a DOM element?
+        _.isElement = function(obj) {
+          return !!(obj && obj.nodeType === 1);
+        };
+      
+        // Is a given value an array?
+        // Delegates to ECMA5's native Array.isArray
+        _.isArray = nativeIsArray || function(obj) {
+          return toString.call(obj) === '[object Array]';
+        };
+      
+        // Is a given variable an object?
+        _.isObject = function(obj) {
+          var type = typeof obj;
+          return type === 'function' || type === 'object' && !!obj;
+        };
+      
+        // Add some isType methods: isArguments, isFunction, isString, isNumber, isDate, isRegExp, isError.
+        _.each(['Arguments', 'Function', 'String', 'Number', 'Date', 'RegExp', 'Error'], function(name) {
+          _['is' + name] = function(obj) {
+            return toString.call(obj) === '[object ' + name + ']';
+          };
+        });
+      
+        // Define a fallback version of the method in browsers (ahem, IE < 9), where
+        // there isn't any inspectable "Arguments" type.
+        if (!_.isArguments(arguments)) {
+          _.isArguments = function(obj) {
+            return _.has(obj, 'callee');
+          };
+        }
+      
+        // Optimize `isFunction` if appropriate. Work around some typeof bugs in old v8,
+        // IE 11 (#1621), and in Safari 8 (#1929).
+        if (typeof /./ != 'function' && typeof Int8Array != 'object') {
+          _.isFunction = function(obj) {
+            return typeof obj == 'function' || false;
+          };
+        }
+      
+        // Is a given object a finite number?
+        _.isFinite = function(obj) {
+          return isFinite(obj) && !isNaN(parseFloat(obj));
+        };
+      
+        // Is the given value `NaN`? (NaN is the only number which does not equal itself).
+        _.isNaN = function(obj) {
+          return _.isNumber(obj) && obj !== +obj;
+        };
+      
+        // Is a given value a boolean?
+        _.isBoolean = function(obj) {
+          return obj === true || obj === false || toString.call(obj) === '[object Boolean]';
+        };
+      
+        // Is a given value equal to null?
+        _.isNull = function(obj) {
+          return obj === null;
+        };
+      
+        // Is a given variable undefined?
+        _.isUndefined = function(obj) {
+          return obj === void 0;
+        };
+      
+        // Shortcut function for checking if an object has a given property directly
+        // on itself (in other words, not on a prototype).
+        _.has = function(obj, key) {
+          return obj != null && hasOwnProperty.call(obj, key);
+        };
+      
+        // Utility Functions
+        // -----------------
+      
+        // Run Underscore.js in *noConflict* mode, returning the `_` variable to its
+        // previous owner. Returns a reference to the Underscore object.
+        _.noConflict = function() {
+          root._ = previousUnderscore;
+          return this;
+        };
+      
+        // Keep the identity function around for default iteratees.
+        _.identity = function(value) {
+          return value;
+        };
+      
+        // Predicate-generating functions. Often useful outside of Underscore.
+        _.constant = function(value) {
+          return function() {
+            return value;
+          };
+        };
+      
+        _.noop = function(){};
+      
+        _.property = property;
+      
+        // Generates a function for a given object that returns a given property.
+        _.propertyOf = function(obj) {
+          return obj == null ? function(){} : function(key) {
+            return obj[key];
+          };
+        };
+      
+        // Returns a predicate for checking whether an object has a given set of
+        // `key:value` pairs.
+        _.matcher = _.matches = function(attrs) {
+          attrs = _.extendOwn({}, attrs);
+          return function(obj) {
+            return _.isMatch(obj, attrs);
+          };
+        };
+      
+        // Run a function **n** times.
+        _.times = function(n, iteratee, context) {
+          var accum = Array(Math.max(0, n));
+          iteratee = optimizeCb(iteratee, context, 1);
+          for (var i = 0; i < n; i++) accum[i] = iteratee(i);
+          return accum;
+        };
+      
+        // Return a random integer between min and max (inclusive).
+        _.random = function(min, max) {
+          if (max == null) {
+            max = min;
+            min = 0;
+          }
+          return min + Math.floor(Math.random() * (max - min + 1));
+        };
+      
+        // A (possibly faster) way to get the current timestamp as an integer.
+        _.now = Date.now || function() {
+          return new Date().getTime();
+        };
+      
+         // List of HTML entities for escaping.
+        var escapeMap = {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#x27;',
+          '`': '&#x60;'
+        };
+        var unescapeMap = _.invert(escapeMap);
+      
+        // Functions for escaping and unescaping strings to/from HTML interpolation.
+        var createEscaper = function(map) {
+          var escaper = function(match) {
+            return map[match];
+          };
+          // Regexes for identifying a key that needs to be escaped
+          var source = '(?:' + _.keys(map).join('|') + ')';
+          var testRegexp = RegExp(source);
+          var replaceRegexp = RegExp(source, 'g');
+          return function(string) {
+            string = string == null ? '' : '' + string;
+            return testRegexp.test(string) ? string.replace(replaceRegexp, escaper) : string;
+          };
+        };
+        _.escape = createEscaper(escapeMap);
+        _.unescape = createEscaper(unescapeMap);
+      
+        // If the value of the named `property` is a function then invoke it with the
+        // `object` as context; otherwise, return it.
+        _.result = function(object, property, fallback) {
+          var value = object == null ? void 0 : object[property];
+          if (value === void 0) {
+            value = fallback;
+          }
+          return _.isFunction(value) ? value.call(object) : value;
+        };
+      
+        // Generate a unique integer id (unique within the entire client session).
+        // Useful for temporary DOM ids.
+        var idCounter = 0;
+        _.uniqueId = function(prefix) {
+          var id = ++idCounter + '';
+          return prefix ? prefix + id : id;
+        };
+      
+        // By default, Underscore uses ERB-style template delimiters, change the
+        // following template settings to use alternative delimiters.
+        _.templateSettings = {
+          evaluate    : /<%([\s\S]+?)%>/g,
+          interpolate : /<%=([\s\S]+?)%>/g,
+          escape      : /<%-([\s\S]+?)%>/g
+        };
+      
+        // When customizing `templateSettings`, if you don't want to define an
+        // interpolation, evaluation or escaping regex, we need one that is
+        // guaranteed not to match.
+        var noMatch = /(.)^/;
+      
+        // Certain characters need to be escaped so that they can be put into a
+        // string literal.
+        var escapes = {
+          "'":      "'",
+          '\\':     '\\',
+          '\r':     'r',
+          '\n':     'n',
+          '\u2028': 'u2028',
+          '\u2029': 'u2029'
+        };
+      
+        var escaper = /\\|'|\r|\n|\u2028|\u2029/g;
+      
+        var escapeChar = function(match) {
+          return '\\' + escapes[match];
+        };
+      
+        // JavaScript micro-templating, similar to John Resig's implementation.
+        // Underscore templating handles arbitrary delimiters, preserves whitespace,
+        // and correctly escapes quotes within interpolated code.
+        // NB: `oldSettings` only exists for backwards compatibility.
+        _.template = function(text, settings, oldSettings) {
+          if (!settings && oldSettings) settings = oldSettings;
+          settings = _.defaults({}, settings, _.templateSettings);
+      
+          // Combine delimiters into one regular expression via alternation.
+          var matcher = RegExp([
+            (settings.escape || noMatch).source,
+            (settings.interpolate || noMatch).source,
+            (settings.evaluate || noMatch).source
+          ].join('|') + '|$', 'g');
+      
+          // Compile the template source, escaping string literals appropriately.
+          var index = 0;
+          var source = "__p+='";
+          text.replace(matcher, function(match, escape, interpolate, evaluate, offset) {
+            source += text.slice(index, offset).replace(escaper, escapeChar);
+            index = offset + match.length;
+      
+            if (escape) {
+              source += "'+\n((__t=(" + escape + "))==null?'':_.escape(__t))+\n'";
+            } else if (interpolate) {
+              source += "'+\n((__t=(" + interpolate + "))==null?'':__t)+\n'";
+            } else if (evaluate) {
+              source += "';\n" + evaluate + "\n__p+='";
+            }
+      
+            // Adobe VMs need the match returned to produce the correct offest.
+            return match;
+          });
+          source += "';\n";
+      
+          // If a variable is not specified, place data values in local scope.
+          if (!settings.variable) source = 'with(obj||{}){\n' + source + '}\n';
+      
+          source = "var __t,__p='',__j=Array.prototype.join," +
+            "print=function(){__p+=__j.call(arguments,'');};\n" +
+            source + 'return __p;\n';
+      
+          try {
+            var render = new Function(settings.variable || 'obj', '_', source);
+          } catch (e) {
+            e.source = source;
+            throw e;
+          }
+      
+          var template = function(data) {
+            return render.call(this, data, _);
+          };
+      
+          // Provide the compiled source as a convenience for precompilation.
+          var argument = settings.variable || 'obj';
+          template.source = 'function(' + argument + '){\n' + source + '}';
+      
+          return template;
+        };
+      
+        // Add a "chain" function. Start chaining a wrapped Underscore object.
+        _.chain = function(obj) {
+          var instance = _(obj);
+          instance._chain = true;
+          return instance;
+        };
+      
+        // OOP
+        // ---------------
+        // If Underscore is called as a function, it returns a wrapped object that
+        // can be used OO-style. This wrapper holds altered versions of all the
+        // underscore functions. Wrapped objects may be chained.
+      
+        // Helper function to continue chaining intermediate results.
+        var result = function(instance, obj) {
+          return instance._chain ? _(obj).chain() : obj;
+        };
+      
+        // Add your own custom functions to the Underscore object.
+        _.mixin = function(obj) {
+          _.each(_.functions(obj), function(name) {
+            var func = _[name] = obj[name];
+            _.prototype[name] = function() {
+              var args = [this._wrapped];
+              push.apply(args, arguments);
+              return result(this, func.apply(_, args));
+            };
+          });
+        };
+      
+        // Add all of the Underscore functions to the wrapper object.
+        _.mixin(_);
+      
+        // Add all mutator Array functions to the wrapper.
+        _.each(['pop', 'push', 'reverse', 'shift', 'sort', 'splice', 'unshift'], function(name) {
+          var method = ArrayProto[name];
+          _.prototype[name] = function() {
+            var obj = this._wrapped;
+            method.apply(obj, arguments);
+            if ((name === 'shift' || name === 'splice') && obj.length === 0) delete obj[0];
+            return result(this, obj);
+          };
+        });
+      
+        // Add all accessor Array functions to the wrapper.
+        _.each(['concat', 'join', 'slice'], function(name) {
+          var method = ArrayProto[name];
+          _.prototype[name] = function() {
+            return result(this, method.apply(this._wrapped, arguments));
+          };
+        });
+      
+        // Extracts the result from a wrapped and chained object.
+        _.prototype.value = function() {
+          return this._wrapped;
+        };
+      
+        // Provide unwrapping proxy for some methods used in engine operations
+        // such as arithmetic and JSON stringification.
+        _.prototype.valueOf = _.prototype.toJSON = _.prototype.value;
+      
+        _.prototype.toString = function() {
+          return '' + this._wrapped;
+        };
+      
+        // AMD registration happens at the end for compatibility with AMD loaders
+        // that may not enforce next-turn semantics on modules. Even though general
+        // practice for AMD registration is to be anonymous, underscore registers
+        // as a named module because, like jQuery, it is a base library that is
+        // popular enough to be bundled in a third party lib, but not be part of
+        // an AMD load request. Those cases could generate an error when an
+        // anonymous define() is called outside of a loader request.
+        if (typeof define === 'function' && define.amd) {
+          define('underscore', [], function() {
+            return _;
+          });
+        }
+      }.call(this));
+      
+    },
+    'underscore-min': function (module, exports, require, global) {
+      //     Underscore.js 1.8.3
+      //     http://underscorejs.org
+      //     (c) 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+      //     Underscore may be freely distributed under the MIT license.
+      (function(){function n(n){function t(t,r,e,u,i,o){for(;i>=0&&o>i;i+=n){var a=u?u[i]:i;e=r(e,t[a],a,t)}return e}return function(r,e,u,i){e=b(e,i,4);var o=!k(r)&&m.keys(r),a=(o||r).length,c=n>0?0:a-1;return arguments.length<3&&(u=r[o?o[c]:c],c+=n),t(r,e,u,o,c,a)}}function t(n){return function(t,r,e){r=x(r,e);for(var u=O(t),i=n>0?0:u-1;i>=0&&u>i;i+=n)if(r(t[i],i,t))return i;return-1}}function r(n,t,r){return function(e,u,i){var o=0,a=O(e);if("number"==typeof i)n>0?o=i>=0?i:Math.max(i+a,o):a=i>=0?Math.min(i+1,a):i+a+1;else if(r&&i&&a)return i=r(e,u),e[i]===u?i:-1;if(u!==u)return i=t(l.call(e,o,a),m.isNaN),i>=0?i+o:-1;for(i=n>0?o:a-1;i>=0&&a>i;i+=n)if(e[i]===u)return i;return-1}}function e(n,t){var r=I.length,e=n.constructor,u=m.isFunction(e)&&e.prototype||a,i="constructor";for(m.has(n,i)&&!m.contains(t,i)&&t.push(i);r--;)i=I[r],i in n&&n[i]!==u[i]&&!m.contains(t,i)&&t.push(i)}var u=this,i=u._,o=Array.prototype,a=Object.prototype,c=Function.prototype,f=o.push,l=o.slice,s=a.toString,p=a.hasOwnProperty,h=Array.isArray,v=Object.keys,g=c.bind,y=Object.create,d=function(){},m=function(n){return n instanceof m?n:this instanceof m?void(this._wrapped=n):new m(n)};"undefined"!=typeof exports?("undefined"!=typeof module&&module.exports&&(exports=module.exports=m),exports._=m):u._=m,m.VERSION="1.8.3";var b=function(n,t,r){if(t===void 0)return n;switch(null==r?3:r){case 1:return function(r){return n.call(t,r)};case 2:return function(r,e){return n.call(t,r,e)};case 3:return function(r,e,u){return n.call(t,r,e,u)};case 4:return function(r,e,u,i){return n.call(t,r,e,u,i)}}return function(){return n.apply(t,arguments)}},x=function(n,t,r){return null==n?m.identity:m.isFunction(n)?b(n,t,r):m.isObject(n)?m.matcher(n):m.property(n)};m.iteratee=function(n,t){return x(n,t,1/0)};var _=function(n,t){return function(r){var e=arguments.length;if(2>e||null==r)return r;for(var u=1;e>u;u++)for(var i=arguments[u],o=n(i),a=o.length,c=0;a>c;c++){var f=o[c];t&&r[f]!==void 0||(r[f]=i[f])}return r}},j=function(n){if(!m.isObject(n))return{};if(y)return y(n);d.prototype=n;var t=new d;return d.prototype=null,t},w=function(n){return function(t){return null==t?void 0:t[n]}},A=Math.pow(2,53)-1,O=w("length"),k=function(n){var t=O(n);return"number"==typeof t&&t>=0&&A>=t};m.each=m.forEach=function(n,t,r){t=b(t,r);var e,u;if(k(n))for(e=0,u=n.length;u>e;e++)t(n[e],e,n);else{var i=m.keys(n);for(e=0,u=i.length;u>e;e++)t(n[i[e]],i[e],n)}return n},m.map=m.collect=function(n,t,r){t=x(t,r);for(var e=!k(n)&&m.keys(n),u=(e||n).length,i=Array(u),o=0;u>o;o++){var a=e?e[o]:o;i[o]=t(n[a],a,n)}return i},m.reduce=m.foldl=m.inject=n(1),m.reduceRight=m.foldr=n(-1),m.find=m.detect=function(n,t,r){var e;return e=k(n)?m.findIndex(n,t,r):m.findKey(n,t,r),e!==void 0&&e!==-1?n[e]:void 0},m.filter=m.select=function(n,t,r){var e=[];return t=x(t,r),m.each(n,function(n,r,u){t(n,r,u)&&e.push(n)}),e},m.reject=function(n,t,r){return m.filter(n,m.negate(x(t)),r)},m.every=m.all=function(n,t,r){t=x(t,r);for(var e=!k(n)&&m.keys(n),u=(e||n).length,i=0;u>i;i++){var o=e?e[i]:i;if(!t(n[o],o,n))return!1}return!0},m.some=m.any=function(n,t,r){t=x(t,r);for(var e=!k(n)&&m.keys(n),u=(e||n).length,i=0;u>i;i++){var o=e?e[i]:i;if(t(n[o],o,n))return!0}return!1},m.contains=m.includes=m.include=function(n,t,r,e){return k(n)||(n=m.values(n)),("number"!=typeof r||e)&&(r=0),m.indexOf(n,t,r)>=0},m.invoke=function(n,t){var r=l.call(arguments,2),e=m.isFunction(t);return m.map(n,function(n){var u=e?t:n[t];return null==u?u:u.apply(n,r)})},m.pluck=function(n,t){return m.map(n,m.property(t))},m.where=function(n,t){return m.filter(n,m.matcher(t))},m.findWhere=function(n,t){return m.find(n,m.matcher(t))},m.max=function(n,t,r){var e,u,i=-1/0,o=-1/0;if(null==t&&null!=n){n=k(n)?n:m.values(n);for(var a=0,c=n.length;c>a;a++)e=n[a],e>i&&(i=e)}else t=x(t,r),m.each(n,function(n,r,e){u=t(n,r,e),(u>o||u===-1/0&&i===-1/0)&&(i=n,o=u)});return i},m.min=function(n,t,r){var e,u,i=1/0,o=1/0;if(null==t&&null!=n){n=k(n)?n:m.values(n);for(var a=0,c=n.length;c>a;a++)e=n[a],i>e&&(i=e)}else t=x(t,r),m.each(n,function(n,r,e){u=t(n,r,e),(o>u||1/0===u&&1/0===i)&&(i=n,o=u)});return i},m.shuffle=function(n){for(var t,r=k(n)?n:m.values(n),e=r.length,u=Array(e),i=0;e>i;i++)t=m.random(0,i),t!==i&&(u[i]=u[t]),u[t]=r[i];return u},m.sample=function(n,t,r){return null==t||r?(k(n)||(n=m.values(n)),n[m.random(n.length-1)]):m.shuffle(n).slice(0,Math.max(0,t))},m.sortBy=function(n,t,r){return t=x(t,r),m.pluck(m.map(n,function(n,r,e){return{value:n,index:r,criteria:t(n,r,e)}}).sort(function(n,t){var r=n.criteria,e=t.criteria;if(r!==e){if(r>e||r===void 0)return 1;if(e>r||e===void 0)return-1}return n.index-t.index}),"value")};var F=function(n){return function(t,r,e){var u={};return r=x(r,e),m.each(t,function(e,i){var o=r(e,i,t);n(u,e,o)}),u}};m.groupBy=F(function(n,t,r){m.has(n,r)?n[r].push(t):n[r]=[t]}),m.indexBy=F(function(n,t,r){n[r]=t}),m.countBy=F(function(n,t,r){m.has(n,r)?n[r]++:n[r]=1}),m.toArray=function(n){return n?m.isArray(n)?l.call(n):k(n)?m.map(n,m.identity):m.values(n):[]},m.size=function(n){return null==n?0:k(n)?n.length:m.keys(n).length},m.partition=function(n,t,r){t=x(t,r);var e=[],u=[];return m.each(n,function(n,r,i){(t(n,r,i)?e:u).push(n)}),[e,u]},m.first=m.head=m.take=function(n,t,r){return null==n?void 0:null==t||r?n[0]:m.initial(n,n.length-t)},m.initial=function(n,t,r){return l.call(n,0,Math.max(0,n.length-(null==t||r?1:t)))},m.last=function(n,t,r){return null==n?void 0:null==t||r?n[n.length-1]:m.rest(n,Math.max(0,n.length-t))},m.rest=m.tail=m.drop=function(n,t,r){return l.call(n,null==t||r?1:t)},m.compact=function(n){return m.filter(n,m.identity)};var S=function(n,t,r,e){for(var u=[],i=0,o=e||0,a=O(n);a>o;o++){var c=n[o];if(k(c)&&(m.isArray(c)||m.isArguments(c))){t||(c=S(c,t,r));var f=0,l=c.length;for(u.length+=l;l>f;)u[i++]=c[f++]}else r||(u[i++]=c)}return u};m.flatten=function(n,t){return S(n,t,!1)},m.without=function(n){return m.difference(n,l.call(arguments,1))},m.uniq=m.unique=function(n,t,r,e){m.isBoolean(t)||(e=r,r=t,t=!1),null!=r&&(r=x(r,e));for(var u=[],i=[],o=0,a=O(n);a>o;o++){var c=n[o],f=r?r(c,o,n):c;t?(o&&i===f||u.push(c),i=f):r?m.contains(i,f)||(i.push(f),u.push(c)):m.contains(u,c)||u.push(c)}return u},m.union=function(){return m.uniq(S(arguments,!0,!0))},m.intersection=function(n){for(var t=[],r=arguments.length,e=0,u=O(n);u>e;e++){var i=n[e];if(!m.contains(t,i)){for(var o=1;r>o&&m.contains(arguments[o],i);o++);o===r&&t.push(i)}}return t},m.difference=function(n){var t=S(arguments,!0,!0,1);return m.filter(n,function(n){return!m.contains(t,n)})},m.zip=function(){return m.unzip(arguments)},m.unzip=function(n){for(var t=n&&m.max(n,O).length||0,r=Array(t),e=0;t>e;e++)r[e]=m.pluck(n,e);return r},m.object=function(n,t){for(var r={},e=0,u=O(n);u>e;e++)t?r[n[e]]=t[e]:r[n[e][0]]=n[e][1];return r},m.findIndex=t(1),m.findLastIndex=t(-1),m.sortedIndex=function(n,t,r,e){r=x(r,e,1);for(var u=r(t),i=0,o=O(n);o>i;){var a=Math.floor((i+o)/2);r(n[a])<u?i=a+1:o=a}return i},m.indexOf=r(1,m.findIndex,m.sortedIndex),m.lastIndexOf=r(-1,m.findLastIndex),m.range=function(n,t,r){null==t&&(t=n||0,n=0),r=r||1;for(var e=Math.max(Math.ceil((t-n)/r),0),u=Array(e),i=0;e>i;i++,n+=r)u[i]=n;return u};var E=function(n,t,r,e,u){if(!(e instanceof t))return n.apply(r,u);var i=j(n.prototype),o=n.apply(i,u);return m.isObject(o)?o:i};m.bind=function(n,t){if(g&&n.bind===g)return g.apply(n,l.call(arguments,1));if(!m.isFunction(n))throw new TypeError("Bind must be called on a function");var r=l.call(arguments,2),e=function(){return E(n,e,t,this,r.concat(l.call(arguments)))};return e},m.partial=function(n){var t=l.call(arguments,1),r=function(){for(var e=0,u=t.length,i=Array(u),o=0;u>o;o++)i[o]=t[o]===m?arguments[e++]:t[o];for(;e<arguments.length;)i.push(arguments[e++]);return E(n,r,this,this,i)};return r},m.bindAll=function(n){var t,r,e=arguments.length;if(1>=e)throw new Error("bindAll must be passed function names");for(t=1;e>t;t++)r=arguments[t],n[r]=m.bind(n[r],n);return n},m.memoize=function(n,t){var r=function(e){var u=r.cache,i=""+(t?t.apply(this,arguments):e);return m.has(u,i)||(u[i]=n.apply(this,arguments)),u[i]};return r.cache={},r},m.delay=function(n,t){var r=l.call(arguments,2);return setTimeout(function(){return n.apply(null,r)},t)},m.defer=m.partial(m.delay,m,1),m.throttle=function(n,t,r){var e,u,i,o=null,a=0;r||(r={});var c=function(){a=r.leading===!1?0:m.now(),o=null,i=n.apply(e,u),o||(e=u=null)};return function(){var f=m.now();a||r.leading!==!1||(a=f);var l=t-(f-a);return e=this,u=arguments,0>=l||l>t?(o&&(clearTimeout(o),o=null),a=f,i=n.apply(e,u),o||(e=u=null)):o||r.trailing===!1||(o=setTimeout(c,l)),i}},m.debounce=function(n,t,r){var e,u,i,o,a,c=function(){var f=m.now()-o;t>f&&f>=0?e=setTimeout(c,t-f):(e=null,r||(a=n.apply(i,u),e||(i=u=null)))};return function(){i=this,u=arguments,o=m.now();var f=r&&!e;return e||(e=setTimeout(c,t)),f&&(a=n.apply(i,u),i=u=null),a}},m.wrap=function(n,t){return m.partial(t,n)},m.negate=function(n){return function(){return!n.apply(this,arguments)}},m.compose=function(){var n=arguments,t=n.length-1;return function(){for(var r=t,e=n[t].apply(this,arguments);r--;)e=n[r].call(this,e);return e}},m.after=function(n,t){return function(){return--n<1?t.apply(this,arguments):void 0}},m.before=function(n,t){var r;return function(){return--n>0&&(r=t.apply(this,arguments)),1>=n&&(t=null),r}},m.once=m.partial(m.before,2);var M=!{toString:null}.propertyIsEnumerable("toString"),I=["valueOf","isPrototypeOf","toString","propertyIsEnumerable","hasOwnProperty","toLocaleString"];m.keys=function(n){if(!m.isObject(n))return[];if(v)return v(n);var t=[];for(var r in n)m.has(n,r)&&t.push(r);return M&&e(n,t),t},m.allKeys=function(n){if(!m.isObject(n))return[];var t=[];for(var r in n)t.push(r);return M&&e(n,t),t},m.values=function(n){for(var t=m.keys(n),r=t.length,e=Array(r),u=0;r>u;u++)e[u]=n[t[u]];return e},m.mapObject=function(n,t,r){t=x(t,r);for(var e,u=m.keys(n),i=u.length,o={},a=0;i>a;a++)e=u[a],o[e]=t(n[e],e,n);return o},m.pairs=function(n){for(var t=m.keys(n),r=t.length,e=Array(r),u=0;r>u;u++)e[u]=[t[u],n[t[u]]];return e},m.invert=function(n){for(var t={},r=m.keys(n),e=0,u=r.length;u>e;e++)t[n[r[e]]]=r[e];return t},m.functions=m.methods=function(n){var t=[];for(var r in n)m.isFunction(n[r])&&t.push(r);return t.sort()},m.extend=_(m.allKeys),m.extendOwn=m.assign=_(m.keys),m.findKey=function(n,t,r){t=x(t,r);for(var e,u=m.keys(n),i=0,o=u.length;o>i;i++)if(e=u[i],t(n[e],e,n))return e},m.pick=function(n,t,r){var e,u,i={},o=n;if(null==o)return i;m.isFunction(t)?(u=m.allKeys(o),e=b(t,r)):(u=S(arguments,!1,!1,1),e=function(n,t,r){return t in r},o=Object(o));for(var a=0,c=u.length;c>a;a++){var f=u[a],l=o[f];e(l,f,o)&&(i[f]=l)}return i},m.omit=function(n,t,r){if(m.isFunction(t))t=m.negate(t);else{var e=m.map(S(arguments,!1,!1,1),String);t=function(n,t){return!m.contains(e,t)}}return m.pick(n,t,r)},m.defaults=_(m.allKeys,!0),m.create=function(n,t){var r=j(n);return t&&m.extendOwn(r,t),r},m.clone=function(n){return m.isObject(n)?m.isArray(n)?n.slice():m.extend({},n):n},m.tap=function(n,t){return t(n),n},m.isMatch=function(n,t){var r=m.keys(t),e=r.length;if(null==n)return!e;for(var u=Object(n),i=0;e>i;i++){var o=r[i];if(t[o]!==u[o]||!(o in u))return!1}return!0};var N=function(n,t,r,e){if(n===t)return 0!==n||1/n===1/t;if(null==n||null==t)return n===t;n instanceof m&&(n=n._wrapped),t instanceof m&&(t=t._wrapped);var u=s.call(n);if(u!==s.call(t))return!1;switch(u){case"[object RegExp]":case"[object String]":return""+n==""+t;case"[object Number]":return+n!==+n?+t!==+t:0===+n?1/+n===1/t:+n===+t;case"[object Date]":case"[object Boolean]":return+n===+t}var i="[object Array]"===u;if(!i){if("object"!=typeof n||"object"!=typeof t)return!1;var o=n.constructor,a=t.constructor;if(o!==a&&!(m.isFunction(o)&&o instanceof o&&m.isFunction(a)&&a instanceof a)&&"constructor"in n&&"constructor"in t)return!1}r=r||[],e=e||[];for(var c=r.length;c--;)if(r[c]===n)return e[c]===t;if(r.push(n),e.push(t),i){if(c=n.length,c!==t.length)return!1;for(;c--;)if(!N(n[c],t[c],r,e))return!1}else{var f,l=m.keys(n);if(c=l.length,m.keys(t).length!==c)return!1;for(;c--;)if(f=l[c],!m.has(t,f)||!N(n[f],t[f],r,e))return!1}return r.pop(),e.pop(),!0};m.isEqual=function(n,t){return N(n,t)},m.isEmpty=function(n){return null==n?!0:k(n)&&(m.isArray(n)||m.isString(n)||m.isArguments(n))?0===n.length:0===m.keys(n).length},m.isElement=function(n){return!(!n||1!==n.nodeType)},m.isArray=h||function(n){return"[object Array]"===s.call(n)},m.isObject=function(n){var t=typeof n;return"function"===t||"object"===t&&!!n},m.each(["Arguments","Function","String","Number","Date","RegExp","Error"],function(n){m["is"+n]=function(t){return s.call(t)==="[object "+n+"]"}}),m.isArguments(arguments)||(m.isArguments=function(n){return m.has(n,"callee")}),"function"!=typeof/./&&"object"!=typeof Int8Array&&(m.isFunction=function(n){return"function"==typeof n||!1}),m.isFinite=function(n){return isFinite(n)&&!isNaN(parseFloat(n))},m.isNaN=function(n){return m.isNumber(n)&&n!==+n},m.isBoolean=function(n){return n===!0||n===!1||"[object Boolean]"===s.call(n)},m.isNull=function(n){return null===n},m.isUndefined=function(n){return n===void 0},m.has=function(n,t){return null!=n&&p.call(n,t)},m.noConflict=function(){return u._=i,this},m.identity=function(n){return n},m.constant=function(n){return function(){return n}},m.noop=function(){},m.property=w,m.propertyOf=function(n){return null==n?function(){}:function(t){return n[t]}},m.matcher=m.matches=function(n){return n=m.extendOwn({},n),function(t){return m.isMatch(t,n)}},m.times=function(n,t,r){var e=Array(Math.max(0,n));t=b(t,r,1);for(var u=0;n>u;u++)e[u]=t(u);return e},m.random=function(n,t){return null==t&&(t=n,n=0),n+Math.floor(Math.random()*(t-n+1))},m.now=Date.now||function(){return(new Date).getTime()};var B={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#x27;","`":"&#x60;"},T=m.invert(B),R=function(n){var t=function(t){return n[t]},r="(?:"+m.keys(n).join("|")+")",e=RegExp(r),u=RegExp(r,"g");return function(n){return n=null==n?"":""+n,e.test(n)?n.replace(u,t):n}};m.escape=R(B),m.unescape=R(T),m.result=function(n,t,r){var e=null==n?void 0:n[t];return e===void 0&&(e=r),m.isFunction(e)?e.call(n):e};var q=0;m.uniqueId=function(n){var t=++q+"";return n?n+t:t},m.templateSettings={evaluate:/<%([\s\S]+?)%>/g,interpolate:/<%=([\s\S]+?)%>/g,escape:/<%-([\s\S]+?)%>/g};var K=/(.)^/,z={"'":"'","\\":"\\","\r":"r","\n":"n","\u2028":"u2028","\u2029":"u2029"},D=/\\|'|\r|\n|\u2028|\u2029/g,L=function(n){return"\\"+z[n]};m.template=function(n,t,r){!t&&r&&(t=r),t=m.defaults({},t,m.templateSettings);var e=RegExp([(t.escape||K).source,(t.interpolate||K).source,(t.evaluate||K).source].join("|")+"|$","g"),u=0,i="__p+='";n.replace(e,function(t,r,e,o,a){return i+=n.slice(u,a).replace(D,L),u=a+t.length,r?i+="'+\n((__t=("+r+"))==null?'':_.escape(__t))+\n'":e?i+="'+\n((__t=("+e+"))==null?'':__t)+\n'":o&&(i+="';\n"+o+"\n__p+='"),t}),i+="';\n",t.variable||(i="with(obj||{}){\n"+i+"}\n"),i="var __t,__p='',__j=Array.prototype.join,"+"print=function(){__p+=__j.call(arguments,'');};\n"+i+"return __p;\n";try{var o=new Function(t.variable||"obj","_",i)}catch(a){throw a.source=i,a}var c=function(n){return o.call(this,n,m)},f=t.variable||"obj";return c.source="function("+f+"){\n"+i+"}",c},m.chain=function(n){var t=m(n);return t._chain=!0,t};var P=function(n,t){return n._chain?m(t).chain():t};m.mixin=function(n){m.each(m.functions(n),function(t){var r=m[t]=n[t];m.prototype[t]=function(){var n=[this._wrapped];return f.apply(n,arguments),P(this,r.apply(m,n))}})},m.mixin(m),m.each(["pop","push","reverse","shift","sort","splice","unshift"],function(n){var t=o[n];m.prototype[n]=function(){var r=this._wrapped;return t.apply(r,arguments),"shift"!==n&&"splice"!==n||0!==r.length||delete r[0],P(this,r)}}),m.each(["concat","join","slice"],function(n){var t=o[n];m.prototype[n]=function(){return P(this,t.apply(this._wrapped,arguments))}}),m.prototype.value=function(){return this._wrapped},m.prototype.valueOf=m.prototype.toJSON=m.prototype.value,m.prototype.toString=function(){return""+this._wrapped},"function"==typeof define&&define.amd&&define("underscore",[],function(){return m})}).call(this);
+      //# sourceMappingURL=underscore-min.map
+    }
+  }, 'underscore');
+
+  Module.createPackage('backbone', {
+    'backbone': function (module, exports, require, global) {
+      //     Backbone.js 1.2.3
+      
+      //     (c) 2010-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+      //     Backbone may be freely distributed under the MIT license.
+      //     For all details and documentation:
+      //     http://backbonejs.org
+      
+      (function(factory) {
+      
+        // Establish the root object, `window` (`self`) in the browser, or `global` on the server.
+        // We use `self` instead of `window` for `WebWorker` support.
+        var root = (typeof self == 'object' && self.self == self && self) ||
+                  (typeof global == 'object' && global.global == global && global);
+      
+        // Set up Backbone appropriately for the environment. Start with AMD.
+        if (typeof define === 'function' && define.amd) {
+          define(['underscore', 'jquery', 'exports'], function(_, $, exports) {
+            // Export global even in AMD case in case this script is loaded with
+            // others that may still expect a global Backbone.
+            root.Backbone = factory(root, exports, _, $);
+          });
+      
+        // Next for Node.js or CommonJS. jQuery may not be needed as a module.
+        } else if (typeof exports !== 'undefined') {
+          var _ = require('underscore'), $;
+          try { $ = require('jquery'); } catch(e) {}
+          factory(root, exports, _, $);
+      
+        // Finally, as a browser global.
+        } else {
+          root.Backbone = factory(root, {}, root._, (root.jQuery || root.Zepto || root.ender || root.$));
+        }
+      
+      }(function(root, Backbone, _, $) {
+      
+        // Initial Setup
+        // -------------
+      
+        // Save the previous value of the `Backbone` variable, so that it can be
+        // restored later on, if `noConflict` is used.
+        var previousBackbone = root.Backbone;
+      
+        // Create a local reference to a common array method we'll want to use later.
+        var slice = Array.prototype.slice;
+      
+        // Current version of the library. Keep in sync with `package.json`.
+        Backbone.VERSION = '1.2.3';
+      
+        // For Backbone's purposes, jQuery, Zepto, Ender, or My Library (kidding) owns
+        // the `$` variable.
+        Backbone.$ = $;
+      
+        // Runs Backbone.js in *noConflict* mode, returning the `Backbone` variable
+        // to its previous owner. Returns a reference to this Backbone object.
+        Backbone.noConflict = function() {
+          root.Backbone = previousBackbone;
+          return this;
+        };
+      
+        // Turn on `emulateHTTP` to support legacy HTTP servers. Setting this option
+        // will fake `"PATCH"`, `"PUT"` and `"DELETE"` requests via the `_method` parameter and
+        // set a `X-Http-Method-Override` header.
+        Backbone.emulateHTTP = false;
+      
+        // Turn on `emulateJSON` to support legacy servers that can't deal with direct
+        // `application/json` requests ... this will encode the body as
+        // `application/x-www-form-urlencoded` instead and will send the model in a
+        // form param named `model`.
+        Backbone.emulateJSON = false;
+      
+        // Proxy Backbone class methods to Underscore functions, wrapping the model's
+        // `attributes` object or collection's `models` array behind the scenes.
+        //
+        // collection.filter(function(model) { return model.get('age') > 10 });
+        // collection.each(this.addView);
+        //
+        // `Function#apply` can be slow so we use the method's arg count, if we know it.
+        var addMethod = function(length, method, attribute) {
+          switch (length) {
+            case 1: return function() {
+              return _[method](this[attribute]);
+            };
+            case 2: return function(value) {
+              return _[method](this[attribute], value);
+            };
+            case 3: return function(iteratee, context) {
+              return _[method](this[attribute], cb(iteratee, this), context);
+            };
+            case 4: return function(iteratee, defaultVal, context) {
+              return _[method](this[attribute], cb(iteratee, this), defaultVal, context);
+            };
+            default: return function() {
+              var args = slice.call(arguments);
+              args.unshift(this[attribute]);
+              return _[method].apply(_, args);
+            };
+          }
+        };
+        var addUnderscoreMethods = function(Class, methods, attribute) {
+          _.each(methods, function(length, method) {
+            if (_[method]) Class.prototype[method] = addMethod(length, method, attribute);
+          });
+        };
+      
+        // Support `collection.sortBy('attr')` and `collection.findWhere({id: 1})`.
+        var cb = function(iteratee, instance) {
+          if (_.isFunction(iteratee)) return iteratee;
+          if (_.isObject(iteratee) && !instance._isModel(iteratee)) return modelMatcher(iteratee);
+          if (_.isString(iteratee)) return function(model) { return model.get(iteratee); };
+          return iteratee;
+        };
+        var modelMatcher = function(attrs) {
+          var matcher = _.matches(attrs);
+          return function(model) {
+            return matcher(model.attributes);
+          };
+        };
+      
+        // Backbone.Events
+        // ---------------
+      
+        // A module that can be mixed in to *any object* in order to provide it with
+        // a custom event channel. You may bind a callback to an event with `on` or
+        // remove with `off`; `trigger`-ing an event fires all callbacks in
+        // succession.
+        //
+        //     var object = {};
+        //     _.extend(object, Backbone.Events);
+        //     object.on('expand', function(){ alert('expanded'); });
+        //     object.trigger('expand');
+        //
+        var Events = Backbone.Events = {};
+      
+        // Regular expression used to split event strings.
+        var eventSplitter = /\s+/;
+      
+        // Iterates over the standard `event, callback` (as well as the fancy multiple
+        // space-separated events `"change blur", callback` and jQuery-style event
+        // maps `{event: callback}`).
+        var eventsApi = function(iteratee, events, name, callback, opts) {
+          var i = 0, names;
+          if (name && typeof name === 'object') {
+            // Handle event maps.
+            if (callback !== void 0 && 'context' in opts && opts.context === void 0) opts.context = callback;
+            for (names = _.keys(name); i < names.length ; i++) {
+              events = eventsApi(iteratee, events, names[i], name[names[i]], opts);
+            }
+          } else if (name && eventSplitter.test(name)) {
+            // Handle space separated event names by delegating them individually.
+            for (names = name.split(eventSplitter); i < names.length; i++) {
+              events = iteratee(events, names[i], callback, opts);
+            }
+          } else {
+            // Finally, standard events.
+            events = iteratee(events, name, callback, opts);
+          }
+          return events;
+        };
+      
+        // Bind an event to a `callback` function. Passing `"all"` will bind
+        // the callback to all events fired.
+        Events.on = function(name, callback, context) {
+          return internalOn(this, name, callback, context);
+        };
+      
+        // Guard the `listening` argument from the public API.
+        var internalOn = function(obj, name, callback, context, listening) {
+          obj._events = eventsApi(onApi, obj._events || {}, name, callback, {
+              context: context,
+              ctx: obj,
+              listening: listening
+          });
+      
+          if (listening) {
+            var listeners = obj._listeners || (obj._listeners = {});
+            listeners[listening.id] = listening;
+          }
+      
+          return obj;
+        };
+      
+        // Inversion-of-control versions of `on`. Tell *this* object to listen to
+        // an event in another object... keeping track of what it's listening to
+        // for easier unbinding later.
+        Events.listenTo =  function(obj, name, callback) {
+          if (!obj) return this;
+          var id = obj._listenId || (obj._listenId = _.uniqueId('l'));
+          var listeningTo = this._listeningTo || (this._listeningTo = {});
+          var listening = listeningTo[id];
+      
+          // This object is not listening to any other events on `obj` yet.
+          // Setup the necessary references to track the listening callbacks.
+          if (!listening) {
+            var thisId = this._listenId || (this._listenId = _.uniqueId('l'));
+            listening = listeningTo[id] = {obj: obj, objId: id, id: thisId, listeningTo: listeningTo, count: 0};
+          }
+      
+          // Bind callbacks on obj, and keep track of them on listening.
+          internalOn(obj, name, callback, this, listening);
+          return this;
+        };
+      
+        // The reducing API that adds a callback to the `events` object.
+        var onApi = function(events, name, callback, options) {
+          if (callback) {
+            var handlers = events[name] || (events[name] = []);
+            var context = options.context, ctx = options.ctx, listening = options.listening;
+            if (listening) listening.count++;
+      
+            handlers.push({ callback: callback, context: context, ctx: context || ctx, listening: listening });
+          }
+          return events;
+        };
+      
+        // Remove one or many callbacks. If `context` is null, removes all
+        // callbacks with that function. If `callback` is null, removes all
+        // callbacks for the event. If `name` is null, removes all bound
+        // callbacks for all events.
+        Events.off =  function(name, callback, context) {
+          if (!this._events) return this;
+          this._events = eventsApi(offApi, this._events, name, callback, {
+              context: context,
+              listeners: this._listeners
+          });
+          return this;
+        };
+      
+        // Tell this object to stop listening to either specific events ... or
+        // to every object it's currently listening to.
+        Events.stopListening =  function(obj, name, callback) {
+          var listeningTo = this._listeningTo;
+          if (!listeningTo) return this;
+      
+          var ids = obj ? [obj._listenId] : _.keys(listeningTo);
+      
+          for (var i = 0; i < ids.length; i++) {
+            var listening = listeningTo[ids[i]];
+      
+            // If listening doesn't exist, this object is not currently
+            // listening to obj. Break out early.
+            if (!listening) break;
+      
+            listening.obj.off(name, callback, this);
+          }
+          if (_.isEmpty(listeningTo)) this._listeningTo = void 0;
+      
+          return this;
+        };
+      
+        // The reducing API that removes a callback from the `events` object.
+        var offApi = function(events, name, callback, options) {
+          if (!events) return;
+      
+          var i = 0, listening;
+          var context = options.context, listeners = options.listeners;
+      
+          // Delete all events listeners and "drop" events.
+          if (!name && !callback && !context) {
+            var ids = _.keys(listeners);
+            for (; i < ids.length; i++) {
+              listening = listeners[ids[i]];
+              delete listeners[listening.id];
+              delete listening.listeningTo[listening.objId];
+            }
+            return;
+          }
+      
+          var names = name ? [name] : _.keys(events);
+          for (; i < names.length; i++) {
+            name = names[i];
+            var handlers = events[name];
+      
+            // Bail out if there are no events stored.
+            if (!handlers) break;
+      
+            // Replace events if there are any remaining.  Otherwise, clean up.
+            var remaining = [];
+            for (var j = 0; j < handlers.length; j++) {
+              var handler = handlers[j];
+              if (
+                callback && callback !== handler.callback &&
+                  callback !== handler.callback._callback ||
+                    context && context !== handler.context
+              ) {
+                remaining.push(handler);
+              } else {
+                listening = handler.listening;
+                if (listening && --listening.count === 0) {
+                  delete listeners[listening.id];
+                  delete listening.listeningTo[listening.objId];
+                }
+              }
+            }
+      
+            // Update tail event if the list has any events.  Otherwise, clean up.
+            if (remaining.length) {
+              events[name] = remaining;
+            } else {
+              delete events[name];
+            }
+          }
+          if (_.size(events)) return events;
+        };
+      
+        // Bind an event to only be triggered a single time. After the first time
+        // the callback is invoked, its listener will be removed. If multiple events
+        // are passed in using the space-separated syntax, the handler will fire
+        // once for each event, not once for a combination of all events.
+        Events.once =  function(name, callback, context) {
+          // Map the event into a `{event: once}` object.
+          var events = eventsApi(onceMap, {}, name, callback, _.bind(this.off, this));
+          return this.on(events, void 0, context);
+        };
+      
+        // Inversion-of-control versions of `once`.
+        Events.listenToOnce =  function(obj, name, callback) {
+          // Map the event into a `{event: once}` object.
+          var events = eventsApi(onceMap, {}, name, callback, _.bind(this.stopListening, this, obj));
+          return this.listenTo(obj, events);
+        };
+      
+        // Reduces the event callbacks into a map of `{event: onceWrapper}`.
+        // `offer` unbinds the `onceWrapper` after it has been called.
+        var onceMap = function(map, name, callback, offer) {
+          if (callback) {
+            var once = map[name] = _.once(function() {
+              offer(name, once);
+              callback.apply(this, arguments);
+            });
+            once._callback = callback;
+          }
+          return map;
+        };
+      
+        // Trigger one or many events, firing all bound callbacks. Callbacks are
+        // passed the same arguments as `trigger` is, apart from the event name
+        // (unless you're listening on `"all"`, which will cause your callback to
+        // receive the true name of the event as the first argument).
+        Events.trigger =  function(name) {
+          if (!this._events) return this;
+      
+          var length = Math.max(0, arguments.length - 1);
+          var args = Array(length);
+          for (var i = 0; i < length; i++) args[i] = arguments[i + 1];
+      
+          eventsApi(triggerApi, this._events, name, void 0, args);
+          return this;
+        };
+      
+        // Handles triggering the appropriate event callbacks.
+        var triggerApi = function(objEvents, name, cb, args) {
+          if (objEvents) {
+            var events = objEvents[name];
+            var allEvents = objEvents.all;
+            if (events && allEvents) allEvents = allEvents.slice();
+            if (events) triggerEvents(events, args);
+            if (allEvents) triggerEvents(allEvents, [name].concat(args));
+          }
+          return objEvents;
+        };
+      
+        // A difficult-to-believe, but optimized internal dispatch function for
+        // triggering events. Tries to keep the usual cases speedy (most internal
+        // Backbone events have 3 arguments).
+        var triggerEvents = function(events, args) {
+          var ev, i = -1, l = events.length, a1 = args[0], a2 = args[1], a3 = args[2];
+          switch (args.length) {
+            case 0: while (++i < l) (ev = events[i]).callback.call(ev.ctx); return;
+            case 1: while (++i < l) (ev = events[i]).callback.call(ev.ctx, a1); return;
+            case 2: while (++i < l) (ev = events[i]).callback.call(ev.ctx, a1, a2); return;
+            case 3: while (++i < l) (ev = events[i]).callback.call(ev.ctx, a1, a2, a3); return;
+            default: while (++i < l) (ev = events[i]).callback.apply(ev.ctx, args); return;
+          }
+        };
+      
+        // Aliases for backwards compatibility.
+        Events.bind   = Events.on;
+        Events.unbind = Events.off;
+      
+        // Allow the `Backbone` object to serve as a global event bus, for folks who
+        // want global "pubsub" in a convenient place.
+        _.extend(Backbone, Events);
+      
+        // Backbone.Model
+        // --------------
+      
+        // Backbone **Models** are the basic data object in the framework --
+        // frequently representing a row in a table in a database on your server.
+        // A discrete chunk of data and a bunch of useful, related methods for
+        // performing computations and transformations on that data.
+      
+        // Create a new model with the specified attributes. A client id (`cid`)
+        // is automatically generated and assigned for you.
+        var Model = Backbone.Model = function(attributes, options) {
+          var attrs = attributes || {};
+          options || (options = {});
+          this.cid = _.uniqueId(this.cidPrefix);
+          this.attributes = {};
+          if (options.collection) this.collection = options.collection;
+          if (options.parse) attrs = this.parse(attrs, options) || {};
+          attrs = _.defaults({}, attrs, _.result(this, 'defaults'));
+          this.set(attrs, options);
+          this.changed = {};
+          this.initialize.apply(this, arguments);
+        };
+      
+        // Attach all inheritable methods to the Model prototype.
+        _.extend(Model.prototype, Events, {
+      
+          // A hash of attributes whose current and previous value differ.
+          changed: null,
+      
+          // The value returned during the last failed validation.
+          validationError: null,
+      
+          // The default name for the JSON `id` attribute is `"id"`. MongoDB and
+          // CouchDB users may want to set this to `"_id"`.
+          idAttribute: 'id',
+      
+          // The prefix is used to create the client id which is used to identify models locally.
+          // You may want to override this if you're experiencing name clashes with model ids.
+          cidPrefix: 'c',
+      
+          // Initialize is an empty function by default. Override it with your own
+          // initialization logic.
+          initialize: function(){},
+      
+          // Return a copy of the model's `attributes` object.
+          toJSON: function(options) {
+            return _.clone(this.attributes);
+          },
+      
+          // Proxy `Backbone.sync` by default -- but override this if you need
+          // custom syncing semantics for *this* particular model.
+          sync: function() {
+            return Backbone.sync.apply(this, arguments);
+          },
+      
+          // Get the value of an attribute.
+          get: function(attr) {
+            return this.attributes[attr];
+          },
+      
+          // Get the HTML-escaped value of an attribute.
+          escape: function(attr) {
+            return _.escape(this.get(attr));
+          },
+      
+          // Returns `true` if the attribute contains a value that is not null
+          // or undefined.
+          has: function(attr) {
+            return this.get(attr) != null;
+          },
+      
+          // Special-cased proxy to underscore's `_.matches` method.
+          matches: function(attrs) {
+            return !!_.iteratee(attrs, this)(this.attributes);
+          },
+      
+          // Set a hash of model attributes on the object, firing `"change"`. This is
+          // the core primitive operation of a model, updating the data and notifying
+          // anyone who needs to know about the change in state. The heart of the beast.
+          set: function(key, val, options) {
+            if (key == null) return this;
+      
+            // Handle both `"key", value` and `{key: value}` -style arguments.
+            var attrs;
+            if (typeof key === 'object') {
+              attrs = key;
+              options = val;
+            } else {
+              (attrs = {})[key] = val;
+            }
+      
+            options || (options = {});
+      
+            // Run validation.
+            if (!this._validate(attrs, options)) return false;
+      
+            // Extract attributes and options.
+            var unset      = options.unset;
+            var silent     = options.silent;
+            var changes    = [];
+            var changing   = this._changing;
+            this._changing = true;
+      
+            if (!changing) {
+              this._previousAttributes = _.clone(this.attributes);
+              this.changed = {};
+            }
+      
+            var current = this.attributes;
+            var changed = this.changed;
+            var prev    = this._previousAttributes;
+      
+            // For each `set` attribute, update or delete the current value.
+            for (var attr in attrs) {
+              val = attrs[attr];
+              if (!_.isEqual(current[attr], val)) changes.push(attr);
+              if (!_.isEqual(prev[attr], val)) {
+                changed[attr] = val;
+              } else {
+                delete changed[attr];
+              }
+              unset ? delete current[attr] : current[attr] = val;
+            }
+      
+            // Update the `id`.
+            this.id = this.get(this.idAttribute);
+      
+            // Trigger all relevant attribute changes.
+            if (!silent) {
+              if (changes.length) this._pending = options;
+              for (var i = 0; i < changes.length; i++) {
+                this.trigger('change:' + changes[i], this, current[changes[i]], options);
+              }
+            }
+      
+            // You might be wondering why there's a `while` loop here. Changes can
+            // be recursively nested within `"change"` events.
+            if (changing) return this;
+            if (!silent) {
+              while (this._pending) {
+                options = this._pending;
+                this._pending = false;
+                this.trigger('change', this, options);
+              }
+            }
+            this._pending = false;
+            this._changing = false;
+            return this;
+          },
+      
+          // Remove an attribute from the model, firing `"change"`. `unset` is a noop
+          // if the attribute doesn't exist.
+          unset: function(attr, options) {
+            return this.set(attr, void 0, _.extend({}, options, {unset: true}));
+          },
+      
+          // Clear all attributes on the model, firing `"change"`.
+          clear: function(options) {
+            var attrs = {};
+            for (var key in this.attributes) attrs[key] = void 0;
+            return this.set(attrs, _.extend({}, options, {unset: true}));
+          },
+      
+          // Determine if the model has changed since the last `"change"` event.
+          // If you specify an attribute name, determine if that attribute has changed.
+          hasChanged: function(attr) {
+            if (attr == null) return !_.isEmpty(this.changed);
+            return _.has(this.changed, attr);
+          },
+      
+          // Return an object containing all the attributes that have changed, or
+          // false if there are no changed attributes. Useful for determining what
+          // parts of a view need to be updated and/or what attributes need to be
+          // persisted to the server. Unset attributes will be set to undefined.
+          // You can also pass an attributes object to diff against the model,
+          // determining if there *would be* a change.
+          changedAttributes: function(diff) {
+            if (!diff) return this.hasChanged() ? _.clone(this.changed) : false;
+            var old = this._changing ? this._previousAttributes : this.attributes;
+            var changed = {};
+            for (var attr in diff) {
+              var val = diff[attr];
+              if (_.isEqual(old[attr], val)) continue;
+              changed[attr] = val;
+            }
+            return _.size(changed) ? changed : false;
+          },
+      
+          // Get the previous value of an attribute, recorded at the time the last
+          // `"change"` event was fired.
+          previous: function(attr) {
+            if (attr == null || !this._previousAttributes) return null;
+            return this._previousAttributes[attr];
+          },
+      
+          // Get all of the attributes of the model at the time of the previous
+          // `"change"` event.
+          previousAttributes: function() {
+            return _.clone(this._previousAttributes);
+          },
+      
+          // Fetch the model from the server, merging the response with the model's
+          // local attributes. Any changed attributes will trigger a "change" event.
+          fetch: function(options) {
+            options = _.extend({parse: true}, options);
+            var model = this;
+            var success = options.success;
+            options.success = function(resp) {
+              var serverAttrs = options.parse ? model.parse(resp, options) : resp;
+              if (!model.set(serverAttrs, options)) return false;
+              if (success) success.call(options.context, model, resp, options);
+              model.trigger('sync', model, resp, options);
+            };
+            wrapError(this, options);
+            return this.sync('read', this, options);
+          },
+      
+          // Set a hash of model attributes, and sync the model to the server.
+          // If the server returns an attributes hash that differs, the model's
+          // state will be `set` again.
+          save: function(key, val, options) {
+            // Handle both `"key", value` and `{key: value}` -style arguments.
+            var attrs;
+            if (key == null || typeof key === 'object') {
+              attrs = key;
+              options = val;
+            } else {
+              (attrs = {})[key] = val;
+            }
+      
+            options = _.extend({validate: true, parse: true}, options);
+            var wait = options.wait;
+      
+            // If we're not waiting and attributes exist, save acts as
+            // `set(attr).save(null, opts)` with validation. Otherwise, check if
+            // the model will be valid when the attributes, if any, are set.
+            if (attrs && !wait) {
+              if (!this.set(attrs, options)) return false;
+            } else {
+              if (!this._validate(attrs, options)) return false;
+            }
+      
+            // After a successful server-side save, the client is (optionally)
+            // updated with the server-side state.
+            var model = this;
+            var success = options.success;
+            var attributes = this.attributes;
+            options.success = function(resp) {
+              // Ensure attributes are restored during synchronous saves.
+              model.attributes = attributes;
+              var serverAttrs = options.parse ? model.parse(resp, options) : resp;
+              if (wait) serverAttrs = _.extend({}, attrs, serverAttrs);
+              if (serverAttrs && !model.set(serverAttrs, options)) return false;
+              if (success) success.call(options.context, model, resp, options);
+              model.trigger('sync', model, resp, options);
+            };
+            wrapError(this, options);
+      
+            // Set temporary attributes if `{wait: true}` to properly find new ids.
+            if (attrs && wait) this.attributes = _.extend({}, attributes, attrs);
+      
+            var method = this.isNew() ? 'create' : (options.patch ? 'patch' : 'update');
+            if (method === 'patch' && !options.attrs) options.attrs = attrs;
+            var xhr = this.sync(method, this, options);
+      
+            // Restore attributes.
+            this.attributes = attributes;
+      
+            return xhr;
+          },
+      
+          // Destroy this model on the server if it was already persisted.
+          // Optimistically removes the model from its collection, if it has one.
+          // If `wait: true` is passed, waits for the server to respond before removal.
+          destroy: function(options) {
+            options = options ? _.clone(options) : {};
+            var model = this;
+            var success = options.success;
+            var wait = options.wait;
+      
+            var destroy = function() {
+              model.stopListening();
+              model.trigger('destroy', model, model.collection, options);
+            };
+      
+            options.success = function(resp) {
+              if (wait) destroy();
+              if (success) success.call(options.context, model, resp, options);
+              if (!model.isNew()) model.trigger('sync', model, resp, options);
+            };
+      
+            var xhr = false;
+            if (this.isNew()) {
+              _.defer(options.success);
+            } else {
+              wrapError(this, options);
+              xhr = this.sync('delete', this, options);
+            }
+            if (!wait) destroy();
+            return xhr;
+          },
+      
+          // Default URL for the model's representation on the server -- if you're
+          // using Backbone's restful methods, override this to change the endpoint
+          // that will be called.
+          url: function() {
+            var base =
+              _.result(this, 'urlRoot') ||
+              _.result(this.collection, 'url') ||
+              urlError();
+            if (this.isNew()) return base;
+            var id = this.get(this.idAttribute);
+            return base.replace(/[^\/]$/, '$&/') + encodeURIComponent(id);
+          },
+      
+          // **parse** converts a response into the hash of attributes to be `set` on
+          // the model. The default implementation is just to pass the response along.
+          parse: function(resp, options) {
+            return resp;
+          },
+      
+          // Create a new model with identical attributes to this one.
+          clone: function() {
+            return new this.constructor(this.attributes);
+          },
+      
+          // A model is new if it has never been saved to the server, and lacks an id.
+          isNew: function() {
+            return !this.has(this.idAttribute);
+          },
+      
+          // Check if the model is currently in a valid state.
+          isValid: function(options) {
+            return this._validate({}, _.defaults({validate: true}, options));
+          },
+      
+          // Run validation against the next complete set of model attributes,
+          // returning `true` if all is well. Otherwise, fire an `"invalid"` event.
+          _validate: function(attrs, options) {
+            if (!options.validate || !this.validate) return true;
+            attrs = _.extend({}, this.attributes, attrs);
+            var error = this.validationError = this.validate(attrs, options) || null;
+            if (!error) return true;
+            this.trigger('invalid', this, error, _.extend(options, {validationError: error}));
+            return false;
+          }
+      
+        });
+      
+        // Underscore methods that we want to implement on the Model, mapped to the
+        // number of arguments they take.
+        var modelMethods = { keys: 1, values: 1, pairs: 1, invert: 1, pick: 0,
+            omit: 0, chain: 1, isEmpty: 1 };
+      
+        // Mix in each Underscore method as a proxy to `Model#attributes`.
+        addUnderscoreMethods(Model, modelMethods, 'attributes');
+      
+        // Backbone.Collection
+        // -------------------
+      
+        // If models tend to represent a single row of data, a Backbone Collection is
+        // more analogous to a table full of data ... or a small slice or page of that
+        // table, or a collection of rows that belong together for a particular reason
+        // -- all of the messages in this particular folder, all of the documents
+        // belonging to this particular author, and so on. Collections maintain
+        // indexes of their models, both in order, and for lookup by `id`.
+      
+        // Create a new **Collection**, perhaps to contain a specific type of `model`.
+        // If a `comparator` is specified, the Collection will maintain
+        // its models in sort order, as they're added and removed.
+        var Collection = Backbone.Collection = function(models, options) {
+          options || (options = {});
+          if (options.model) this.model = options.model;
+          if (options.comparator !== void 0) this.comparator = options.comparator;
+          this._reset();
+          this.initialize.apply(this, arguments);
+          if (models) this.reset(models, _.extend({silent: true}, options));
+        };
+      
+        // Default options for `Collection#set`.
+        var setOptions = {add: true, remove: true, merge: true};
+        var addOptions = {add: true, remove: false};
+      
+        // Splices `insert` into `array` at index `at`.
+        var splice = function(array, insert, at) {
+          at = Math.min(Math.max(at, 0), array.length);
+          var tail = Array(array.length - at);
+          var length = insert.length;
+          for (var i = 0; i < tail.length; i++) tail[i] = array[i + at];
+          for (i = 0; i < length; i++) array[i + at] = insert[i];
+          for (i = 0; i < tail.length; i++) array[i + length + at] = tail[i];
+        };
+      
+        // Define the Collection's inheritable methods.
+        _.extend(Collection.prototype, Events, {
+      
+          // The default model for a collection is just a **Backbone.Model**.
+          // This should be overridden in most cases.
+          model: Model,
+      
+          // Initialize is an empty function by default. Override it with your own
+          // initialization logic.
+          initialize: function(){},
+      
+          // The JSON representation of a Collection is an array of the
+          // models' attributes.
+          toJSON: function(options) {
+            return this.map(function(model) { return model.toJSON(options); });
+          },
+      
+          // Proxy `Backbone.sync` by default.
+          sync: function() {
+            return Backbone.sync.apply(this, arguments);
+          },
+      
+          // Add a model, or list of models to the set. `models` may be Backbone
+          // Models or raw JavaScript objects to be converted to Models, or any
+          // combination of the two.
+          add: function(models, options) {
+            return this.set(models, _.extend({merge: false}, options, addOptions));
+          },
+      
+          // Remove a model, or a list of models from the set.
+          remove: function(models, options) {
+            options = _.extend({}, options);
+            var singular = !_.isArray(models);
+            models = singular ? [models] : _.clone(models);
+            var removed = this._removeModels(models, options);
+            if (!options.silent && removed) this.trigger('update', this, options);
+            return singular ? removed[0] : removed;
+          },
+      
+          // Update a collection by `set`-ing a new list of models, adding new ones,
+          // removing models that are no longer present, and merging models that
+          // already exist in the collection, as necessary. Similar to **Model#set**,
+          // the core operation for updating the data contained by the collection.
+          set: function(models, options) {
+            if (models == null) return;
+      
+            options = _.defaults({}, options, setOptions);
+            if (options.parse && !this._isModel(models)) models = this.parse(models, options);
+      
+            var singular = !_.isArray(models);
+            models = singular ? [models] : models.slice();
+      
+            var at = options.at;
+            if (at != null) at = +at;
+            if (at < 0) at += this.length + 1;
+      
+            var set = [];
+            var toAdd = [];
+            var toRemove = [];
+            var modelMap = {};
+      
+            var add = options.add;
+            var merge = options.merge;
+            var remove = options.remove;
+      
+            var sort = false;
+            var sortable = this.comparator && (at == null) && options.sort !== false;
+            var sortAttr = _.isString(this.comparator) ? this.comparator : null;
+      
+            // Turn bare objects into model references, and prevent invalid models
+            // from being added.
+            var model;
+            for (var i = 0; i < models.length; i++) {
+              model = models[i];
+      
+              // If a duplicate is found, prevent it from being added and
+              // optionally merge it into the existing model.
+              var existing = this.get(model);
+              if (existing) {
+                if (merge && model !== existing) {
+                  var attrs = this._isModel(model) ? model.attributes : model;
+                  if (options.parse) attrs = existing.parse(attrs, options);
+                  existing.set(attrs, options);
+                  if (sortable && !sort) sort = existing.hasChanged(sortAttr);
+                }
+                if (!modelMap[existing.cid]) {
+                  modelMap[existing.cid] = true;
+                  set.push(existing);
+                }
+                models[i] = existing;
+      
+              // If this is a new, valid model, push it to the `toAdd` list.
+              } else if (add) {
+                model = models[i] = this._prepareModel(model, options);
+                if (model) {
+                  toAdd.push(model);
+                  this._addReference(model, options);
+                  modelMap[model.cid] = true;
+                  set.push(model);
+                }
+              }
+            }
+      
+            // Remove stale models.
+            if (remove) {
+              for (i = 0; i < this.length; i++) {
+                model = this.models[i];
+                if (!modelMap[model.cid]) toRemove.push(model);
+              }
+              if (toRemove.length) this._removeModels(toRemove, options);
+            }
+      
+            // See if sorting is needed, update `length` and splice in new models.
+            var orderChanged = false;
+            var replace = !sortable && add && remove;
+            if (set.length && replace) {
+              orderChanged = this.length != set.length || _.some(this.models, function(model, index) {
+                return model !== set[index];
+              });
+              this.models.length = 0;
+              splice(this.models, set, 0);
+              this.length = this.models.length;
+            } else if (toAdd.length) {
+              if (sortable) sort = true;
+              splice(this.models, toAdd, at == null ? this.length : at);
+              this.length = this.models.length;
+            }
+      
+            // Silently sort the collection if appropriate.
+            if (sort) this.sort({silent: true});
+      
+            // Unless silenced, it's time to fire all appropriate add/sort events.
+            if (!options.silent) {
+              for (i = 0; i < toAdd.length; i++) {
+                if (at != null) options.index = at + i;
+                model = toAdd[i];
+                model.trigger('add', model, this, options);
+              }
+              if (sort || orderChanged) this.trigger('sort', this, options);
+              if (toAdd.length || toRemove.length) this.trigger('update', this, options);
+            }
+      
+            // Return the added (or merged) model (or models).
+            return singular ? models[0] : models;
+          },
+      
+          // When you have more items than you want to add or remove individually,
+          // you can reset the entire set with a new list of models, without firing
+          // any granular `add` or `remove` events. Fires `reset` when finished.
+          // Useful for bulk operations and optimizations.
+          reset: function(models, options) {
+            options = options ? _.clone(options) : {};
+            for (var i = 0; i < this.models.length; i++) {
+              this._removeReference(this.models[i], options);
+            }
+            options.previousModels = this.models;
+            this._reset();
+            models = this.add(models, _.extend({silent: true}, options));
+            if (!options.silent) this.trigger('reset', this, options);
+            return models;
+          },
+      
+          // Add a model to the end of the collection.
+          push: function(model, options) {
+            return this.add(model, _.extend({at: this.length}, options));
+          },
+      
+          // Remove a model from the end of the collection.
+          pop: function(options) {
+            var model = this.at(this.length - 1);
+            return this.remove(model, options);
+          },
+      
+          // Add a model to the beginning of the collection.
+          unshift: function(model, options) {
+            return this.add(model, _.extend({at: 0}, options));
+          },
+      
+          // Remove a model from the beginning of the collection.
+          shift: function(options) {
+            var model = this.at(0);
+            return this.remove(model, options);
+          },
+      
+          // Slice out a sub-array of models from the collection.
+          slice: function() {
+            return slice.apply(this.models, arguments);
+          },
+      
+          // Get a model from the set by id.
+          get: function(obj) {
+            if (obj == null) return void 0;
+            var id = this.modelId(this._isModel(obj) ? obj.attributes : obj);
+            return this._byId[obj] || this._byId[id] || this._byId[obj.cid];
+          },
+      
+          // Get the model at the given index.
+          at: function(index) {
+            if (index < 0) index += this.length;
+            return this.models[index];
+          },
+      
+          // Return models with matching attributes. Useful for simple cases of
+          // `filter`.
+          where: function(attrs, first) {
+            return this[first ? 'find' : 'filter'](attrs);
+          },
+      
+          // Return the first model with matching attributes. Useful for simple cases
+          // of `find`.
+          findWhere: function(attrs) {
+            return this.where(attrs, true);
+          },
+      
+          // Force the collection to re-sort itself. You don't need to call this under
+          // normal circumstances, as the set will maintain sort order as each item
+          // is added.
+          sort: function(options) {
+            var comparator = this.comparator;
+            if (!comparator) throw new Error('Cannot sort a set without a comparator');
+            options || (options = {});
+      
+            var length = comparator.length;
+            if (_.isFunction(comparator)) comparator = _.bind(comparator, this);
+      
+            // Run sort based on type of `comparator`.
+            if (length === 1 || _.isString(comparator)) {
+              this.models = this.sortBy(comparator);
+            } else {
+              this.models.sort(comparator);
+            }
+            if (!options.silent) this.trigger('sort', this, options);
+            return this;
+          },
+      
+          // Pluck an attribute from each model in the collection.
+          pluck: function(attr) {
+            return _.invoke(this.models, 'get', attr);
+          },
+      
+          // Fetch the default set of models for this collection, resetting the
+          // collection when they arrive. If `reset: true` is passed, the response
+          // data will be passed through the `reset` method instead of `set`.
+          fetch: function(options) {
+            options = _.extend({parse: true}, options);
+            var success = options.success;
+            var collection = this;
+            options.success = function(resp) {
+              var method = options.reset ? 'reset' : 'set';
+              collection[method](resp, options);
+              if (success) success.call(options.context, collection, resp, options);
+              collection.trigger('sync', collection, resp, options);
+            };
+            wrapError(this, options);
+            return this.sync('read', this, options);
+          },
+      
+          // Create a new instance of a model in this collection. Add the model to the
+          // collection immediately, unless `wait: true` is passed, in which case we
+          // wait for the server to agree.
+          create: function(model, options) {
+            options = options ? _.clone(options) : {};
+            var wait = options.wait;
+            model = this._prepareModel(model, options);
+            if (!model) return false;
+            if (!wait) this.add(model, options);
+            var collection = this;
+            var success = options.success;
+            options.success = function(model, resp, callbackOpts) {
+              if (wait) collection.add(model, callbackOpts);
+              if (success) success.call(callbackOpts.context, model, resp, callbackOpts);
+            };
+            model.save(null, options);
+            return model;
+          },
+      
+          // **parse** converts a response into a list of models to be added to the
+          // collection. The default implementation is just to pass it through.
+          parse: function(resp, options) {
+            return resp;
+          },
+      
+          // Create a new collection with an identical list of models as this one.
+          clone: function() {
+            return new this.constructor(this.models, {
+              model: this.model,
+              comparator: this.comparator
+            });
+          },
+      
+          // Define how to uniquely identify models in the collection.
+          modelId: function (attrs) {
+            return attrs[this.model.prototype.idAttribute || 'id'];
+          },
+      
+          // Private method to reset all internal state. Called when the collection
+          // is first initialized or reset.
+          _reset: function() {
+            this.length = 0;
+            this.models = [];
+            this._byId  = {};
+          },
+      
+          // Prepare a hash of attributes (or other model) to be added to this
+          // collection.
+          _prepareModel: function(attrs, options) {
+            if (this._isModel(attrs)) {
+              if (!attrs.collection) attrs.collection = this;
+              return attrs;
+            }
+            options = options ? _.clone(options) : {};
+            options.collection = this;
+            var model = new this.model(attrs, options);
+            if (!model.validationError) return model;
+            this.trigger('invalid', this, model.validationError, options);
+            return false;
+          },
+      
+          // Internal method called by both remove and set.
+          _removeModels: function(models, options) {
+            var removed = [];
+            for (var i = 0; i < models.length; i++) {
+              var model = this.get(models[i]);
+              if (!model) continue;
+      
+              var index = this.indexOf(model);
+              this.models.splice(index, 1);
+              this.length--;
+      
+              if (!options.silent) {
+                options.index = index;
+                model.trigger('remove', model, this, options);
+              }
+      
+              removed.push(model);
+              this._removeReference(model, options);
+            }
+            return removed.length ? removed : false;
+          },
+      
+          // Method for checking whether an object should be considered a model for
+          // the purposes of adding to the collection.
+          _isModel: function (model) {
+            return model instanceof Model;
+          },
+      
+          // Internal method to create a model's ties to a collection.
+          _addReference: function(model, options) {
+            this._byId[model.cid] = model;
+            var id = this.modelId(model.attributes);
+            if (id != null) this._byId[id] = model;
+            model.on('all', this._onModelEvent, this);
+          },
+      
+          // Internal method to sever a model's ties to a collection.
+          _removeReference: function(model, options) {
+            delete this._byId[model.cid];
+            var id = this.modelId(model.attributes);
+            if (id != null) delete this._byId[id];
+            if (this === model.collection) delete model.collection;
+            model.off('all', this._onModelEvent, this);
+          },
+      
+          // Internal method called every time a model in the set fires an event.
+          // Sets need to update their indexes when models change ids. All other
+          // events simply proxy through. "add" and "remove" events that originate
+          // in other collections are ignored.
+          _onModelEvent: function(event, model, collection, options) {
+            if ((event === 'add' || event === 'remove') && collection !== this) return;
+            if (event === 'destroy') this.remove(model, options);
+            if (event === 'change') {
+              var prevId = this.modelId(model.previousAttributes());
+              var id = this.modelId(model.attributes);
+              if (prevId !== id) {
+                if (prevId != null) delete this._byId[prevId];
+                if (id != null) this._byId[id] = model;
+              }
+            }
+            this.trigger.apply(this, arguments);
+          }
+      
+        });
+      
+        // Underscore methods that we want to implement on the Collection.
+        // 90% of the core usefulness of Backbone Collections is actually implemented
+        // right here:
+        var collectionMethods = { forEach: 3, each: 3, map: 3, collect: 3, reduce: 4,
+            foldl: 4, inject: 4, reduceRight: 4, foldr: 4, find: 3, detect: 3, filter: 3,
+            select: 3, reject: 3, every: 3, all: 3, some: 3, any: 3, include: 3, includes: 3,
+            contains: 3, invoke: 0, max: 3, min: 3, toArray: 1, size: 1, first: 3,
+            head: 3, take: 3, initial: 3, rest: 3, tail: 3, drop: 3, last: 3,
+            without: 0, difference: 0, indexOf: 3, shuffle: 1, lastIndexOf: 3,
+            isEmpty: 1, chain: 1, sample: 3, partition: 3, groupBy: 3, countBy: 3,
+            sortBy: 3, indexBy: 3};
+      
+        // Mix in each Underscore method as a proxy to `Collection#models`.
+        addUnderscoreMethods(Collection, collectionMethods, 'models');
+      
+        // Backbone.View
+        // -------------
+      
+        // Backbone Views are almost more convention than they are actual code. A View
+        // is simply a JavaScript object that represents a logical chunk of UI in the
+        // DOM. This might be a single item, an entire list, a sidebar or panel, or
+        // even the surrounding frame which wraps your whole app. Defining a chunk of
+        // UI as a **View** allows you to define your DOM events declaratively, without
+        // having to worry about render order ... and makes it easy for the view to
+        // react to specific changes in the state of your models.
+      
+        // Creating a Backbone.View creates its initial element outside of the DOM,
+        // if an existing element is not provided...
+        var View = Backbone.View = function(options) {
+          this.cid = _.uniqueId('view');
+          _.extend(this, _.pick(options, viewOptions));
+          this._ensureElement();
+          this.initialize.apply(this, arguments);
+        };
+      
+        // Cached regex to split keys for `delegate`.
+        var delegateEventSplitter = /^(\S+)\s*(.*)$/;
+      
+        // List of view options to be set as properties.
+        var viewOptions = ['model', 'collection', 'el', 'id', 'attributes', 'className', 'tagName', 'events'];
+      
+        // Set up all inheritable **Backbone.View** properties and methods.
+        _.extend(View.prototype, Events, {
+      
+          // The default `tagName` of a View's element is `"div"`.
+          tagName: 'div',
+      
+          // jQuery delegate for element lookup, scoped to DOM elements within the
+          // current view. This should be preferred to global lookups where possible.
+          $: function(selector) {
+            return this.$el.find(selector);
+          },
+      
+          // Initialize is an empty function by default. Override it with your own
+          // initialization logic.
+          initialize: function(){},
+      
+          // **render** is the core function that your view should override, in order
+          // to populate its element (`this.el`), with the appropriate HTML. The
+          // convention is for **render** to always return `this`.
+          render: function() {
+            return this;
+          },
+      
+          // Remove this view by taking the element out of the DOM, and removing any
+          // applicable Backbone.Events listeners.
+          remove: function() {
+            this._removeElement();
+            this.stopListening();
+            return this;
+          },
+      
+          // Remove this view's element from the document and all event listeners
+          // attached to it. Exposed for subclasses using an alternative DOM
+          // manipulation API.
+          _removeElement: function() {
+            this.$el.remove();
+          },
+      
+          // Change the view's element (`this.el` property) and re-delegate the
+          // view's events on the new element.
+          setElement: function(element) {
+            this.undelegateEvents();
+            this._setElement(element);
+            this.delegateEvents();
+            return this;
+          },
+      
+          // Creates the `this.el` and `this.$el` references for this view using the
+          // given `el`. `el` can be a CSS selector or an HTML string, a jQuery
+          // context or an element. Subclasses can override this to utilize an
+          // alternative DOM manipulation API and are only required to set the
+          // `this.el` property.
+          _setElement: function(el) {
+            this.$el = el instanceof Backbone.$ ? el : Backbone.$(el);
+            this.el = this.$el[0];
+          },
+      
+          // Set callbacks, where `this.events` is a hash of
+          //
+          // *{"event selector": "callback"}*
+          //
+          //     {
+          //       'mousedown .title':  'edit',
+          //       'click .button':     'save',
+          //       'click .open':       function(e) { ... }
+          //     }
+          //
+          // pairs. Callbacks will be bound to the view, with `this` set properly.
+          // Uses event delegation for efficiency.
+          // Omitting the selector binds the event to `this.el`.
+          delegateEvents: function(events) {
+            events || (events = _.result(this, 'events'));
+            if (!events) return this;
+            this.undelegateEvents();
+            for (var key in events) {
+              var method = events[key];
+              if (!_.isFunction(method)) method = this[method];
+              if (!method) continue;
+              var match = key.match(delegateEventSplitter);
+              this.delegate(match[1], match[2], _.bind(method, this));
+            }
+            return this;
+          },
+      
+          // Add a single event listener to the view's element (or a child element
+          // using `selector`). This only works for delegate-able events: not `focus`,
+          // `blur`, and not `change`, `submit`, and `reset` in Internet Explorer.
+          delegate: function(eventName, selector, listener) {
+            this.$el.on(eventName + '.delegateEvents' + this.cid, selector, listener);
+            return this;
+          },
+      
+          // Clears all callbacks previously bound to the view by `delegateEvents`.
+          // You usually don't need to use this, but may wish to if you have multiple
+          // Backbone views attached to the same DOM element.
+          undelegateEvents: function() {
+            if (this.$el) this.$el.off('.delegateEvents' + this.cid);
+            return this;
+          },
+      
+          // A finer-grained `undelegateEvents` for removing a single delegated event.
+          // `selector` and `listener` are both optional.
+          undelegate: function(eventName, selector, listener) {
+            this.$el.off(eventName + '.delegateEvents' + this.cid, selector, listener);
+            return this;
+          },
+      
+          // Produces a DOM element to be assigned to your view. Exposed for
+          // subclasses using an alternative DOM manipulation API.
+          _createElement: function(tagName) {
+            return document.createElement(tagName);
+          },
+      
+          // Ensure that the View has a DOM element to render into.
+          // If `this.el` is a string, pass it through `$()`, take the first
+          // matching element, and re-assign it to `el`. Otherwise, create
+          // an element from the `id`, `className` and `tagName` properties.
+          _ensureElement: function() {
+            if (!this.el) {
+              var attrs = _.extend({}, _.result(this, 'attributes'));
+              if (this.id) attrs.id = _.result(this, 'id');
+              if (this.className) attrs['class'] = _.result(this, 'className');
+              this.setElement(this._createElement(_.result(this, 'tagName')));
+              this._setAttributes(attrs);
+            } else {
+              this.setElement(_.result(this, 'el'));
+            }
+          },
+      
+          // Set attributes from a hash on this view's element.  Exposed for
+          // subclasses using an alternative DOM manipulation API.
+          _setAttributes: function(attributes) {
+            this.$el.attr(attributes);
+          }
+      
+        });
+      
+        // Backbone.sync
+        // -------------
+      
+        // Override this function to change the manner in which Backbone persists
+        // models to the server. You will be passed the type of request, and the
+        // model in question. By default, makes a RESTful Ajax request
+        // to the model's `url()`. Some possible customizations could be:
+        //
+        // * Use `setTimeout` to batch rapid-fire updates into a single request.
+        // * Send up the models as XML instead of JSON.
+        // * Persist models via WebSockets instead of Ajax.
+        //
+        // Turn on `Backbone.emulateHTTP` in order to send `PUT` and `DELETE` requests
+        // as `POST`, with a `_method` parameter containing the true HTTP method,
+        // as well as all requests with the body as `application/x-www-form-urlencoded`
+        // instead of `application/json` with the model in a param named `model`.
+        // Useful when interfacing with server-side languages like **PHP** that make
+        // it difficult to read the body of `PUT` requests.
+        Backbone.sync = function(method, model, options) {
+          var type = methodMap[method];
+      
+          // Default options, unless specified.
+          _.defaults(options || (options = {}), {
+            emulateHTTP: Backbone.emulateHTTP,
+            emulateJSON: Backbone.emulateJSON
+          });
+      
+          // Default JSON-request options.
+          var params = {type: type, dataType: 'json'};
+      
+          // Ensure that we have a URL.
+          if (!options.url) {
+            params.url = _.result(model, 'url') || urlError();
+          }
+      
+          // Ensure that we have the appropriate request data.
+          if (options.data == null && model && (method === 'create' || method === 'update' || method === 'patch')) {
+            params.contentType = 'application/json';
+            params.data = JSON.stringify(options.attrs || model.toJSON(options));
+          }
+      
+          // For older servers, emulate JSON by encoding the request into an HTML-form.
+          if (options.emulateJSON) {
+            params.contentType = 'application/x-www-form-urlencoded';
+            params.data = params.data ? {model: params.data} : {};
+          }
+      
+          // For older servers, emulate HTTP by mimicking the HTTP method with `_method`
+          // And an `X-HTTP-Method-Override` header.
+          if (options.emulateHTTP && (type === 'PUT' || type === 'DELETE' || type === 'PATCH')) {
+            params.type = 'POST';
+            if (options.emulateJSON) params.data._method = type;
+            var beforeSend = options.beforeSend;
+            options.beforeSend = function(xhr) {
+              xhr.setRequestHeader('X-HTTP-Method-Override', type);
+              if (beforeSend) return beforeSend.apply(this, arguments);
+            };
+          }
+      
+          // Don't process data on a non-GET request.
+          if (params.type !== 'GET' && !options.emulateJSON) {
+            params.processData = false;
+          }
+      
+          // Pass along `textStatus` and `errorThrown` from jQuery.
+          var error = options.error;
+          options.error = function(xhr, textStatus, errorThrown) {
+            options.textStatus = textStatus;
+            options.errorThrown = errorThrown;
+            if (error) error.call(options.context, xhr, textStatus, errorThrown);
+          };
+      
+          // Make the request, allowing the user to override any Ajax options.
+          var xhr = options.xhr = Backbone.ajax(_.extend(params, options));
+          model.trigger('request', model, xhr, options);
+          return xhr;
+        };
+      
+        // Map from CRUD to HTTP for our default `Backbone.sync` implementation.
+        var methodMap = {
+          'create': 'POST',
+          'update': 'PUT',
+          'patch':  'PATCH',
+          'delete': 'DELETE',
+          'read':   'GET'
+        };
+      
+        // Set the default implementation of `Backbone.ajax` to proxy through to `$`.
+        // Override this if you'd like to use a different library.
+        Backbone.ajax = function() {
+          return Backbone.$.ajax.apply(Backbone.$, arguments);
+        };
+      
+        // Backbone.Router
+        // ---------------
+      
+        // Routers map faux-URLs to actions, and fire events when routes are
+        // matched. Creating a new one sets its `routes` hash, if not set statically.
+        var Router = Backbone.Router = function(options) {
+          options || (options = {});
+          if (options.routes) this.routes = options.routes;
+          this._bindRoutes();
+          this.initialize.apply(this, arguments);
+        };
+      
+        // Cached regular expressions for matching named param parts and splatted
+        // parts of route strings.
+        var optionalParam = /\((.*?)\)/g;
+        var namedParam    = /(\(\?)?:\w+/g;
+        var splatParam    = /\*\w+/g;
+        var escapeRegExp  = /[\-{}\[\]+?.,\\\^$|#\s]/g;
+      
+        // Set up all inheritable **Backbone.Router** properties and methods.
+        _.extend(Router.prototype, Events, {
+      
+          // Initialize is an empty function by default. Override it with your own
+          // initialization logic.
+          initialize: function(){},
+      
+          // Manually bind a single named route to a callback. For example:
+          //
+          //     this.route('search/:query/p:num', 'search', function(query, num) {
+          //       ...
+          //     });
+          //
+          route: function(route, name, callback) {
+            if (!_.isRegExp(route)) route = this._routeToRegExp(route);
+            if (_.isFunction(name)) {
+              callback = name;
+              name = '';
+            }
+            if (!callback) callback = this[name];
+            var router = this;
+            Backbone.history.route(route, function(fragment) {
+              var args = router._extractParameters(route, fragment);
+              if (router.execute(callback, args, name) !== false) {
+                router.trigger.apply(router, ['route:' + name].concat(args));
+                router.trigger('route', name, args);
+                Backbone.history.trigger('route', router, name, args);
+              }
+            });
+            return this;
+          },
+      
+          // Execute a route handler with the provided parameters.  This is an
+          // excellent place to do pre-route setup or post-route cleanup.
+          execute: function(callback, args, name) {
+            if (callback) callback.apply(this, args);
+          },
+      
+          // Simple proxy to `Backbone.history` to save a fragment into the history.
+          navigate: function(fragment, options) {
+            Backbone.history.navigate(fragment, options);
+            return this;
+          },
+      
+          // Bind all defined routes to `Backbone.history`. We have to reverse the
+          // order of the routes here to support behavior where the most general
+          // routes can be defined at the bottom of the route map.
+          _bindRoutes: function() {
+            if (!this.routes) return;
+            this.routes = _.result(this, 'routes');
+            var route, routes = _.keys(this.routes);
+            while ((route = routes.pop()) != null) {
+              this.route(route, this.routes[route]);
+            }
+          },
+      
+          // Convert a route string into a regular expression, suitable for matching
+          // against the current location hash.
+          _routeToRegExp: function(route) {
+            route = route.replace(escapeRegExp, '\\$&')
+                         .replace(optionalParam, '(?:$1)?')
+                         .replace(namedParam, function(match, optional) {
+                           return optional ? match : '([^/?]+)';
+                         })
+                         .replace(splatParam, '([^?]*?)');
+            return new RegExp('^' + route + '(?:\\?([\\s\\S]*))?$');
+          },
+      
+          // Given a route, and a URL fragment that it matches, return the array of
+          // extracted decoded parameters. Empty or unmatched parameters will be
+          // treated as `null` to normalize cross-browser behavior.
+          _extractParameters: function(route, fragment) {
+            var params = route.exec(fragment).slice(1);
+            return _.map(params, function(param, i) {
+              // Don't decode the search params.
+              if (i === params.length - 1) return param || null;
+              return param ? decodeURIComponent(param) : null;
+            });
+          }
+      
+        });
+      
+        // Backbone.History
+        // ----------------
+      
+        // Handles cross-browser history management, based on either
+        // [pushState](http://diveintohtml5.info/history.html) and real URLs, or
+        // [onhashchange](https://developer.mozilla.org/en-US/docs/DOM/window.onhashchange)
+        // and URL fragments. If the browser supports neither (old IE, natch),
+        // falls back to polling.
+        var History = Backbone.History = function() {
+          this.handlers = [];
+          this.checkUrl = _.bind(this.checkUrl, this);
+      
+          // Ensure that `History` can be used outside of the browser.
+          if (typeof window !== 'undefined') {
+            this.location = window.location;
+            this.history = window.history;
+          }
+        };
+      
+        // Cached regex for stripping a leading hash/slash and trailing space.
+        var routeStripper = /^[#\/]|\s+$/g;
+      
+        // Cached regex for stripping leading and trailing slashes.
+        var rootStripper = /^\/+|\/+$/g;
+      
+        // Cached regex for stripping urls of hash.
+        var pathStripper = /#.*$/;
+      
+        // Has the history handling already been started?
+        History.started = false;
+      
+        // Set up all inheritable **Backbone.History** properties and methods.
+        _.extend(History.prototype, Events, {
+      
+          // The default interval to poll for hash changes, if necessary, is
+          // twenty times a second.
+          interval: 50,
+      
+          // Are we at the app root?
+          atRoot: function() {
+            var path = this.location.pathname.replace(/[^\/]$/, '$&/');
+            return path === this.root && !this.getSearch();
+          },
+      
+          // Does the pathname match the root?
+          matchRoot: function() {
+            var path = this.decodeFragment(this.location.pathname);
+            var root = path.slice(0, this.root.length - 1) + '/';
+            return root === this.root;
+          },
+      
+          // Unicode characters in `location.pathname` are percent encoded so they're
+          // decoded for comparison. `%25` should not be decoded since it may be part
+          // of an encoded parameter.
+          decodeFragment: function(fragment) {
+            return decodeURI(fragment.replace(/%25/g, '%2525'));
+          },
+      
+          // In IE6, the hash fragment and search params are incorrect if the
+          // fragment contains `?`.
+          getSearch: function() {
+            var match = this.location.href.replace(/#.*/, '').match(/\?.+/);
+            return match ? match[0] : '';
+          },
+      
+          // Gets the true hash value. Cannot use location.hash directly due to bug
+          // in Firefox where location.hash will always be decoded.
+          getHash: function(window) {
+            var match = (window || this).location.href.match(/#(.*)$/);
+            return match ? match[1] : '';
+          },
+      
+          // Get the pathname and search params, without the root.
+          getPath: function() {
+            var path = this.decodeFragment(
+              this.location.pathname + this.getSearch()
+            ).slice(this.root.length - 1);
+            return path.charAt(0) === '/' ? path.slice(1) : path;
+          },
+      
+          // Get the cross-browser normalized URL fragment from the path or hash.
+          getFragment: function(fragment) {
+            if (fragment == null) {
+              if (this._usePushState || !this._wantsHashChange) {
+                fragment = this.getPath();
+              } else {
+                fragment = this.getHash();
+              }
+            }
+            return fragment.replace(routeStripper, '');
+          },
+      
+          // Start the hash change handling, returning `true` if the current URL matches
+          // an existing route, and `false` otherwise.
+          start: function(options) {
+            if (History.started) throw new Error('Backbone.history has already been started');
+            History.started = true;
+      
+            // Figure out the initial configuration. Do we need an iframe?
+            // Is pushState desired ... is it available?
+            this.options          = _.extend({root: '/'}, this.options, options);
+            this.root             = this.options.root;
+            this._wantsHashChange = this.options.hashChange !== false;
+            this._hasHashChange   = 'onhashchange' in window && (document.documentMode === void 0 || document.documentMode > 7);
+            this._useHashChange   = this._wantsHashChange && this._hasHashChange;
+            this._wantsPushState  = !!this.options.pushState;
+            this._hasPushState    = !!(this.history && this.history.pushState);
+            this._usePushState    = this._wantsPushState && this._hasPushState;
+            this.fragment         = this.getFragment();
+      
+            // Normalize root to always include a leading and trailing slash.
+            this.root = ('/' + this.root + '/').replace(rootStripper, '/');
+      
+            // Transition from hashChange to pushState or vice versa if both are
+            // requested.
+            if (this._wantsHashChange && this._wantsPushState) {
+      
+              // If we've started off with a route from a `pushState`-enabled
+              // browser, but we're currently in a browser that doesn't support it...
+              if (!this._hasPushState && !this.atRoot()) {
+                var root = this.root.slice(0, -1) || '/';
+                this.location.replace(root + '#' + this.getPath());
+                // Return immediately as browser will do redirect to new url
+                return true;
+      
+              // Or if we've started out with a hash-based route, but we're currently
+              // in a browser where it could be `pushState`-based instead...
+              } else if (this._hasPushState && this.atRoot()) {
+                this.navigate(this.getHash(), {replace: true});
+              }
+      
+            }
+      
+            // Proxy an iframe to handle location events if the browser doesn't
+            // support the `hashchange` event, HTML5 history, or the user wants
+            // `hashChange` but not `pushState`.
+            if (!this._hasHashChange && this._wantsHashChange && !this._usePushState) {
+              this.iframe = document.createElement('iframe');
+              this.iframe.src = 'javascript:0';
+              this.iframe.style.display = 'none';
+              this.iframe.tabIndex = -1;
+              var body = document.body;
+              // Using `appendChild` will throw on IE < 9 if the document is not ready.
+              var iWindow = body.insertBefore(this.iframe, body.firstChild).contentWindow;
+              iWindow.document.open();
+              iWindow.document.close();
+              iWindow.location.hash = '#' + this.fragment;
+            }
+      
+            // Add a cross-platform `addEventListener` shim for older browsers.
+            var addEventListener = window.addEventListener || function (eventName, listener) {
+              return attachEvent('on' + eventName, listener);
+            };
+      
+            // Depending on whether we're using pushState or hashes, and whether
+            // 'onhashchange' is supported, determine how we check the URL state.
+            if (this._usePushState) {
+              addEventListener('popstate', this.checkUrl, false);
+            } else if (this._useHashChange && !this.iframe) {
+              addEventListener('hashchange', this.checkUrl, false);
+            } else if (this._wantsHashChange) {
+              this._checkUrlInterval = setInterval(this.checkUrl, this.interval);
+            }
+      
+            if (!this.options.silent) return this.loadUrl();
+          },
+      
+          // Disable Backbone.history, perhaps temporarily. Not useful in a real app,
+          // but possibly useful for unit testing Routers.
+          stop: function() {
+            // Add a cross-platform `removeEventListener` shim for older browsers.
+            var removeEventListener = window.removeEventListener || function (eventName, listener) {
+              return detachEvent('on' + eventName, listener);
+            };
+      
+            // Remove window listeners.
+            if (this._usePushState) {
+              removeEventListener('popstate', this.checkUrl, false);
+            } else if (this._useHashChange && !this.iframe) {
+              removeEventListener('hashchange', this.checkUrl, false);
+            }
+      
+            // Clean up the iframe if necessary.
+            if (this.iframe) {
+              document.body.removeChild(this.iframe);
+              this.iframe = null;
+            }
+      
+            // Some environments will throw when clearing an undefined interval.
+            if (this._checkUrlInterval) clearInterval(this._checkUrlInterval);
+            History.started = false;
+          },
+      
+          // Add a route to be tested when the fragment changes. Routes added later
+          // may override previous routes.
+          route: function(route, callback) {
+            this.handlers.unshift({route: route, callback: callback});
+          },
+      
+          // Checks the current URL to see if it has changed, and if it has,
+          // calls `loadUrl`, normalizing across the hidden iframe.
+          checkUrl: function(e) {
+            var current = this.getFragment();
+      
+            // If the user pressed the back button, the iframe's hash will have
+            // changed and we should use that for comparison.
+            if (current === this.fragment && this.iframe) {
+              current = this.getHash(this.iframe.contentWindow);
+            }
+      
+            if (current === this.fragment) return false;
+            if (this.iframe) this.navigate(current);
+            this.loadUrl();
+          },
+      
+          // Attempt to load the current URL fragment. If a route succeeds with a
+          // match, returns `true`. If no defined routes matches the fragment,
+          // returns `false`.
+          loadUrl: function(fragment) {
+            // If the root doesn't match, no routes can match either.
+            if (!this.matchRoot()) return false;
+            fragment = this.fragment = this.getFragment(fragment);
+            return _.some(this.handlers, function(handler) {
+              if (handler.route.test(fragment)) {
+                handler.callback(fragment);
+                return true;
+              }
+            });
+          },
+      
+          // Save a fragment into the hash history, or replace the URL state if the
+          // 'replace' option is passed. You are responsible for properly URL-encoding
+          // the fragment in advance.
+          //
+          // The options object can contain `trigger: true` if you wish to have the
+          // route callback be fired (not usually desirable), or `replace: true`, if
+          // you wish to modify the current URL without adding an entry to the history.
+          navigate: function(fragment, options) {
+            if (!History.started) return false;
+            if (!options || options === true) options = {trigger: !!options};
+      
+            // Normalize the fragment.
+            fragment = this.getFragment(fragment || '');
+      
+            // Don't include a trailing slash on the root.
+            var root = this.root;
+            if (fragment === '' || fragment.charAt(0) === '?') {
+              root = root.slice(0, -1) || '/';
+            }
+            var url = root + fragment;
+      
+            // Strip the hash and decode for matching.
+            fragment = this.decodeFragment(fragment.replace(pathStripper, ''));
+      
+            if (this.fragment === fragment) return;
+            this.fragment = fragment;
+      
+            // If pushState is available, we use it to set the fragment as a real URL.
+            if (this._usePushState) {
+              this.history[options.replace ? 'replaceState' : 'pushState']({}, document.title, url);
+      
+            // If hash changes haven't been explicitly disabled, update the hash
+            // fragment to store history.
+            } else if (this._wantsHashChange) {
+              this._updateHash(this.location, fragment, options.replace);
+              if (this.iframe && (fragment !== this.getHash(this.iframe.contentWindow))) {
+                var iWindow = this.iframe.contentWindow;
+      
+                // Opening and closing the iframe tricks IE7 and earlier to push a
+                // history entry on hash-tag change.  When replace is true, we don't
+                // want this.
+                if (!options.replace) {
+                  iWindow.document.open();
+                  iWindow.document.close();
+                }
+      
+                this._updateHash(iWindow.location, fragment, options.replace);
+              }
+      
+            // If you've told us that you explicitly don't want fallback hashchange-
+            // based history, then `navigate` becomes a page refresh.
+            } else {
+              return this.location.assign(url);
+            }
+            if (options.trigger) return this.loadUrl(fragment);
+          },
+      
+          // Update the hash location, either replacing the current entry, or adding
+          // a new one to the browser history.
+          _updateHash: function(location, fragment, replace) {
+            if (replace) {
+              var href = location.href.replace(/(javascript:|#).*$/, '');
+              location.replace(href + '#' + fragment);
+            } else {
+              // Some browsers require that `hash` contains a leading #.
+              location.hash = '#' + fragment;
+            }
+          }
+      
+        });
+      
+        // Create the default Backbone.history.
+        Backbone.history = new History;
+      
+        // Helpers
+        // -------
+      
+        // Helper function to correctly set up the prototype chain for subclasses.
+        // Similar to `goog.inherits`, but uses a hash of prototype properties and
+        // class properties to be extended.
+        var extend = function(protoProps, staticProps) {
+          var parent = this;
+          var child;
+      
+          // The constructor function for the new subclass is either defined by you
+          // (the "constructor" property in your `extend` definition), or defaulted
+          // by us to simply call the parent constructor.
+          if (protoProps && _.has(protoProps, 'constructor')) {
+            child = protoProps.constructor;
+          } else {
+            child = function(){ return parent.apply(this, arguments); };
+          }
+      
+          // Add static properties to the constructor function, if supplied.
+          _.extend(child, parent, staticProps);
+      
+          // Set the prototype chain to inherit from `parent`, without calling
+          // `parent` constructor function.
+          var Surrogate = function(){ this.constructor = child; };
+          Surrogate.prototype = parent.prototype;
+          child.prototype = new Surrogate;
+      
+          // Add prototype properties (instance properties) to the subclass,
+          // if supplied.
+          if (protoProps) _.extend(child.prototype, protoProps);
+      
+          // Set a convenience property in case the parent's prototype is needed
+          // later.
+          child.__super__ = parent.prototype;
+      
+          return child;
+        };
+      
+        // Set up inheritance for the model, collection, router, view and history.
+        Model.extend = Collection.extend = Router.extend = View.extend = History.extend = extend;
+      
+        // Throw an error when a URL is needed, and none is supplied.
+        var urlError = function() {
+          throw new Error('A "url" property or function must be specified');
+        };
+      
+        // Wrap an optional error callback with a fallback error event.
+        var wrapError = function(model, options) {
+          var error = options.error;
+          options.error = function(resp) {
+            if (error) error.call(options.context, model, resp, options);
+            model.trigger('error', model, resp, options);
+          };
+        };
+      
+        return Backbone;
+      
+      }));
+      
+    },
+    'backbone-min': function (module, exports, require, global) {
+      (function(t){var e=typeof self=="object"&&self.self==self&&self||typeof global=="object"&&global.global==global&&global;if(typeof define==="function"&&define.amd){define(["underscore","jquery","exports"],function(i,r,n){e.Backbone=t(e,n,i,r)})}else if(typeof exports!=="undefined"){var i=require("underscore"),r;try{r=require("jquery")}catch(n){}t(e,exports,i,r)}else{e.Backbone=t(e,{},e._,e.jQuery||e.Zepto||e.ender||e.$)}})(function(t,e,i,r){var n=t.Backbone;var s=Array.prototype.slice;e.VERSION="1.2.3";e.$=r;e.noConflict=function(){t.Backbone=n;return this};e.emulateHTTP=false;e.emulateJSON=false;var a=function(t,e,r){switch(t){case 1:return function(){return i[e](this[r])};case 2:return function(t){return i[e](this[r],t)};case 3:return function(t,n){return i[e](this[r],h(t,this),n)};case 4:return function(t,n,s){return i[e](this[r],h(t,this),n,s)};default:return function(){var t=s.call(arguments);t.unshift(this[r]);return i[e].apply(i,t)}}};var o=function(t,e,r){i.each(e,function(e,n){if(i[n])t.prototype[n]=a(e,n,r)})};var h=function(t,e){if(i.isFunction(t))return t;if(i.isObject(t)&&!e._isModel(t))return u(t);if(i.isString(t))return function(e){return e.get(t)};return t};var u=function(t){var e=i.matches(t);return function(t){return e(t.attributes)}};var l=e.Events={};var c=/\s+/;var f=function(t,e,r,n,s){var a=0,o;if(r&&typeof r==="object"){if(n!==void 0&&"context"in s&&s.context===void 0)s.context=n;for(o=i.keys(r);a<o.length;a++){e=f(t,e,o[a],r[o[a]],s)}}else if(r&&c.test(r)){for(o=r.split(c);a<o.length;a++){e=t(e,o[a],n,s)}}else{e=t(e,r,n,s)}return e};l.on=function(t,e,i){return d(this,t,e,i)};var d=function(t,e,i,r,n){t._events=f(v,t._events||{},e,i,{context:r,ctx:t,listening:n});if(n){var s=t._listeners||(t._listeners={});s[n.id]=n}return t};l.listenTo=function(t,e,r){if(!t)return this;var n=t._listenId||(t._listenId=i.uniqueId("l"));var s=this._listeningTo||(this._listeningTo={});var a=s[n];if(!a){var o=this._listenId||(this._listenId=i.uniqueId("l"));a=s[n]={obj:t,objId:n,id:o,listeningTo:s,count:0}}d(t,e,r,this,a);return this};var v=function(t,e,i,r){if(i){var n=t[e]||(t[e]=[]);var s=r.context,a=r.ctx,o=r.listening;if(o)o.count++;n.push({callback:i,context:s,ctx:s||a,listening:o})}return t};l.off=function(t,e,i){if(!this._events)return this;this._events=f(g,this._events,t,e,{context:i,listeners:this._listeners});return this};l.stopListening=function(t,e,r){var n=this._listeningTo;if(!n)return this;var s=t?[t._listenId]:i.keys(n);for(var a=0;a<s.length;a++){var o=n[s[a]];if(!o)break;o.obj.off(e,r,this)}if(i.isEmpty(n))this._listeningTo=void 0;return this};var g=function(t,e,r,n){if(!t)return;var s=0,a;var o=n.context,h=n.listeners;if(!e&&!r&&!o){var u=i.keys(h);for(;s<u.length;s++){a=h[u[s]];delete h[a.id];delete a.listeningTo[a.objId]}return}var l=e?[e]:i.keys(t);for(;s<l.length;s++){e=l[s];var c=t[e];if(!c)break;var f=[];for(var d=0;d<c.length;d++){var v=c[d];if(r&&r!==v.callback&&r!==v.callback._callback||o&&o!==v.context){f.push(v)}else{a=v.listening;if(a&&--a.count===0){delete h[a.id];delete a.listeningTo[a.objId]}}}if(f.length){t[e]=f}else{delete t[e]}}if(i.size(t))return t};l.once=function(t,e,r){var n=f(p,{},t,e,i.bind(this.off,this));return this.on(n,void 0,r)};l.listenToOnce=function(t,e,r){var n=f(p,{},e,r,i.bind(this.stopListening,this,t));return this.listenTo(t,n)};var p=function(t,e,r,n){if(r){var s=t[e]=i.once(function(){n(e,s);r.apply(this,arguments)});s._callback=r}return t};l.trigger=function(t){if(!this._events)return this;var e=Math.max(0,arguments.length-1);var i=Array(e);for(var r=0;r<e;r++)i[r]=arguments[r+1];f(m,this._events,t,void 0,i);return this};var m=function(t,e,i,r){if(t){var n=t[e];var s=t.all;if(n&&s)s=s.slice();if(n)_(n,r);if(s)_(s,[e].concat(r))}return t};var _=function(t,e){var i,r=-1,n=t.length,s=e[0],a=e[1],o=e[2];switch(e.length){case 0:while(++r<n)(i=t[r]).callback.call(i.ctx);return;case 1:while(++r<n)(i=t[r]).callback.call(i.ctx,s);return;case 2:while(++r<n)(i=t[r]).callback.call(i.ctx,s,a);return;case 3:while(++r<n)(i=t[r]).callback.call(i.ctx,s,a,o);return;default:while(++r<n)(i=t[r]).callback.apply(i.ctx,e);return}};l.bind=l.on;l.unbind=l.off;i.extend(e,l);var y=e.Model=function(t,e){var r=t||{};e||(e={});this.cid=i.uniqueId(this.cidPrefix);this.attributes={};if(e.collection)this.collection=e.collection;if(e.parse)r=this.parse(r,e)||{};r=i.defaults({},r,i.result(this,"defaults"));this.set(r,e);this.changed={};this.initialize.apply(this,arguments)};i.extend(y.prototype,l,{changed:null,validationError:null,idAttribute:"id",cidPrefix:"c",initialize:function(){},toJSON:function(t){return i.clone(this.attributes)},sync:function(){return e.sync.apply(this,arguments)},get:function(t){return this.attributes[t]},escape:function(t){return i.escape(this.get(t))},has:function(t){return this.get(t)!=null},matches:function(t){return!!i.iteratee(t,this)(this.attributes)},set:function(t,e,r){if(t==null)return this;var n;if(typeof t==="object"){n=t;r=e}else{(n={})[t]=e}r||(r={});if(!this._validate(n,r))return false;var s=r.unset;var a=r.silent;var o=[];var h=this._changing;this._changing=true;if(!h){this._previousAttributes=i.clone(this.attributes);this.changed={}}var u=this.attributes;var l=this.changed;var c=this._previousAttributes;for(var f in n){e=n[f];if(!i.isEqual(u[f],e))o.push(f);if(!i.isEqual(c[f],e)){l[f]=e}else{delete l[f]}s?delete u[f]:u[f]=e}this.id=this.get(this.idAttribute);if(!a){if(o.length)this._pending=r;for(var d=0;d<o.length;d++){this.trigger("change:"+o[d],this,u[o[d]],r)}}if(h)return this;if(!a){while(this._pending){r=this._pending;this._pending=false;this.trigger("change",this,r)}}this._pending=false;this._changing=false;return this},unset:function(t,e){return this.set(t,void 0,i.extend({},e,{unset:true}))},clear:function(t){var e={};for(var r in this.attributes)e[r]=void 0;return this.set(e,i.extend({},t,{unset:true}))},hasChanged:function(t){if(t==null)return!i.isEmpty(this.changed);return i.has(this.changed,t)},changedAttributes:function(t){if(!t)return this.hasChanged()?i.clone(this.changed):false;var e=this._changing?this._previousAttributes:this.attributes;var r={};for(var n in t){var s=t[n];if(i.isEqual(e[n],s))continue;r[n]=s}return i.size(r)?r:false},previous:function(t){if(t==null||!this._previousAttributes)return null;return this._previousAttributes[t]},previousAttributes:function(){return i.clone(this._previousAttributes)},fetch:function(t){t=i.extend({parse:true},t);var e=this;var r=t.success;t.success=function(i){var n=t.parse?e.parse(i,t):i;if(!e.set(n,t))return false;if(r)r.call(t.context,e,i,t);e.trigger("sync",e,i,t)};z(this,t);return this.sync("read",this,t)},save:function(t,e,r){var n;if(t==null||typeof t==="object"){n=t;r=e}else{(n={})[t]=e}r=i.extend({validate:true,parse:true},r);var s=r.wait;if(n&&!s){if(!this.set(n,r))return false}else{if(!this._validate(n,r))return false}var a=this;var o=r.success;var h=this.attributes;r.success=function(t){a.attributes=h;var e=r.parse?a.parse(t,r):t;if(s)e=i.extend({},n,e);if(e&&!a.set(e,r))return false;if(o)o.call(r.context,a,t,r);a.trigger("sync",a,t,r)};z(this,r);if(n&&s)this.attributes=i.extend({},h,n);var u=this.isNew()?"create":r.patch?"patch":"update";if(u==="patch"&&!r.attrs)r.attrs=n;var l=this.sync(u,this,r);this.attributes=h;return l},destroy:function(t){t=t?i.clone(t):{};var e=this;var r=t.success;var n=t.wait;var s=function(){e.stopListening();e.trigger("destroy",e,e.collection,t)};t.success=function(i){if(n)s();if(r)r.call(t.context,e,i,t);if(!e.isNew())e.trigger("sync",e,i,t)};var a=false;if(this.isNew()){i.defer(t.success)}else{z(this,t);a=this.sync("delete",this,t)}if(!n)s();return a},url:function(){var t=i.result(this,"urlRoot")||i.result(this.collection,"url")||F();if(this.isNew())return t;var e=this.get(this.idAttribute);return t.replace(/[^\/]$/,"$&/")+encodeURIComponent(e)},parse:function(t,e){return t},clone:function(){return new this.constructor(this.attributes)},isNew:function(){return!this.has(this.idAttribute)},isValid:function(t){return this._validate({},i.defaults({validate:true},t))},_validate:function(t,e){if(!e.validate||!this.validate)return true;t=i.extend({},this.attributes,t);var r=this.validationError=this.validate(t,e)||null;if(!r)return true;this.trigger("invalid",this,r,i.extend(e,{validationError:r}));return false}});var b={keys:1,values:1,pairs:1,invert:1,pick:0,omit:0,chain:1,isEmpty:1};o(y,b,"attributes");var x=e.Collection=function(t,e){e||(e={});if(e.model)this.model=e.model;if(e.comparator!==void 0)this.comparator=e.comparator;this._reset();this.initialize.apply(this,arguments);if(t)this.reset(t,i.extend({silent:true},e))};var w={add:true,remove:true,merge:true};var E={add:true,remove:false};var k=function(t,e,i){i=Math.min(Math.max(i,0),t.length);var r=Array(t.length-i);var n=e.length;for(var s=0;s<r.length;s++)r[s]=t[s+i];for(s=0;s<n;s++)t[s+i]=e[s];for(s=0;s<r.length;s++)t[s+n+i]=r[s]};i.extend(x.prototype,l,{model:y,initialize:function(){},toJSON:function(t){return this.map(function(e){return e.toJSON(t)})},sync:function(){return e.sync.apply(this,arguments)},add:function(t,e){return this.set(t,i.extend({merge:false},e,E))},remove:function(t,e){e=i.extend({},e);var r=!i.isArray(t);t=r?[t]:i.clone(t);var n=this._removeModels(t,e);if(!e.silent&&n)this.trigger("update",this,e);return r?n[0]:n},set:function(t,e){if(t==null)return;e=i.defaults({},e,w);if(e.parse&&!this._isModel(t))t=this.parse(t,e);var r=!i.isArray(t);t=r?[t]:t.slice();var n=e.at;if(n!=null)n=+n;if(n<0)n+=this.length+1;var s=[];var a=[];var o=[];var h={};var u=e.add;var l=e.merge;var c=e.remove;var f=false;var d=this.comparator&&n==null&&e.sort!==false;var v=i.isString(this.comparator)?this.comparator:null;var g;for(var p=0;p<t.length;p++){g=t[p];var m=this.get(g);if(m){if(l&&g!==m){var _=this._isModel(g)?g.attributes:g;if(e.parse)_=m.parse(_,e);m.set(_,e);if(d&&!f)f=m.hasChanged(v)}if(!h[m.cid]){h[m.cid]=true;s.push(m)}t[p]=m}else if(u){g=t[p]=this._prepareModel(g,e);if(g){a.push(g);this._addReference(g,e);h[g.cid]=true;s.push(g)}}}if(c){for(p=0;p<this.length;p++){g=this.models[p];if(!h[g.cid])o.push(g)}if(o.length)this._removeModels(o,e)}var y=false;var b=!d&&u&&c;if(s.length&&b){y=this.length!=s.length||i.some(this.models,function(t,e){return t!==s[e]});this.models.length=0;k(this.models,s,0);this.length=this.models.length}else if(a.length){if(d)f=true;k(this.models,a,n==null?this.length:n);this.length=this.models.length}if(f)this.sort({silent:true});if(!e.silent){for(p=0;p<a.length;p++){if(n!=null)e.index=n+p;g=a[p];g.trigger("add",g,this,e)}if(f||y)this.trigger("sort",this,e);if(a.length||o.length)this.trigger("update",this,e)}return r?t[0]:t},reset:function(t,e){e=e?i.clone(e):{};for(var r=0;r<this.models.length;r++){this._removeReference(this.models[r],e)}e.previousModels=this.models;this._reset();t=this.add(t,i.extend({silent:true},e));if(!e.silent)this.trigger("reset",this,e);return t},push:function(t,e){return this.add(t,i.extend({at:this.length},e))},pop:function(t){var e=this.at(this.length-1);return this.remove(e,t)},unshift:function(t,e){return this.add(t,i.extend({at:0},e))},shift:function(t){var e=this.at(0);return this.remove(e,t)},slice:function(){return s.apply(this.models,arguments)},get:function(t){if(t==null)return void 0;var e=this.modelId(this._isModel(t)?t.attributes:t);return this._byId[t]||this._byId[e]||this._byId[t.cid]},at:function(t){if(t<0)t+=this.length;return this.models[t]},where:function(t,e){return this[e?"find":"filter"](t)},findWhere:function(t){return this.where(t,true)},sort:function(t){var e=this.comparator;if(!e)throw new Error("Cannot sort a set without a comparator");t||(t={});var r=e.length;if(i.isFunction(e))e=i.bind(e,this);if(r===1||i.isString(e)){this.models=this.sortBy(e)}else{this.models.sort(e)}if(!t.silent)this.trigger("sort",this,t);return this},pluck:function(t){return i.invoke(this.models,"get",t)},fetch:function(t){t=i.extend({parse:true},t);var e=t.success;var r=this;t.success=function(i){var n=t.reset?"reset":"set";r[n](i,t);if(e)e.call(t.context,r,i,t);r.trigger("sync",r,i,t)};z(this,t);return this.sync("read",this,t)},create:function(t,e){e=e?i.clone(e):{};var r=e.wait;t=this._prepareModel(t,e);if(!t)return false;if(!r)this.add(t,e);var n=this;var s=e.success;e.success=function(t,e,i){if(r)n.add(t,i);if(s)s.call(i.context,t,e,i)};t.save(null,e);return t},parse:function(t,e){return t},clone:function(){return new this.constructor(this.models,{model:this.model,comparator:this.comparator})},modelId:function(t){return t[this.model.prototype.idAttribute||"id"]},_reset:function(){this.length=0;this.models=[];this._byId={}},_prepareModel:function(t,e){if(this._isModel(t)){if(!t.collection)t.collection=this;return t}e=e?i.clone(e):{};e.collection=this;var r=new this.model(t,e);if(!r.validationError)return r;this.trigger("invalid",this,r.validationError,e);return false},_removeModels:function(t,e){var i=[];for(var r=0;r<t.length;r++){var n=this.get(t[r]);if(!n)continue;var s=this.indexOf(n);this.models.splice(s,1);this.length--;if(!e.silent){e.index=s;n.trigger("remove",n,this,e)}i.push(n);this._removeReference(n,e)}return i.length?i:false},_isModel:function(t){return t instanceof y},_addReference:function(t,e){this._byId[t.cid]=t;var i=this.modelId(t.attributes);if(i!=null)this._byId[i]=t;t.on("all",this._onModelEvent,this)},_removeReference:function(t,e){delete this._byId[t.cid];var i=this.modelId(t.attributes);if(i!=null)delete this._byId[i];if(this===t.collection)delete t.collection;t.off("all",this._onModelEvent,this)},_onModelEvent:function(t,e,i,r){if((t==="add"||t==="remove")&&i!==this)return;if(t==="destroy")this.remove(e,r);if(t==="change"){var n=this.modelId(e.previousAttributes());var s=this.modelId(e.attributes);if(n!==s){if(n!=null)delete this._byId[n];if(s!=null)this._byId[s]=e}}this.trigger.apply(this,arguments)}});var S={forEach:3,each:3,map:3,collect:3,reduce:4,foldl:4,inject:4,reduceRight:4,foldr:4,find:3,detect:3,filter:3,select:3,reject:3,every:3,all:3,some:3,any:3,include:3,includes:3,contains:3,invoke:0,max:3,min:3,toArray:1,size:1,first:3,head:3,take:3,initial:3,rest:3,tail:3,drop:3,last:3,without:0,difference:0,indexOf:3,shuffle:1,lastIndexOf:3,isEmpty:1,chain:1,sample:3,partition:3,groupBy:3,countBy:3,sortBy:3,indexBy:3};o(x,S,"models");var I=e.View=function(t){this.cid=i.uniqueId("view");i.extend(this,i.pick(t,P));this._ensureElement();this.initialize.apply(this,arguments)};var T=/^(\S+)\s*(.*)$/;var P=["model","collection","el","id","attributes","className","tagName","events"];i.extend(I.prototype,l,{tagName:"div",$:function(t){return this.$el.find(t)},initialize:function(){},render:function(){return this},remove:function(){this._removeElement();this.stopListening();return this},_removeElement:function(){this.$el.remove()},setElement:function(t){this.undelegateEvents();this._setElement(t);this.delegateEvents();return this},_setElement:function(t){this.$el=t instanceof e.$?t:e.$(t);this.el=this.$el[0]},delegateEvents:function(t){t||(t=i.result(this,"events"));if(!t)return this;this.undelegateEvents();for(var e in t){var r=t[e];if(!i.isFunction(r))r=this[r];if(!r)continue;var n=e.match(T);this.delegate(n[1],n[2],i.bind(r,this))}return this},delegate:function(t,e,i){this.$el.on(t+".delegateEvents"+this.cid,e,i);return this},undelegateEvents:function(){if(this.$el)this.$el.off(".delegateEvents"+this.cid);return this},undelegate:function(t,e,i){this.$el.off(t+".delegateEvents"+this.cid,e,i);return this},_createElement:function(t){return document.createElement(t)},_ensureElement:function(){if(!this.el){var t=i.extend({},i.result(this,"attributes"));if(this.id)t.id=i.result(this,"id");if(this.className)t["class"]=i.result(this,"className");this.setElement(this._createElement(i.result(this,"tagName")));this._setAttributes(t)}else{this.setElement(i.result(this,"el"))}},_setAttributes:function(t){this.$el.attr(t)}});e.sync=function(t,r,n){var s=H[t];i.defaults(n||(n={}),{emulateHTTP:e.emulateHTTP,emulateJSON:e.emulateJSON});var a={type:s,dataType:"json"};if(!n.url){a.url=i.result(r,"url")||F()}if(n.data==null&&r&&(t==="create"||t==="update"||t==="patch")){a.contentType="application/json";a.data=JSON.stringify(n.attrs||r.toJSON(n))}if(n.emulateJSON){a.contentType="application/x-www-form-urlencoded";a.data=a.data?{model:a.data}:{}}if(n.emulateHTTP&&(s==="PUT"||s==="DELETE"||s==="PATCH")){a.type="POST";if(n.emulateJSON)a.data._method=s;var o=n.beforeSend;n.beforeSend=function(t){t.setRequestHeader("X-HTTP-Method-Override",s);if(o)return o.apply(this,arguments)}}if(a.type!=="GET"&&!n.emulateJSON){a.processData=false}var h=n.error;n.error=function(t,e,i){n.textStatus=e;n.errorThrown=i;if(h)h.call(n.context,t,e,i)};var u=n.xhr=e.ajax(i.extend(a,n));r.trigger("request",r,u,n);return u};var H={create:"POST",update:"PUT",patch:"PATCH","delete":"DELETE",read:"GET"};e.ajax=function(){return e.$.ajax.apply(e.$,arguments)};var $=e.Router=function(t){t||(t={});if(t.routes)this.routes=t.routes;this._bindRoutes();this.initialize.apply(this,arguments)};var A=/\((.*?)\)/g;var C=/(\(\?)?:\w+/g;var R=/\*\w+/g;var j=/[\-{}\[\]+?.,\\\^$|#\s]/g;i.extend($.prototype,l,{initialize:function(){},route:function(t,r,n){if(!i.isRegExp(t))t=this._routeToRegExp(t);if(i.isFunction(r)){n=r;r=""}if(!n)n=this[r];var s=this;e.history.route(t,function(i){var a=s._extractParameters(t,i);if(s.execute(n,a,r)!==false){s.trigger.apply(s,["route:"+r].concat(a));s.trigger("route",r,a);e.history.trigger("route",s,r,a)}});return this},execute:function(t,e,i){if(t)t.apply(this,e)},navigate:function(t,i){e.history.navigate(t,i);return this},_bindRoutes:function(){if(!this.routes)return;this.routes=i.result(this,"routes");var t,e=i.keys(this.routes);while((t=e.pop())!=null){this.route(t,this.routes[t])}},_routeToRegExp:function(t){t=t.replace(j,"\\$&").replace(A,"(?:$1)?").replace(C,function(t,e){return e?t:"([^/?]+)"}).replace(R,"([^?]*?)");return new RegExp("^"+t+"(?:\\?([\\s\\S]*))?$")},_extractParameters:function(t,e){var r=t.exec(e).slice(1);return i.map(r,function(t,e){if(e===r.length-1)return t||null;return t?decodeURIComponent(t):null})}});var M=e.History=function(){this.handlers=[];this.checkUrl=i.bind(this.checkUrl,this);if(typeof window!=="undefined"){this.location=window.location;this.history=window.history}};var N=/^[#\/]|\s+$/g;var O=/^\/+|\/+$/g;var U=/#.*$/;M.started=false;i.extend(M.prototype,l,{interval:50,atRoot:function(){var t=this.location.pathname.replace(/[^\/]$/,"$&/");return t===this.root&&!this.getSearch()},matchRoot:function(){var t=this.decodeFragment(this.location.pathname);var e=t.slice(0,this.root.length-1)+"/";return e===this.root},decodeFragment:function(t){return decodeURI(t.replace(/%25/g,"%2525"))},getSearch:function(){var t=this.location.href.replace(/#.*/,"").match(/\?.+/);return t?t[0]:""},getHash:function(t){var e=(t||this).location.href.match(/#(.*)$/);return e?e[1]:""},getPath:function(){var t=this.decodeFragment(this.location.pathname+this.getSearch()).slice(this.root.length-1);return t.charAt(0)==="/"?t.slice(1):t},getFragment:function(t){if(t==null){if(this._usePushState||!this._wantsHashChange){t=this.getPath()}else{t=this.getHash()}}return t.replace(N,"")},start:function(t){if(M.started)throw new Error("Backbone.history has already been started");M.started=true;this.options=i.extend({root:"/"},this.options,t);this.root=this.options.root;this._wantsHashChange=this.options.hashChange!==false;this._hasHashChange="onhashchange"in window&&(document.documentMode===void 0||document.documentMode>7);this._useHashChange=this._wantsHashChange&&this._hasHashChange;this._wantsPushState=!!this.options.pushState;this._hasPushState=!!(this.history&&this.history.pushState);this._usePushState=this._wantsPushState&&this._hasPushState;this.fragment=this.getFragment();this.root=("/"+this.root+"/").replace(O,"/");if(this._wantsHashChange&&this._wantsPushState){if(!this._hasPushState&&!this.atRoot()){var e=this.root.slice(0,-1)||"/";this.location.replace(e+"#"+this.getPath());return true}else if(this._hasPushState&&this.atRoot()){this.navigate(this.getHash(),{replace:true})}}if(!this._hasHashChange&&this._wantsHashChange&&!this._usePushState){this.iframe=document.createElement("iframe");this.iframe.src="javascript:0";this.iframe.style.display="none";this.iframe.tabIndex=-1;var r=document.body;var n=r.insertBefore(this.iframe,r.firstChild).contentWindow;n.document.open();n.document.close();n.location.hash="#"+this.fragment}var s=window.addEventListener||function(t,e){return attachEvent("on"+t,e)};if(this._usePushState){s("popstate",this.checkUrl,false)}else if(this._useHashChange&&!this.iframe){s("hashchange",this.checkUrl,false)}else if(this._wantsHashChange){this._checkUrlInterval=setInterval(this.checkUrl,this.interval)}if(!this.options.silent)return this.loadUrl()},stop:function(){var t=window.removeEventListener||function(t,e){return detachEvent("on"+t,e)};if(this._usePushState){t("popstate",this.checkUrl,false)}else if(this._useHashChange&&!this.iframe){t("hashchange",this.checkUrl,false)}if(this.iframe){document.body.removeChild(this.iframe);this.iframe=null}if(this._checkUrlInterval)clearInterval(this._checkUrlInterval);M.started=false},route:function(t,e){this.handlers.unshift({route:t,callback:e})},checkUrl:function(t){var e=this.getFragment();if(e===this.fragment&&this.iframe){e=this.getHash(this.iframe.contentWindow)}if(e===this.fragment)return false;if(this.iframe)this.navigate(e);this.loadUrl()},loadUrl:function(t){if(!this.matchRoot())return false;t=this.fragment=this.getFragment(t);return i.some(this.handlers,function(e){if(e.route.test(t)){e.callback(t);return true}})},navigate:function(t,e){if(!M.started)return false;if(!e||e===true)e={trigger:!!e};t=this.getFragment(t||"");var i=this.root;if(t===""||t.charAt(0)==="?"){i=i.slice(0,-1)||"/"}var r=i+t;t=this.decodeFragment(t.replace(U,""));if(this.fragment===t)return;this.fragment=t;if(this._usePushState){this.history[e.replace?"replaceState":"pushState"]({},document.title,r)}else if(this._wantsHashChange){this._updateHash(this.location,t,e.replace);if(this.iframe&&t!==this.getHash(this.iframe.contentWindow)){var n=this.iframe.contentWindow;if(!e.replace){n.document.open();n.document.close()}this._updateHash(n.location,t,e.replace)}}else{return this.location.assign(r)}if(e.trigger)return this.loadUrl(t)},_updateHash:function(t,e,i){if(i){var r=t.href.replace(/(javascript:|#).*$/,"");t.replace(r+"#"+e)}else{t.hash="#"+e}}});e.history=new M;var q=function(t,e){var r=this;var n;if(t&&i.has(t,"constructor")){n=t.constructor}else{n=function(){return r.apply(this,arguments)}}i.extend(n,r,e);var s=function(){this.constructor=n};s.prototype=r.prototype;n.prototype=new s;if(t)i.extend(n.prototype,t);n.__super__=r.prototype;return n};y.extend=x.extend=$.extend=I.extend=M.extend=q;var F=function(){throw new Error('A "url" property or function must be specified')};var z=function(t,e){var i=e.error;e.error=function(r){if(i)i.call(e.context,t,r,e);t.trigger("error",t,r,e)}};return e});
+      //# sourceMappingURL=backbone-min.map
+    }
+  }, 'backbone');
+
   require('jquery');
   require('vague-time');
+  require('underscore');
+  require('backbone');
 
 }.call(window));
 //# sourceMappingURL=ender.js.map
 
+/*!
+  * =============================================================
+  * Ender: open module JavaScript framework (https://enderjs.com)
+  * Build: ender build jquery vague-time backbone@1.2.3
+  * Packages: ender-core@2.0.0 ender-commonjs@1.0.8 jquery@2.1.4 vague-time@1.3.0 underscore@1.8.3 backbone@1.2.3
+  * =============================================================
+  */
+(function(){/*!
+    * Ender: open module JavaScript framework (client-lib)
+    * http://enderjs.com
+    * License MIT
+    */
+function t(t,n){var r;if(this.length=0,"string"==typeof t&&(t=e._select(this.selector=t,n)),null==t)return this;if("function"==typeof t)e._closure(t,n);else if("object"!=typeof t||t.nodeType||(r=t.length)!==+r||t==t.window)this[this.length++]=t;else for(this.length=r=r>0?~~r:0;r--;)this[r]=t[r]}function e(e,n){return new t(e,n)}function n(t){if("$"+t in n._cache)return n._cache["$"+t];if("$"+t in n._modules)return n._cache["$"+t]=n._modules["$"+t]._load();if(t in window)return window[t];throw new Error('Requested module "'+t+'" has not been defined.')}function r(t,e){return n._cache["$"+t]=e}function i(t,e){this.id=t,this.fn=e,n._modules["$"+t]=this}e.fn=e.prototype=t.prototype,e._reserved={reserved:1,ender:1,expose:1,noConflict:1,fn:1},t.prototype.$=e,t.prototype.splice=function(){throw new Error("Not implemented")},t.prototype.forEach=function(t,e){var n,r;for(n=0,r=this.length;r>n;++n)n in this&&t.call(e||this[n],this[n],n,this);return this},e.ender=function(n,r){var i=r?t.prototype:e;for(var o in n)!(o in e._reserved)&&(i[o]=n[o]);return i},e._select=function(t,e){return t?(e||document).querySelectorAll(t):[]},e._closure=function(t){t.call(document,e)},"undefined"!=typeof module&&module.exports&&(module.exports=e);e.expose=function(t,n){e.expose.old[t]=window[t],window[t]=n},e.expose.old={},e.noConflict=function(t){if(window.$=e.expose.old.$,t)for(var n in e.expose.old)window[n]=e.expose.old[n];return this},e.expose("$",e),e.expose("ender",e);/*!
+    * Ender: open module JavaScript framework (module-lib)
+    * http://enderjs.com
+    * License MIT
+    */
+var o=this;n._cache={},n._modules={},i.prototype.require=function(t){var e,r;if("."==t.charAt(0)){for(e=(this.id.replace(/\/.*?$/,"/")+t.replace(/\.js$/,"")).split("/");~(r=e.indexOf("."));)e.splice(r,1);for(;(r=e.lastIndexOf(".."))>0;)e.splice(r-1,2);t=e.join("/")}return n(t)},i.prototype._load=function(){var t=this,e=/^\.\.\//g,n=/^\.\/[^\/]+$/g;return t._loaded||(t._loaded=!0,t.exports={},t.fn.call(o,t,t.exports,function(r){return r.match(e)?r=t.id.replace(/[^\/]+\/[^\/]+$/,"")+r.replace(e,""):r.match(n)&&(r=t.id.replace(/\/[^\/]+$/,"")+r.replace(".","")),t.require(r)},o)),t.exports},i.createPackage=function(t,e,r){var o,s;for(o in e)new i(t+"/"+o,e[o]),(s=o.match(/^(.+)\/index$/))&&new i(t+"/"+s[1],e[o]);r&&(n._modules["$"+t]=n._modules["$"+t+"/"+r])},e&&e.expose&&(e.expose("global",o),e.expose("require",n),e.expose("provide",r),e.expose("Module",i)),i.createPackage("jquery",{"dist/jquery":function(t,e,n,r){/*!
+       * jQuery JavaScript Library v2.1.4
+       * http://jquery.com/
+       *
+       * Includes Sizzle.js
+       * http://sizzlejs.com/
+       *
+       * Copyright 2005, 2014 jQuery Foundation, Inc. and other contributors
+       * Released under the MIT license
+       * http://jquery.org/license
+       *
+       * Date: 2015-04-28T16:01Z
+       */
+!function(e,n){"object"==typeof t&&"object"==typeof t.exports?t.exports=e.document?n(e,!0):function(t){if(!t.document)throw new Error("jQuery requires a window with a document");return n(t)}:n(e)}("undefined"!=typeof window?window:this,function(t,e){function n(t){var e="length"in t&&t.length,n=Z.type(t);return"function"===n||Z.isWindow(t)?!1:1===t.nodeType&&e?!0:"array"===n||0===e||"number"==typeof e&&e>0&&e-1 in t}function r(t,e,n){if(Z.isFunction(e))return Z.grep(t,function(t,r){return!!e.call(t,r,t)!==n});if(e.nodeType)return Z.grep(t,function(t){return t===e!==n});if("string"==typeof e){if(at.test(e))return Z.filter(e,t,n);e=Z.filter(e,t)}return Z.grep(t,function(t){return J.call(e,t)>=0!==n})}function i(t,e){for(;(t=t[e])&&1!==t.nodeType;);return t}function o(t){var e=pt[t]={};return Z.each(t.match(dt)||[],function(t,n){e[n]=!0}),e}function s(){Y.removeEventListener("DOMContentLoaded",s,!1),t.removeEventListener("load",s,!1),Z.ready()}function a(){Object.defineProperty(this.cache={},0,{get:function(){return{}}}),this.expando=Z.expando+a.uid++}function u(t,e,n){var r;if(void 0===n&&1===t.nodeType)if(r="data-"+e.replace(bt,"-$1").toLowerCase(),n=t.getAttribute(r),"string"==typeof n){try{n="true"===n?!0:"false"===n?!1:"null"===n?null:+n+""===n?+n:xt.test(n)?Z.parseJSON(n):n}catch(i){}yt.set(t,e,n)}else n=void 0;return n}function c(){return!0}function l(){return!1}function f(){try{return Y.activeElement}catch(t){}}function h(t,e){return Z.nodeName(t,"table")&&Z.nodeName(11!==e.nodeType?e:e.firstChild,"tr")?t.getElementsByTagName("tbody")[0]||t.appendChild(t.ownerDocument.createElement("tbody")):t}function d(t){return t.type=(null!==t.getAttribute("type"))+"/"+t.type,t}function p(t){var e=Mt.exec(t.type);return e?t.type=e[1]:t.removeAttribute("type"),t}function g(t,e){for(var n=0,r=t.length;r>n;n++)mt.set(t[n],"globalEval",!e||mt.get(e[n],"globalEval"))}function v(t,e){var n,r,i,o,s,a,u,c;if(1===e.nodeType){if(mt.hasData(t)&&(o=mt.access(t),s=mt.set(e,o),c=o.events)){delete s.handle,s.events={};for(i in c)for(n=0,r=c[i].length;r>n;n++)Z.event.add(e,i,c[i][n])}yt.hasData(t)&&(a=yt.access(t),u=Z.extend({},a),yt.set(e,u))}}function m(t,e){var n=t.getElementsByTagName?t.getElementsByTagName(e||"*"):t.querySelectorAll?t.querySelectorAll(e||"*"):[];return void 0===e||e&&Z.nodeName(t,e)?Z.merge([t],n):n}function y(t,e){var n=e.nodeName.toLowerCase();"input"===n&&Tt.test(t.type)?e.checked=t.checked:("input"===n||"textarea"===n)&&(e.defaultValue=t.defaultValue)}function x(e,n){var r,i=Z(n.createElement(e)).appendTo(n.body),o=t.getDefaultComputedStyle&&(r=t.getDefaultComputedStyle(i[0]))?r.display:Z.css(i[0],"display");return i.detach(),o}function b(t){var e=Y,n=Rt[t];return n||(n=x(t,e),"none"!==n&&n||($t=($t||Z("<iframe frameborder='0' width='0' height='0'/>")).appendTo(e.documentElement),e=$t[0].contentDocument,e.write(),e.close(),n=x(t,e),$t.detach()),Rt[t]=n),n}function w(t,e,n){var r,i,o,s,a=t.style;return n=n||Wt(t),n&&(s=n.getPropertyValue(e)||n[e]),n&&(""!==s||Z.contains(t.ownerDocument,t)||(s=Z.style(t,e)),Bt.test(s)&&Lt.test(e)&&(r=a.width,i=a.minWidth,o=a.maxWidth,a.minWidth=a.maxWidth=a.width=s,s=n.width,a.width=r,a.minWidth=i,a.maxWidth=o)),void 0!==s?s+"":s}function _(t,e){return{get:function(){return t()?void delete this.get:(this.get=e).apply(this,arguments)}}}function k(t,e){if(e in t)return e;for(var n=e[0].toUpperCase()+e.slice(1),r=e,i=Kt.length;i--;)if(e=Kt[i]+n,e in t)return e;return r}function T(t,e,n){var r=Ut.exec(e);return r?Math.max(0,r[1]-(n||0))+(r[2]||"px"):e}function E(t,e,n,r,i){for(var o=n===(r?"border":"content")?4:"width"===e?1:0,s=0;4>o;o+=2)"margin"===n&&(s+=Z.css(t,n+_t[o],!0,i)),r?("content"===n&&(s-=Z.css(t,"padding"+_t[o],!0,i)),"margin"!==n&&(s-=Z.css(t,"border"+_t[o]+"Width",!0,i))):(s+=Z.css(t,"padding"+_t[o],!0,i),"padding"!==n&&(s+=Z.css(t,"border"+_t[o]+"Width",!0,i)));return s}function j(t,e,n){var r=!0,i="width"===e?t.offsetWidth:t.offsetHeight,o=Wt(t),s="border-box"===Z.css(t,"boxSizing",!1,o);if(0>=i||null==i){if(i=w(t,e,o),(0>i||null==i)&&(i=t.style[e]),Bt.test(i))return i;r=s&&(G.boxSizingReliable()||i===t.style[e]),i=parseFloat(i)||0}return i+E(t,e,n||(s?"border":"content"),r,o)+"px"}function S(t,e){for(var n,r,i,o=[],s=0,a=t.length;a>s;s++)r=t[s],r.style&&(o[s]=mt.get(r,"olddisplay"),n=r.style.display,e?(o[s]||"none"!==n||(r.style.display=""),""===r.style.display&&kt(r)&&(o[s]=mt.access(r,"olddisplay",b(r.nodeName)))):(i=kt(r),"none"===n&&i||mt.set(r,"olddisplay",i?n:Z.css(r,"display"))));for(s=0;a>s;s++)r=t[s],r.style&&(e&&"none"!==r.style.display&&""!==r.style.display||(r.style.display=e?o[s]||"":"none"));return t}function C(t,e,n,r,i){return new C.prototype.init(t,e,n,r,i)}function N(){return setTimeout(function(){Gt=void 0}),Gt=Z.now()}function A(t,e){var n,r=0,i={height:t};for(e=e?1:0;4>r;r+=2-e)n=_t[r],i["margin"+n]=i["padding"+n]=t;return e&&(i.opacity=i.width=t),i}function O(t,e,n){for(var r,i=(ne[e]||[]).concat(ne["*"]),o=0,s=i.length;s>o;o++)if(r=i[o].call(n,e,t))return r}function I(t,e,n){var r,i,o,s,a,u,c,l,f=this,h={},d=t.style,p=t.nodeType&&kt(t),g=mt.get(t,"fxshow");n.queue||(a=Z._queueHooks(t,"fx"),null==a.unqueued&&(a.unqueued=0,u=a.empty.fire,a.empty.fire=function(){a.unqueued||u()}),a.unqueued++,f.always(function(){f.always(function(){a.unqueued--,Z.queue(t,"fx").length||a.empty.fire()})})),1===t.nodeType&&("height"in e||"width"in e)&&(n.overflow=[d.overflow,d.overflowX,d.overflowY],c=Z.css(t,"display"),l="none"===c?mt.get(t,"olddisplay")||b(t.nodeName):c,"inline"===l&&"none"===Z.css(t,"float")&&(d.display="inline-block")),n.overflow&&(d.overflow="hidden",f.always(function(){d.overflow=n.overflow[0],d.overflowX=n.overflow[1],d.overflowY=n.overflow[2]}));for(r in e)if(i=e[r],Qt.exec(i)){if(delete e[r],o=o||"toggle"===i,i===(p?"hide":"show")){if("show"!==i||!g||void 0===g[r])continue;p=!0}h[r]=g&&g[r]||Z.style(t,r)}else c=void 0;if(Z.isEmptyObject(h))"inline"===("none"===c?b(t.nodeName):c)&&(d.display=c);else{g?"hidden"in g&&(p=g.hidden):g=mt.access(t,"fxshow",{}),o&&(g.hidden=!p),p?Z(t).show():f.done(function(){Z(t).hide()}),f.done(function(){var e;mt.remove(t,"fxshow");for(e in h)Z.style(t,e,h[e])});for(r in h)s=O(p?g[r]:0,r,f),r in g||(g[r]=s.start,p&&(s.end=s.start,s.start="width"===r||"height"===r?1:0))}}function H(t,e){var n,r,i,o,s;for(n in t)if(r=Z.camelCase(n),i=e[r],o=t[n],Z.isArray(o)&&(i=o[1],o=t[n]=o[0]),n!==r&&(t[r]=o,delete t[n]),s=Z.cssHooks[r],s&&"expand"in s){o=s.expand(o),delete t[r];for(n in o)n in t||(t[n]=o[n],e[n]=i)}else e[r]=i}function D(t,e,n){var r,i,o=0,s=ee.length,a=Z.Deferred().always(function(){delete u.elem}),u=function(){if(i)return!1;for(var e=Gt||N(),n=Math.max(0,c.startTime+c.duration-e),r=n/c.duration||0,o=1-r,s=0,u=c.tweens.length;u>s;s++)c.tweens[s].run(o);return a.notifyWith(t,[c,o,n]),1>o&&u?n:(a.resolveWith(t,[c]),!1)},c=a.promise({elem:t,props:Z.extend({},e),opts:Z.extend(!0,{specialEasing:{}},n),originalProperties:e,originalOptions:n,startTime:Gt||N(),duration:n.duration,tweens:[],createTween:function(e,n){var r=Z.Tween(t,c.opts,e,n,c.opts.specialEasing[e]||c.opts.easing);return c.tweens.push(r),r},stop:function(e){var n=0,r=e?c.tweens.length:0;if(i)return this;for(i=!0;r>n;n++)c.tweens[n].run(1);return e?a.resolveWith(t,[c,e]):a.rejectWith(t,[c,e]),this}}),l=c.props;for(H(l,c.opts.specialEasing);s>o;o++)if(r=ee[o].call(c,t,l,c.opts))return r;return Z.map(l,O,c),Z.isFunction(c.opts.start)&&c.opts.start.call(t,c),Z.fx.timer(Z.extend(u,{elem:t,anim:c,queue:c.opts.queue})),c.progress(c.opts.progress).done(c.opts.done,c.opts.complete).fail(c.opts.fail).always(c.opts.always)}function q(t){return function(e,n){"string"!=typeof e&&(n=e,e="*");var r,i=0,o=e.toLowerCase().match(dt)||[];if(Z.isFunction(n))for(;r=o[i++];)"+"===r[0]?(r=r.slice(1)||"*",(t[r]=t[r]||[]).unshift(n)):(t[r]=t[r]||[]).push(n)}}function M(t,e,n,r){function i(a){var u;return o[a]=!0,Z.each(t[a]||[],function(t,a){var c=a(e,n,r);return"string"!=typeof c||s||o[c]?s?!(u=c):void 0:(e.dataTypes.unshift(c),i(c),!1)}),u}var o={},s=t===xe;return i(e.dataTypes[0])||!o["*"]&&i("*")}function P(t,e){var n,r,i=Z.ajaxSettings.flatOptions||{};for(n in e)void 0!==e[n]&&((i[n]?t:r||(r={}))[n]=e[n]);return r&&Z.extend(!0,t,r),t}function F(t,e,n){for(var r,i,o,s,a=t.contents,u=t.dataTypes;"*"===u[0];)u.shift(),void 0===r&&(r=t.mimeType||e.getResponseHeader("Content-Type"));if(r)for(i in a)if(a[i]&&a[i].test(r)){u.unshift(i);break}if(u[0]in n)o=u[0];else{for(i in n){if(!u[0]||t.converters[i+" "+u[0]]){o=i;break}s||(s=i)}o=o||s}return o?(o!==u[0]&&u.unshift(o),n[o]):void 0}function $(t,e,n,r){var i,o,s,a,u,c={},l=t.dataTypes.slice();if(l[1])for(s in t.converters)c[s.toLowerCase()]=t.converters[s];for(o=l.shift();o;)if(t.responseFields[o]&&(n[t.responseFields[o]]=e),!u&&r&&t.dataFilter&&(e=t.dataFilter(e,t.dataType)),u=o,o=l.shift())if("*"===o)o=u;else if("*"!==u&&u!==o){if(s=c[u+" "+o]||c["* "+o],!s)for(i in c)if(a=i.split(" "),a[1]===o&&(s=c[u+" "+a[0]]||c["* "+a[0]])){s===!0?s=c[i]:c[i]!==!0&&(o=a[0],l.unshift(a[1]));break}if(s!==!0)if(s&&t["throws"])e=s(e);else try{e=s(e)}catch(f){return{state:"parsererror",error:s?f:"No conversion from "+u+" to "+o}}}return{state:"success",data:e}}function R(t,e,n,r){var i;if(Z.isArray(e))Z.each(e,function(e,i){n||Te.test(t)?r(t,i):R(t+"["+("object"==typeof i?e:"")+"]",i,n,r)});else if(n||"object"!==Z.type(e))r(t,e);else for(i in e)R(t+"["+i+"]",e[i],n,r)}function L(t){return Z.isWindow(t)?t:9===t.nodeType&&t.defaultView}var B=[],W=B.slice,z=B.concat,U=B.push,J=B.indexOf,X={},V=X.toString,K=X.hasOwnProperty,G={},Y=t.document,Q="2.1.4",Z=function(t,e){return new Z.fn.init(t,e)},tt=/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g,et=/^-ms-/,nt=/-([\da-z])/gi,rt=function(t,e){return e.toUpperCase()};Z.fn=Z.prototype={jquery:Q,constructor:Z,selector:"",length:0,toArray:function(){return W.call(this)},get:function(t){return null!=t?0>t?this[t+this.length]:this[t]:W.call(this)},pushStack:function(t){var e=Z.merge(this.constructor(),t);return e.prevObject=this,e.context=this.context,e},each:function(t,e){return Z.each(this,t,e)},map:function(t){return this.pushStack(Z.map(this,function(e,n){return t.call(e,n,e)}))},slice:function(){return this.pushStack(W.apply(this,arguments))},first:function(){return this.eq(0)},last:function(){return this.eq(-1)},eq:function(t){var e=this.length,n=+t+(0>t?e:0);return this.pushStack(n>=0&&e>n?[this[n]]:[])},end:function(){return this.prevObject||this.constructor(null)},push:U,sort:B.sort,splice:B.splice},Z.extend=Z.fn.extend=function(){var t,e,n,r,i,o,s=arguments[0]||{},a=1,u=arguments.length,c=!1;for("boolean"==typeof s&&(c=s,s=arguments[a]||{},a++),"object"==typeof s||Z.isFunction(s)||(s={}),a===u&&(s=this,a--);u>a;a++)if(null!=(t=arguments[a]))for(e in t)n=s[e],r=t[e],s!==r&&(c&&r&&(Z.isPlainObject(r)||(i=Z.isArray(r)))?(i?(i=!1,o=n&&Z.isArray(n)?n:[]):o=n&&Z.isPlainObject(n)?n:{},s[e]=Z.extend(c,o,r)):void 0!==r&&(s[e]=r));return s},Z.extend({expando:"jQuery"+(Q+Math.random()).replace(/\D/g,""),isReady:!0,error:function(t){throw new Error(t)},noop:function(){},isFunction:function(t){return"function"===Z.type(t)},isArray:Array.isArray,isWindow:function(t){return null!=t&&t===t.window},isNumeric:function(t){return!Z.isArray(t)&&t-parseFloat(t)+1>=0},isPlainObject:function(t){return"object"!==Z.type(t)||t.nodeType||Z.isWindow(t)?!1:t.constructor&&!K.call(t.constructor.prototype,"isPrototypeOf")?!1:!0},isEmptyObject:function(t){var e;for(e in t)return!1;return!0},type:function(t){return null==t?t+"":"object"==typeof t||"function"==typeof t?X[V.call(t)]||"object":typeof t},globalEval:function(t){var e,n=eval;t=Z.trim(t),t&&(1===t.indexOf("use strict")?(e=Y.createElement("script"),e.text=t,Y.head.appendChild(e).parentNode.removeChild(e)):n(t))},camelCase:function(t){return t.replace(et,"ms-").replace(nt,rt)},nodeName:function(t,e){return t.nodeName&&t.nodeName.toLowerCase()===e.toLowerCase()},each:function(t,e,r){var i,o=0,s=t.length,a=n(t);if(r){if(a)for(;s>o&&(i=e.apply(t[o],r),i!==!1);o++);else for(o in t)if(i=e.apply(t[o],r),i===!1)break}else if(a)for(;s>o&&(i=e.call(t[o],o,t[o]),i!==!1);o++);else for(o in t)if(i=e.call(t[o],o,t[o]),i===!1)break;return t},trim:function(t){return null==t?"":(t+"").replace(tt,"")},makeArray:function(t,e){var r=e||[];return null!=t&&(n(Object(t))?Z.merge(r,"string"==typeof t?[t]:t):U.call(r,t)),r},inArray:function(t,e,n){return null==e?-1:J.call(e,t,n)},merge:function(t,e){for(var n=+e.length,r=0,i=t.length;n>r;r++)t[i++]=e[r];return t.length=i,t},grep:function(t,e,n){for(var r,i=[],o=0,s=t.length,a=!n;s>o;o++)r=!e(t[o],o),r!==a&&i.push(t[o]);return i},map:function(t,e,r){var i,o=0,s=t.length,a=n(t),u=[];if(a)for(;s>o;o++)i=e(t[o],o,r),null!=i&&u.push(i);else for(o in t)i=e(t[o],o,r),null!=i&&u.push(i);return z.apply([],u)},guid:1,proxy:function(t,e){var n,r,i;return"string"==typeof e&&(n=t[e],e=t,t=n),Z.isFunction(t)?(r=W.call(arguments,2),i=function(){return t.apply(e||this,r.concat(W.call(arguments)))},i.guid=t.guid=t.guid||Z.guid++,i):void 0},now:Date.now,support:G}),Z.each("Boolean Number String Function Array Date RegExp Object Error".split(" "),function(t,e){X["[object "+e+"]"]=e.toLowerCase()});var it=/*!
+       * Sizzle CSS Selector Engine v2.2.0-pre
+       * http://sizzlejs.com/
+       *
+       * Copyright 2008, 2014 jQuery Foundation, Inc. and other contributors
+       * Released under the MIT license
+       * http://jquery.org/license
+       *
+       * Date: 2014-12-16
+       */
+function(t){function e(t,e,n,r){var i,o,s,a,u,c,f,d,p,g;if((e?e.ownerDocument||e:R)!==I&&O(e),e=e||I,n=n||[],a=e.nodeType,"string"!=typeof t||!t||1!==a&&9!==a&&11!==a)return n;if(!r&&D){if(11!==a&&(i=yt.exec(t)))if(s=i[1]){if(9===a){if(o=e.getElementById(s),!o||!o.parentNode)return n;if(o.id===s)return n.push(o),n}else if(e.ownerDocument&&(o=e.ownerDocument.getElementById(s))&&F(e,o)&&o.id===s)return n.push(o),n}else{if(i[2])return Q.apply(n,e.getElementsByTagName(t)),n;if((s=i[3])&&w.getElementsByClassName)return Q.apply(n,e.getElementsByClassName(s)),n}if(w.qsa&&(!q||!q.test(t))){if(d=f=$,p=e,g=1!==a&&t,1===a&&"object"!==e.nodeName.toLowerCase()){for(c=E(t),(f=e.getAttribute("id"))?d=f.replace(bt,"\\$&"):e.setAttribute("id",d),d="[id='"+d+"'] ",u=c.length;u--;)c[u]=d+h(c[u]);p=xt.test(t)&&l(e.parentNode)||e,g=c.join(",")}if(g)try{return Q.apply(n,p.querySelectorAll(g)),n}catch(v){}finally{f||e.removeAttribute("id")}}}return S(t.replace(ut,"$1"),e,n,r)}function n(){function t(n,r){return e.push(n+" ")>_.cacheLength&&delete t[e.shift()],t[n+" "]=r}var e=[];return t}function r(t){return t[$]=!0,t}function i(t){var e=I.createElement("div");try{return!!t(e)}catch(n){return!1}finally{e.parentNode&&e.parentNode.removeChild(e),e=null}}function o(t,e){for(var n=t.split("|"),r=t.length;r--;)_.attrHandle[n[r]]=e}function s(t,e){var n=e&&t,r=n&&1===t.nodeType&&1===e.nodeType&&(~e.sourceIndex||X)-(~t.sourceIndex||X);if(r)return r;if(n)for(;n=n.nextSibling;)if(n===e)return-1;return t?1:-1}function a(t){return function(e){var n=e.nodeName.toLowerCase();return"input"===n&&e.type===t}}function u(t){return function(e){var n=e.nodeName.toLowerCase();return("input"===n||"button"===n)&&e.type===t}}function c(t){return r(function(e){return e=+e,r(function(n,r){for(var i,o=t([],n.length,e),s=o.length;s--;)n[i=o[s]]&&(n[i]=!(r[i]=n[i]))})})}function l(t){return t&&"undefined"!=typeof t.getElementsByTagName&&t}function f(){}function h(t){for(var e=0,n=t.length,r="";n>e;e++)r+=t[e].value;return r}function d(t,e,n){var r=e.dir,i=n&&"parentNode"===r,o=B++;return e.first?function(e,n,o){for(;e=e[r];)if(1===e.nodeType||i)return t(e,n,o)}:function(e,n,s){var a,u,c=[L,o];if(s){for(;e=e[r];)if((1===e.nodeType||i)&&t(e,n,s))return!0}else for(;e=e[r];)if(1===e.nodeType||i){if(u=e[$]||(e[$]={}),(a=u[r])&&a[0]===L&&a[1]===o)return c[2]=a[2];if(u[r]=c,c[2]=t(e,n,s))return!0}}}function p(t){return t.length>1?function(e,n,r){for(var i=t.length;i--;)if(!t[i](e,n,r))return!1;return!0}:t[0]}function g(t,n,r){for(var i=0,o=n.length;o>i;i++)e(t,n[i],r);return r}function v(t,e,n,r,i){for(var o,s=[],a=0,u=t.length,c=null!=e;u>a;a++)(o=t[a])&&(!n||n(o,r,i))&&(s.push(o),c&&e.push(a));return s}function m(t,e,n,i,o,s){return i&&!i[$]&&(i=m(i)),o&&!o[$]&&(o=m(o,s)),r(function(r,s,a,u){var c,l,f,h=[],d=[],p=s.length,m=r||g(e||"*",a.nodeType?[a]:a,[]),y=!t||!r&&e?m:v(m,h,t,a,u),x=n?o||(r?t:p||i)?[]:s:y;if(n&&n(y,x,a,u),i)for(c=v(x,d),i(c,[],a,u),l=c.length;l--;)(f=c[l])&&(x[d[l]]=!(y[d[l]]=f));if(r){if(o||t){if(o){for(c=[],l=x.length;l--;)(f=x[l])&&c.push(y[l]=f);o(null,x=[],c,u)}for(l=x.length;l--;)(f=x[l])&&(c=o?tt(r,f):h[l])>-1&&(r[c]=!(s[c]=f))}}else x=v(x===s?x.splice(p,x.length):x),o?o(null,s,x,u):Q.apply(s,x)})}function y(t){for(var e,n,r,i=t.length,o=_.relative[t[0].type],s=o||_.relative[" "],a=o?1:0,u=d(function(t){return t===e},s,!0),c=d(function(t){return tt(e,t)>-1},s,!0),l=[function(t,n,r){var i=!o&&(r||n!==C)||((e=n).nodeType?u(t,n,r):c(t,n,r));return e=null,i}];i>a;a++)if(n=_.relative[t[a].type])l=[d(p(l),n)];else{if(n=_.filter[t[a].type].apply(null,t[a].matches),n[$]){for(r=++a;i>r&&!_.relative[t[r].type];r++);return m(a>1&&p(l),a>1&&h(t.slice(0,a-1).concat({value:" "===t[a-2].type?"*":""})).replace(ut,"$1"),n,r>a&&y(t.slice(a,r)),i>r&&y(t=t.slice(r)),i>r&&h(t))}l.push(n)}return p(l)}function x(t,n){var i=n.length>0,o=t.length>0,s=function(r,s,a,u,c){var l,f,h,d=0,p="0",g=r&&[],m=[],y=C,x=r||o&&_.find.TAG("*",c),b=L+=null==y?1:Math.random()||.1,w=x.length;for(c&&(C=s!==I&&s);p!==w&&null!=(l=x[p]);p++){if(o&&l){for(f=0;h=t[f++];)if(h(l,s,a)){u.push(l);break}c&&(L=b)}i&&((l=!h&&l)&&d--,r&&g.push(l))}if(d+=p,i&&p!==d){for(f=0;h=n[f++];)h(g,m,s,a);if(r){if(d>0)for(;p--;)g[p]||m[p]||(m[p]=G.call(u));m=v(m)}Q.apply(u,m),c&&!r&&m.length>0&&d+n.length>1&&e.uniqueSort(u)}return c&&(L=b,C=y),g};return i?r(s):s}var b,w,_,k,T,E,j,S,C,N,A,O,I,H,D,q,M,P,F,$="sizzle"+1*new Date,R=t.document,L=0,B=0,W=n(),z=n(),U=n(),J=function(t,e){return t===e&&(A=!0),0},X=1<<31,V={}.hasOwnProperty,K=[],G=K.pop,Y=K.push,Q=K.push,Z=K.slice,tt=function(t,e){for(var n=0,r=t.length;r>n;n++)if(t[n]===e)return n;return-1},et="checked|selected|async|autofocus|autoplay|controls|defer|disabled|hidden|ismap|loop|multiple|open|readonly|required|scoped",nt="[\\x20\\t\\r\\n\\f]",rt="(?:\\\\.|[\\w-]|[^\\x00-\\xa0])+",it=rt.replace("w","w#"),ot="\\["+nt+"*("+rt+")(?:"+nt+"*([*^$|!~]?=)"+nt+"*(?:'((?:\\\\.|[^\\\\'])*)'|\"((?:\\\\.|[^\\\\\"])*)\"|("+it+"))|)"+nt+"*\\]",st=":("+rt+")(?:\\((('((?:\\\\.|[^\\\\'])*)'|\"((?:\\\\.|[^\\\\\"])*)\")|((?:\\\\.|[^\\\\()[\\]]|"+ot+")*)|.*)\\)|)",at=new RegExp(nt+"+","g"),ut=new RegExp("^"+nt+"+|((?:^|[^\\\\])(?:\\\\.)*)"+nt+"+$","g"),ct=new RegExp("^"+nt+"*,"+nt+"*"),lt=new RegExp("^"+nt+"*([>+~]|"+nt+")"+nt+"*"),ft=new RegExp("="+nt+"*([^\\]'\"]*?)"+nt+"*\\]","g"),ht=new RegExp(st),dt=new RegExp("^"+it+"$"),pt={ID:new RegExp("^#("+rt+")"),CLASS:new RegExp("^\\.("+rt+")"),TAG:new RegExp("^("+rt.replace("w","w*")+")"),ATTR:new RegExp("^"+ot),PSEUDO:new RegExp("^"+st),CHILD:new RegExp("^:(only|first|last|nth|nth-last)-(child|of-type)(?:\\("+nt+"*(even|odd|(([+-]|)(\\d*)n|)"+nt+"*(?:([+-]|)"+nt+"*(\\d+)|))"+nt+"*\\)|)","i"),bool:new RegExp("^(?:"+et+")$","i"),needsContext:new RegExp("^"+nt+"*[>+~]|:(even|odd|eq|gt|lt|nth|first|last)(?:\\("+nt+"*((?:-\\d)?\\d*)"+nt+"*\\)|)(?=[^-]|$)","i")},gt=/^(?:input|select|textarea|button)$/i,vt=/^h\d$/i,mt=/^[^{]+\{\s*\[native \w/,yt=/^(?:#([\w-]+)|(\w+)|\.([\w-]+))$/,xt=/[+~]/,bt=/'|\\/g,wt=new RegExp("\\\\([\\da-f]{1,6}"+nt+"?|("+nt+")|.)","ig"),_t=function(t,e,n){var r="0x"+e-65536;return r!==r||n?e:0>r?String.fromCharCode(r+65536):String.fromCharCode(r>>10|55296,1023&r|56320)},kt=function(){O()};try{Q.apply(K=Z.call(R.childNodes),R.childNodes),K[R.childNodes.length].nodeType}catch(Tt){Q={apply:K.length?function(t,e){Y.apply(t,Z.call(e))}:function(t,e){for(var n=t.length,r=0;t[n++]=e[r++];);t.length=n-1}}}w=e.support={},T=e.isXML=function(t){var e=t&&(t.ownerDocument||t).documentElement;return e?"HTML"!==e.nodeName:!1},O=e.setDocument=function(t){var e,n,r=t?t.ownerDocument||t:R;return r!==I&&9===r.nodeType&&r.documentElement?(I=r,H=r.documentElement,n=r.defaultView,n&&n!==n.top&&(n.addEventListener?n.addEventListener("unload",kt,!1):n.attachEvent&&n.attachEvent("onunload",kt)),D=!T(r),w.attributes=i(function(t){return t.className="i",!t.getAttribute("className")}),w.getElementsByTagName=i(function(t){return t.appendChild(r.createComment("")),!t.getElementsByTagName("*").length}),w.getElementsByClassName=mt.test(r.getElementsByClassName),w.getById=i(function(t){return H.appendChild(t).id=$,!r.getElementsByName||!r.getElementsByName($).length}),w.getById?(_.find.ID=function(t,e){if("undefined"!=typeof e.getElementById&&D){var n=e.getElementById(t);return n&&n.parentNode?[n]:[]}},_.filter.ID=function(t){var e=t.replace(wt,_t);return function(t){return t.getAttribute("id")===e}}):(delete _.find.ID,_.filter.ID=function(t){var e=t.replace(wt,_t);return function(t){var n="undefined"!=typeof t.getAttributeNode&&t.getAttributeNode("id");return n&&n.value===e}}),_.find.TAG=w.getElementsByTagName?function(t,e){return"undefined"!=typeof e.getElementsByTagName?e.getElementsByTagName(t):w.qsa?e.querySelectorAll(t):void 0}:function(t,e){var n,r=[],i=0,o=e.getElementsByTagName(t);if("*"===t){for(;n=o[i++];)1===n.nodeType&&r.push(n);return r}return o},_.find.CLASS=w.getElementsByClassName&&function(t,e){return D?e.getElementsByClassName(t):void 0},M=[],q=[],(w.qsa=mt.test(r.querySelectorAll))&&(i(function(t){H.appendChild(t).innerHTML="<a id='"+$+"'></a><select id='"+$+"-\f]' msallowcapture=''><option selected=''></option></select>",t.querySelectorAll("[msallowcapture^='']").length&&q.push("[*^$]="+nt+"*(?:''|\"\")"),t.querySelectorAll("[selected]").length||q.push("\\["+nt+"*(?:value|"+et+")"),t.querySelectorAll("[id~="+$+"-]").length||q.push("~="),t.querySelectorAll(":checked").length||q.push(":checked"),t.querySelectorAll("a#"+$+"+*").length||q.push(".#.+[+~]")}),i(function(t){var e=r.createElement("input");e.setAttribute("type","hidden"),t.appendChild(e).setAttribute("name","D"),t.querySelectorAll("[name=d]").length&&q.push("name"+nt+"*[*^$|!~]?="),t.querySelectorAll(":enabled").length||q.push(":enabled",":disabled"),t.querySelectorAll("*,:x"),q.push(",.*:")})),(w.matchesSelector=mt.test(P=H.matches||H.webkitMatchesSelector||H.mozMatchesSelector||H.oMatchesSelector||H.msMatchesSelector))&&i(function(t){w.disconnectedMatch=P.call(t,"div"),P.call(t,"[s!='']:x"),M.push("!=",st)}),q=q.length&&new RegExp(q.join("|")),M=M.length&&new RegExp(M.join("|")),e=mt.test(H.compareDocumentPosition),F=e||mt.test(H.contains)?function(t,e){var n=9===t.nodeType?t.documentElement:t,r=e&&e.parentNode;return t===r||!(!r||1!==r.nodeType||!(n.contains?n.contains(r):t.compareDocumentPosition&&16&t.compareDocumentPosition(r)))}:function(t,e){if(e)for(;e=e.parentNode;)if(e===t)return!0;return!1},J=e?function(t,e){if(t===e)return A=!0,0;var n=!t.compareDocumentPosition-!e.compareDocumentPosition;return n?n:(n=(t.ownerDocument||t)===(e.ownerDocument||e)?t.compareDocumentPosition(e):1,1&n||!w.sortDetached&&e.compareDocumentPosition(t)===n?t===r||t.ownerDocument===R&&F(R,t)?-1:e===r||e.ownerDocument===R&&F(R,e)?1:N?tt(N,t)-tt(N,e):0:4&n?-1:1)}:function(t,e){if(t===e)return A=!0,0;var n,i=0,o=t.parentNode,a=e.parentNode,u=[t],c=[e];if(!o||!a)return t===r?-1:e===r?1:o?-1:a?1:N?tt(N,t)-tt(N,e):0;if(o===a)return s(t,e);for(n=t;n=n.parentNode;)u.unshift(n);for(n=e;n=n.parentNode;)c.unshift(n);for(;u[i]===c[i];)i++;return i?s(u[i],c[i]):u[i]===R?-1:c[i]===R?1:0},r):I},e.matches=function(t,n){return e(t,null,null,n)},e.matchesSelector=function(t,n){if((t.ownerDocument||t)!==I&&O(t),n=n.replace(ft,"='$1']"),w.matchesSelector&&D&&(!M||!M.test(n))&&(!q||!q.test(n)))try{var r=P.call(t,n);if(r||w.disconnectedMatch||t.document&&11!==t.document.nodeType)return r}catch(i){}return e(n,I,null,[t]).length>0},e.contains=function(t,e){return(t.ownerDocument||t)!==I&&O(t),F(t,e)},e.attr=function(t,e){(t.ownerDocument||t)!==I&&O(t);var n=_.attrHandle[e.toLowerCase()],r=n&&V.call(_.attrHandle,e.toLowerCase())?n(t,e,!D):void 0;return void 0!==r?r:w.attributes||!D?t.getAttribute(e):(r=t.getAttributeNode(e))&&r.specified?r.value:null},e.error=function(t){throw new Error("Syntax error, unrecognized expression: "+t)},e.uniqueSort=function(t){var e,n=[],r=0,i=0;if(A=!w.detectDuplicates,N=!w.sortStable&&t.slice(0),t.sort(J),A){for(;e=t[i++];)e===t[i]&&(r=n.push(i));for(;r--;)t.splice(n[r],1)}return N=null,t},k=e.getText=function(t){var e,n="",r=0,i=t.nodeType;if(i){if(1===i||9===i||11===i){if("string"==typeof t.textContent)return t.textContent;for(t=t.firstChild;t;t=t.nextSibling)n+=k(t)}else if(3===i||4===i)return t.nodeValue}else for(;e=t[r++];)n+=k(e);return n},_=e.selectors={cacheLength:50,createPseudo:r,match:pt,attrHandle:{},find:{},relative:{">":{dir:"parentNode",first:!0}," ":{dir:"parentNode"},"+":{dir:"previousSibling",first:!0},"~":{dir:"previousSibling"}},preFilter:{ATTR:function(t){return t[1]=t[1].replace(wt,_t),t[3]=(t[3]||t[4]||t[5]||"").replace(wt,_t),"~="===t[2]&&(t[3]=" "+t[3]+" "),t.slice(0,4)},CHILD:function(t){return t[1]=t[1].toLowerCase(),"nth"===t[1].slice(0,3)?(t[3]||e.error(t[0]),t[4]=+(t[4]?t[5]+(t[6]||1):2*("even"===t[3]||"odd"===t[3])),t[5]=+(t[7]+t[8]||"odd"===t[3])):t[3]&&e.error(t[0]),t},PSEUDO:function(t){var e,n=!t[6]&&t[2];return pt.CHILD.test(t[0])?null:(t[3]?t[2]=t[4]||t[5]||"":n&&ht.test(n)&&(e=E(n,!0))&&(e=n.indexOf(")",n.length-e)-n.length)&&(t[0]=t[0].slice(0,e),t[2]=n.slice(0,e)),t.slice(0,3))}},filter:{TAG:function(t){var e=t.replace(wt,_t).toLowerCase();return"*"===t?function(){return!0}:function(t){return t.nodeName&&t.nodeName.toLowerCase()===e}},CLASS:function(t){var e=W[t+" "];return e||(e=new RegExp("(^|"+nt+")"+t+"("+nt+"|$)"))&&W(t,function(t){return e.test("string"==typeof t.className&&t.className||"undefined"!=typeof t.getAttribute&&t.getAttribute("class")||"")})},ATTR:function(t,n,r){return function(i){var o=e.attr(i,t);return null==o?"!="===n:n?(o+="","="===n?o===r:"!="===n?o!==r:"^="===n?r&&0===o.indexOf(r):"*="===n?r&&o.indexOf(r)>-1:"$="===n?r&&o.slice(-r.length)===r:"~="===n?(" "+o.replace(at," ")+" ").indexOf(r)>-1:"|="===n?o===r||o.slice(0,r.length+1)===r+"-":!1):!0}},CHILD:function(t,e,n,r,i){var o="nth"!==t.slice(0,3),s="last"!==t.slice(-4),a="of-type"===e;return 1===r&&0===i?function(t){return!!t.parentNode}:function(e,n,u){var c,l,f,h,d,p,g=o!==s?"nextSibling":"previousSibling",v=e.parentNode,m=a&&e.nodeName.toLowerCase(),y=!u&&!a;if(v){if(o){for(;g;){for(f=e;f=f[g];)if(a?f.nodeName.toLowerCase()===m:1===f.nodeType)return!1;p=g="only"===t&&!p&&"nextSibling"}return!0}if(p=[s?v.firstChild:v.lastChild],s&&y){for(l=v[$]||(v[$]={}),c=l[t]||[],d=c[0]===L&&c[1],h=c[0]===L&&c[2],f=d&&v.childNodes[d];f=++d&&f&&f[g]||(h=d=0)||p.pop();)if(1===f.nodeType&&++h&&f===e){l[t]=[L,d,h];break}}else if(y&&(c=(e[$]||(e[$]={}))[t])&&c[0]===L)h=c[1];else for(;(f=++d&&f&&f[g]||(h=d=0)||p.pop())&&((a?f.nodeName.toLowerCase()!==m:1!==f.nodeType)||!++h||(y&&((f[$]||(f[$]={}))[t]=[L,h]),f!==e)););return h-=i,h===r||h%r===0&&h/r>=0}}},PSEUDO:function(t,n){var i,o=_.pseudos[t]||_.setFilters[t.toLowerCase()]||e.error("unsupported pseudo: "+t);return o[$]?o(n):o.length>1?(i=[t,t,"",n],_.setFilters.hasOwnProperty(t.toLowerCase())?r(function(t,e){for(var r,i=o(t,n),s=i.length;s--;)r=tt(t,i[s]),t[r]=!(e[r]=i[s])}):function(t){return o(t,0,i)}):o}},pseudos:{not:r(function(t){var e=[],n=[],i=j(t.replace(ut,"$1"));return i[$]?r(function(t,e,n,r){for(var o,s=i(t,null,r,[]),a=t.length;a--;)(o=s[a])&&(t[a]=!(e[a]=o))}):function(t,r,o){return e[0]=t,i(e,null,o,n),e[0]=null,!n.pop()}}),has:r(function(t){return function(n){return e(t,n).length>0}}),contains:r(function(t){return t=t.replace(wt,_t),function(e){return(e.textContent||e.innerText||k(e)).indexOf(t)>-1}}),lang:r(function(t){return dt.test(t||"")||e.error("unsupported lang: "+t),t=t.replace(wt,_t).toLowerCase(),function(e){var n;do if(n=D?e.lang:e.getAttribute("xml:lang")||e.getAttribute("lang"))return n=n.toLowerCase(),n===t||0===n.indexOf(t+"-");while((e=e.parentNode)&&1===e.nodeType);return!1}}),target:function(e){var n=t.location&&t.location.hash;return n&&n.slice(1)===e.id},root:function(t){return t===H},focus:function(t){return t===I.activeElement&&(!I.hasFocus||I.hasFocus())&&!!(t.type||t.href||~t.tabIndex)},enabled:function(t){return t.disabled===!1},disabled:function(t){return t.disabled===!0},checked:function(t){var e=t.nodeName.toLowerCase();return"input"===e&&!!t.checked||"option"===e&&!!t.selected},selected:function(t){return t.parentNode&&t.parentNode.selectedIndex,t.selected===!0},empty:function(t){for(t=t.firstChild;t;t=t.nextSibling)if(t.nodeType<6)return!1;return!0},parent:function(t){return!_.pseudos.empty(t)},header:function(t){return vt.test(t.nodeName)},input:function(t){return gt.test(t.nodeName)},button:function(t){var e=t.nodeName.toLowerCase();return"input"===e&&"button"===t.type||"button"===e},text:function(t){var e;return"input"===t.nodeName.toLowerCase()&&"text"===t.type&&(null==(e=t.getAttribute("type"))||"text"===e.toLowerCase())},first:c(function(){return[0]}),last:c(function(t,e){return[e-1]}),eq:c(function(t,e,n){return[0>n?n+e:n]}),even:c(function(t,e){for(var n=0;e>n;n+=2)t.push(n);return t}),odd:c(function(t,e){for(var n=1;e>n;n+=2)t.push(n);return t}),lt:c(function(t,e,n){for(var r=0>n?n+e:n;--r>=0;)t.push(r);return t}),gt:c(function(t,e,n){for(var r=0>n?n+e:n;++r<e;)t.push(r);return t})}},_.pseudos.nth=_.pseudos.eq;for(b in{radio:!0,checkbox:!0,file:!0,password:!0,image:!0})_.pseudos[b]=a(b);for(b in{submit:!0,reset:!0})_.pseudos[b]=u(b);return f.prototype=_.filters=_.pseudos,_.setFilters=new f,E=e.tokenize=function(t,n){var r,i,o,s,a,u,c,l=z[t+" "];if(l)return n?0:l.slice(0);for(a=t,u=[],c=_.preFilter;a;){(!r||(i=ct.exec(a)))&&(i&&(a=a.slice(i[0].length)||a),u.push(o=[])),r=!1,(i=lt.exec(a))&&(r=i.shift(),o.push({value:r,type:i[0].replace(ut," ")}),a=a.slice(r.length));for(s in _.filter)!(i=pt[s].exec(a))||c[s]&&!(i=c[s](i))||(r=i.shift(),o.push({value:r,type:s,matches:i}),a=a.slice(r.length));if(!r)break}return n?a.length:a?e.error(t):z(t,u).slice(0)},j=e.compile=function(t,e){var n,r=[],i=[],o=U[t+" "];if(!o){for(e||(e=E(t)),n=e.length;n--;)o=y(e[n]),o[$]?r.push(o):i.push(o);o=U(t,x(i,r)),o.selector=t}return o},S=e.select=function(t,e,n,r){var i,o,s,a,u,c="function"==typeof t&&t,f=!r&&E(t=c.selector||t);if(n=n||[],1===f.length){if(o=f[0]=f[0].slice(0),o.length>2&&"ID"===(s=o[0]).type&&w.getById&&9===e.nodeType&&D&&_.relative[o[1].type]){if(e=(_.find.ID(s.matches[0].replace(wt,_t),e)||[])[0],!e)return n;c&&(e=e.parentNode),t=t.slice(o.shift().value.length)}for(i=pt.needsContext.test(t)?0:o.length;i--&&(s=o[i],!_.relative[a=s.type]);)if((u=_.find[a])&&(r=u(s.matches[0].replace(wt,_t),xt.test(o[0].type)&&l(e.parentNode)||e))){if(o.splice(i,1),t=r.length&&h(o),!t)return Q.apply(n,r),n;break}}return(c||j(t,f))(r,e,!D,n,xt.test(t)&&l(e.parentNode)||e),n},w.sortStable=$.split("").sort(J).join("")===$,w.detectDuplicates=!!A,O(),w.sortDetached=i(function(t){return 1&t.compareDocumentPosition(I.createElement("div"))}),i(function(t){return t.innerHTML="<a href='#'></a>","#"===t.firstChild.getAttribute("href")})||o("type|href|height|width",function(t,e,n){return n?void 0:t.getAttribute(e,"type"===e.toLowerCase()?1:2)}),w.attributes&&i(function(t){return t.innerHTML="<input/>",t.firstChild.setAttribute("value",""),""===t.firstChild.getAttribute("value")})||o("value",function(t,e,n){return n||"input"!==t.nodeName.toLowerCase()?void 0:t.defaultValue}),i(function(t){return null==t.getAttribute("disabled")})||o(et,function(t,e,n){var r;return n?void 0:t[e]===!0?e.toLowerCase():(r=t.getAttributeNode(e))&&r.specified?r.value:null}),e}(t);Z.find=it,Z.expr=it.selectors,Z.expr[":"]=Z.expr.pseudos,Z.unique=it.uniqueSort,Z.text=it.getText,Z.isXMLDoc=it.isXML,Z.contains=it.contains;var ot=Z.expr.match.needsContext,st=/^<(\w+)\s*\/?>(?:<\/\1>|)$/,at=/^.[^:#\[\.,]*$/;Z.filter=function(t,e,n){var r=e[0];return n&&(t=":not("+t+")"),1===e.length&&1===r.nodeType?Z.find.matchesSelector(r,t)?[r]:[]:Z.find.matches(t,Z.grep(e,function(t){return 1===t.nodeType}))},Z.fn.extend({find:function(t){var e,n=this.length,r=[],i=this;if("string"!=typeof t)return this.pushStack(Z(t).filter(function(){for(e=0;n>e;e++)if(Z.contains(i[e],this))return!0}));for(e=0;n>e;e++)Z.find(t,i[e],r);return r=this.pushStack(n>1?Z.unique(r):r),r.selector=this.selector?this.selector+" "+t:t,r},filter:function(t){return this.pushStack(r(this,t||[],!1))},not:function(t){return this.pushStack(r(this,t||[],!0))},is:function(t){return!!r(this,"string"==typeof t&&ot.test(t)?Z(t):t||[],!1).length}});var ut,ct=/^(?:\s*(<[\w\W]+>)[^>]*|#([\w-]*))$/,lt=Z.fn.init=function(t,e){var n,r;if(!t)return this;if("string"==typeof t){if(n="<"===t[0]&&">"===t[t.length-1]&&t.length>=3?[null,t,null]:ct.exec(t),!n||!n[1]&&e)return!e||e.jquery?(e||ut).find(t):this.constructor(e).find(t);if(n[1]){if(e=e instanceof Z?e[0]:e,Z.merge(this,Z.parseHTML(n[1],e&&e.nodeType?e.ownerDocument||e:Y,!0)),st.test(n[1])&&Z.isPlainObject(e))for(n in e)Z.isFunction(this[n])?this[n](e[n]):this.attr(n,e[n]);return this}return r=Y.getElementById(n[2]),r&&r.parentNode&&(this.length=1,this[0]=r),this.context=Y,this.selector=t,this}return t.nodeType?(this.context=this[0]=t,this.length=1,this):Z.isFunction(t)?"undefined"!=typeof ut.ready?ut.ready(t):t(Z):(void 0!==t.selector&&(this.selector=t.selector,this.context=t.context),Z.makeArray(t,this))};lt.prototype=Z.fn,ut=Z(Y);var ft=/^(?:parents|prev(?:Until|All))/,ht={children:!0,contents:!0,next:!0,prev:!0};Z.extend({dir:function(t,e,n){for(var r=[],i=void 0!==n;(t=t[e])&&9!==t.nodeType;)if(1===t.nodeType){if(i&&Z(t).is(n))break;r.push(t)}return r},sibling:function(t,e){for(var n=[];t;t=t.nextSibling)1===t.nodeType&&t!==e&&n.push(t);return n}}),Z.fn.extend({has:function(t){var e=Z(t,this),n=e.length;return this.filter(function(){for(var t=0;n>t;t++)if(Z.contains(this,e[t]))return!0})},closest:function(t,e){for(var n,r=0,i=this.length,o=[],s=ot.test(t)||"string"!=typeof t?Z(t,e||this.context):0;i>r;r++)for(n=this[r];n&&n!==e;n=n.parentNode)if(n.nodeType<11&&(s?s.index(n)>-1:1===n.nodeType&&Z.find.matchesSelector(n,t))){o.push(n);break}return this.pushStack(o.length>1?Z.unique(o):o)},index:function(t){return t?"string"==typeof t?J.call(Z(t),this[0]):J.call(this,t.jquery?t[0]:t):this[0]&&this[0].parentNode?this.first().prevAll().length:-1},add:function(t,e){return this.pushStack(Z.unique(Z.merge(this.get(),Z(t,e))))},addBack:function(t){return this.add(null==t?this.prevObject:this.prevObject.filter(t))}}),Z.each({parent:function(t){var e=t.parentNode;return e&&11!==e.nodeType?e:null},parents:function(t){return Z.dir(t,"parentNode")},parentsUntil:function(t,e,n){return Z.dir(t,"parentNode",n)},next:function(t){return i(t,"nextSibling")},prev:function(t){return i(t,"previousSibling")},nextAll:function(t){return Z.dir(t,"nextSibling")},prevAll:function(t){return Z.dir(t,"previousSibling")},nextUntil:function(t,e,n){return Z.dir(t,"nextSibling",n)},prevUntil:function(t,e,n){return Z.dir(t,"previousSibling",n)},siblings:function(t){return Z.sibling((t.parentNode||{}).firstChild,t)},children:function(t){return Z.sibling(t.firstChild)},contents:function(t){return t.contentDocument||Z.merge([],t.childNodes)}},function(t,e){Z.fn[t]=function(n,r){var i=Z.map(this,e,n);return"Until"!==t.slice(-5)&&(r=n),r&&"string"==typeof r&&(i=Z.filter(r,i)),this.length>1&&(ht[t]||Z.unique(i),ft.test(t)&&i.reverse()),this.pushStack(i)}});var dt=/\S+/g,pt={};Z.Callbacks=function(t){t="string"==typeof t?pt[t]||o(t):Z.extend({},t);var e,n,r,i,s,a,u=[],c=!t.once&&[],l=function(o){for(e=t.memory&&o,n=!0,a=i||0,i=0,s=u.length,r=!0;u&&s>a;a++)if(u[a].apply(o[0],o[1])===!1&&t.stopOnFalse){e=!1;break}r=!1,u&&(c?c.length&&l(c.shift()):e?u=[]:f.disable())},f={add:function(){if(u){var n=u.length;!function o(e){Z.each(e,function(e,n){var r=Z.type(n);"function"===r?t.unique&&f.has(n)||u.push(n):n&&n.length&&"string"!==r&&o(n)})}(arguments),r?s=u.length:e&&(i=n,l(e))}return this},remove:function(){return u&&Z.each(arguments,function(t,e){for(var n;(n=Z.inArray(e,u,n))>-1;)u.splice(n,1),r&&(s>=n&&s--,a>=n&&a--)}),this},has:function(t){return t?Z.inArray(t,u)>-1:!(!u||!u.length)},empty:function(){return u=[],s=0,this},disable:function(){return u=c=e=void 0,this},disabled:function(){return!u},lock:function(){return c=void 0,e||f.disable(),this},locked:function(){return!c},fireWith:function(t,e){return!u||n&&!c||(e=e||[],e=[t,e.slice?e.slice():e],r?c.push(e):l(e)),this},fire:function(){return f.fireWith(this,arguments),this},fired:function(){return!!n}};return f},Z.extend({Deferred:function(t){var e=[["resolve","done",Z.Callbacks("once memory"),"resolved"],["reject","fail",Z.Callbacks("once memory"),"rejected"],["notify","progress",Z.Callbacks("memory")]],n="pending",r={state:function(){return n},always:function(){return i.done(arguments).fail(arguments),this},then:function(){var t=arguments;return Z.Deferred(function(n){Z.each(e,function(e,o){var s=Z.isFunction(t[e])&&t[e];i[o[1]](function(){var t=s&&s.apply(this,arguments);t&&Z.isFunction(t.promise)?t.promise().done(n.resolve).fail(n.reject).progress(n.notify):n[o[0]+"With"](this===r?n.promise():this,s?[t]:arguments)})}),t=null}).promise()},promise:function(t){return null!=t?Z.extend(t,r):r}},i={};return r.pipe=r.then,Z.each(e,function(t,o){var s=o[2],a=o[3];r[o[1]]=s.add,a&&s.add(function(){n=a},e[1^t][2].disable,e[2][2].lock),i[o[0]]=function(){return i[o[0]+"With"](this===i?r:this,arguments),this},i[o[0]+"With"]=s.fireWith}),r.promise(i),t&&t.call(i,i),i},when:function(t){var e,n,r,i=0,o=W.call(arguments),s=o.length,a=1!==s||t&&Z.isFunction(t.promise)?s:0,u=1===a?t:Z.Deferred(),c=function(t,n,r){return function(i){n[t]=this,r[t]=arguments.length>1?W.call(arguments):i,r===e?u.notifyWith(n,r):--a||u.resolveWith(n,r)}};if(s>1)for(e=new Array(s),n=new Array(s),r=new Array(s);s>i;i++)o[i]&&Z.isFunction(o[i].promise)?o[i].promise().done(c(i,r,o)).fail(u.reject).progress(c(i,n,e)):--a;return a||u.resolveWith(r,o),u.promise()}});var gt;Z.fn.ready=function(t){return Z.ready.promise().done(t),this},Z.extend({isReady:!1,readyWait:1,holdReady:function(t){t?Z.readyWait++:Z.ready(!0)},ready:function(t){(t===!0?--Z.readyWait:Z.isReady)||(Z.isReady=!0,t!==!0&&--Z.readyWait>0||(gt.resolveWith(Y,[Z]),Z.fn.triggerHandler&&(Z(Y).triggerHandler("ready"),Z(Y).off("ready"))))}}),Z.ready.promise=function(e){return gt||(gt=Z.Deferred(),"complete"===Y.readyState?setTimeout(Z.ready):(Y.addEventListener("DOMContentLoaded",s,!1),t.addEventListener("load",s,!1))),gt.promise(e)},Z.ready.promise();var vt=Z.access=function(t,e,n,r,i,o,s){var a=0,u=t.length,c=null==n;if("object"===Z.type(n)){i=!0;for(a in n)Z.access(t,e,a,n[a],!0,o,s)}else if(void 0!==r&&(i=!0,Z.isFunction(r)||(s=!0),c&&(s?(e.call(t,r),e=null):(c=e,e=function(t,e,n){return c.call(Z(t),n)})),e))for(;u>a;a++)e(t[a],n,s?r:r.call(t[a],a,e(t[a],n)));return i?t:c?e.call(t):u?e(t[0],n):o};Z.acceptData=function(t){return 1===t.nodeType||9===t.nodeType||!+t.nodeType},a.uid=1,a.accepts=Z.acceptData,a.prototype={key:function(t){if(!a.accepts(t))return 0;var e={},n=t[this.expando];if(!n){n=a.uid++;try{e[this.expando]={value:n},Object.defineProperties(t,e)}catch(r){e[this.expando]=n,Z.extend(t,e)}}return this.cache[n]||(this.cache[n]={}),n},set:function(t,e,n){var r,i=this.key(t),o=this.cache[i];if("string"==typeof e)o[e]=n;else if(Z.isEmptyObject(o))Z.extend(this.cache[i],e);else for(r in e)o[r]=e[r];return o},get:function(t,e){var n=this.cache[this.key(t)];return void 0===e?n:n[e]},access:function(t,e,n){var r;return void 0===e||e&&"string"==typeof e&&void 0===n?(r=this.get(t,e),void 0!==r?r:this.get(t,Z.camelCase(e))):(this.set(t,e,n),void 0!==n?n:e)},remove:function(t,e){var n,r,i,o=this.key(t),s=this.cache[o];if(void 0===e)this.cache[o]={};else{Z.isArray(e)?r=e.concat(e.map(Z.camelCase)):(i=Z.camelCase(e),e in s?r=[e,i]:(r=i,r=r in s?[r]:r.match(dt)||[])),n=r.length;for(;n--;)delete s[r[n]]}},hasData:function(t){return!Z.isEmptyObject(this.cache[t[this.expando]]||{})},discard:function(t){t[this.expando]&&delete this.cache[t[this.expando]]}};var mt=new a,yt=new a,xt=/^(?:\{[\w\W]*\}|\[[\w\W]*\])$/,bt=/([A-Z])/g;Z.extend({hasData:function(t){return yt.hasData(t)||mt.hasData(t)},data:function(t,e,n){return yt.access(t,e,n)},removeData:function(t,e){yt.remove(t,e)},_data:function(t,e,n){return mt.access(t,e,n)},_removeData:function(t,e){mt.remove(t,e)}}),Z.fn.extend({data:function(t,e){var n,r,i,o=this[0],s=o&&o.attributes;if(void 0===t){if(this.length&&(i=yt.get(o),1===o.nodeType&&!mt.get(o,"hasDataAttrs"))){for(n=s.length;n--;)s[n]&&(r=s[n].name,0===r.indexOf("data-")&&(r=Z.camelCase(r.slice(5)),u(o,r,i[r])));mt.set(o,"hasDataAttrs",!0)}return i}return"object"==typeof t?this.each(function(){yt.set(this,t)}):vt(this,function(e){var n,r=Z.camelCase(t);if(o&&void 0===e){if(n=yt.get(o,t),void 0!==n)return n;if(n=yt.get(o,r),void 0!==n)return n;if(n=u(o,r,void 0),void 0!==n)return n}else this.each(function(){var n=yt.get(this,r);yt.set(this,r,e),-1!==t.indexOf("-")&&void 0!==n&&yt.set(this,t,e)})},null,e,arguments.length>1,null,!0)},removeData:function(t){return this.each(function(){yt.remove(this,t)})}}),Z.extend({queue:function(t,e,n){var r;return t?(e=(e||"fx")+"queue",r=mt.get(t,e),n&&(!r||Z.isArray(n)?r=mt.access(t,e,Z.makeArray(n)):r.push(n)),r||[]):void 0},dequeue:function(t,e){e=e||"fx";var n=Z.queue(t,e),r=n.length,i=n.shift(),o=Z._queueHooks(t,e),s=function(){Z.dequeue(t,e)};"inprogress"===i&&(i=n.shift(),r--),i&&("fx"===e&&n.unshift("inprogress"),delete o.stop,i.call(t,s,o)),!r&&o&&o.empty.fire()},_queueHooks:function(t,e){var n=e+"queueHooks";return mt.get(t,n)||mt.access(t,n,{empty:Z.Callbacks("once memory").add(function(){mt.remove(t,[e+"queue",n])})})}}),Z.fn.extend({queue:function(t,e){var n=2;return"string"!=typeof t&&(e=t,t="fx",n--),arguments.length<n?Z.queue(this[0],t):void 0===e?this:this.each(function(){var n=Z.queue(this,t,e);Z._queueHooks(this,t),"fx"===t&&"inprogress"!==n[0]&&Z.dequeue(this,t)})},dequeue:function(t){return this.each(function(){Z.dequeue(this,t)})},clearQueue:function(t){return this.queue(t||"fx",[])},promise:function(t,e){var n,r=1,i=Z.Deferred(),o=this,s=this.length,a=function(){--r||i.resolveWith(o,[o])};for("string"!=typeof t&&(e=t,t=void 0),t=t||"fx";s--;)n=mt.get(o[s],t+"queueHooks"),n&&n.empty&&(r++,n.empty.add(a));return a(),i.promise(e)}});var wt=/[+-]?(?:\d*\.|)\d+(?:[eE][+-]?\d+|)/.source,_t=["Top","Right","Bottom","Left"],kt=function(t,e){return t=e||t,"none"===Z.css(t,"display")||!Z.contains(t.ownerDocument,t)},Tt=/^(?:checkbox|radio)$/i;!function(){var t=Y.createDocumentFragment(),e=t.appendChild(Y.createElement("div")),n=Y.createElement("input");n.setAttribute("type","radio"),n.setAttribute("checked","checked"),n.setAttribute("name","t"),e.appendChild(n),G.checkClone=e.cloneNode(!0).cloneNode(!0).lastChild.checked,e.innerHTML="<textarea>x</textarea>",G.noCloneChecked=!!e.cloneNode(!0).lastChild.defaultValue}();var Et="undefined";G.focusinBubbles="onfocusin"in t;var jt=/^key/,St=/^(?:mouse|pointer|contextmenu)|click/,Ct=/^(?:focusinfocus|focusoutblur)$/,Nt=/^([^.]*)(?:\.(.+)|)$/;Z.event={global:{},add:function(t,e,n,r,i){var o,s,a,u,c,l,f,h,d,p,g,v=mt.get(t);if(v)for(n.handler&&(o=n,n=o.handler,i=o.selector),n.guid||(n.guid=Z.guid++),(u=v.events)||(u=v.events={}),(s=v.handle)||(s=v.handle=function(e){return typeof Z!==Et&&Z.event.triggered!==e.type?Z.event.dispatch.apply(t,arguments):void 0}),e=(e||"").match(dt)||[""],c=e.length;c--;)a=Nt.exec(e[c])||[],d=g=a[1],p=(a[2]||"").split(".").sort(),d&&(f=Z.event.special[d]||{},d=(i?f.delegateType:f.bindType)||d,f=Z.event.special[d]||{},l=Z.extend({type:d,origType:g,data:r,handler:n,guid:n.guid,selector:i,needsContext:i&&Z.expr.match.needsContext.test(i),namespace:p.join(".")},o),(h=u[d])||(h=u[d]=[],h.delegateCount=0,f.setup&&f.setup.call(t,r,p,s)!==!1||t.addEventListener&&t.addEventListener(d,s,!1)),f.add&&(f.add.call(t,l),l.handler.guid||(l.handler.guid=n.guid)),i?h.splice(h.delegateCount++,0,l):h.push(l),Z.event.global[d]=!0)},remove:function(t,e,n,r,i){var o,s,a,u,c,l,f,h,d,p,g,v=mt.hasData(t)&&mt.get(t);if(v&&(u=v.events)){for(e=(e||"").match(dt)||[""],c=e.length;c--;)if(a=Nt.exec(e[c])||[],d=g=a[1],p=(a[2]||"").split(".").sort(),d){for(f=Z.event.special[d]||{},d=(r?f.delegateType:f.bindType)||d,h=u[d]||[],a=a[2]&&new RegExp("(^|\\.)"+p.join("\\.(?:.*\\.|)")+"(\\.|$)"),s=o=h.length;o--;)l=h[o],!i&&g!==l.origType||n&&n.guid!==l.guid||a&&!a.test(l.namespace)||r&&r!==l.selector&&("**"!==r||!l.selector)||(h.splice(o,1),l.selector&&h.delegateCount--,f.remove&&f.remove.call(t,l));s&&!h.length&&(f.teardown&&f.teardown.call(t,p,v.handle)!==!1||Z.removeEvent(t,d,v.handle),delete u[d])}else for(d in u)Z.event.remove(t,d+e[c],n,r,!0);Z.isEmptyObject(u)&&(delete v.handle,mt.remove(t,"events"))}},trigger:function(e,n,r,i){var o,s,a,u,c,l,f,h=[r||Y],d=K.call(e,"type")?e.type:e,p=K.call(e,"namespace")?e.namespace.split("."):[];if(s=a=r=r||Y,3!==r.nodeType&&8!==r.nodeType&&!Ct.test(d+Z.event.triggered)&&(d.indexOf(".")>=0&&(p=d.split("."),d=p.shift(),p.sort()),c=d.indexOf(":")<0&&"on"+d,e=e[Z.expando]?e:new Z.Event(d,"object"==typeof e&&e),e.isTrigger=i?2:3,e.namespace=p.join("."),e.namespace_re=e.namespace?new RegExp("(^|\\.)"+p.join("\\.(?:.*\\.|)")+"(\\.|$)"):null,e.result=void 0,e.target||(e.target=r),
+n=null==n?[e]:Z.makeArray(n,[e]),f=Z.event.special[d]||{},i||!f.trigger||f.trigger.apply(r,n)!==!1)){if(!i&&!f.noBubble&&!Z.isWindow(r)){for(u=f.delegateType||d,Ct.test(u+d)||(s=s.parentNode);s;s=s.parentNode)h.push(s),a=s;a===(r.ownerDocument||Y)&&h.push(a.defaultView||a.parentWindow||t)}for(o=0;(s=h[o++])&&!e.isPropagationStopped();)e.type=o>1?u:f.bindType||d,l=(mt.get(s,"events")||{})[e.type]&&mt.get(s,"handle"),l&&l.apply(s,n),l=c&&s[c],l&&l.apply&&Z.acceptData(s)&&(e.result=l.apply(s,n),e.result===!1&&e.preventDefault());return e.type=d,i||e.isDefaultPrevented()||f._default&&f._default.apply(h.pop(),n)!==!1||!Z.acceptData(r)||c&&Z.isFunction(r[d])&&!Z.isWindow(r)&&(a=r[c],a&&(r[c]=null),Z.event.triggered=d,r[d](),Z.event.triggered=void 0,a&&(r[c]=a)),e.result}},dispatch:function(t){t=Z.event.fix(t);var e,n,r,i,o,s=[],a=W.call(arguments),u=(mt.get(this,"events")||{})[t.type]||[],c=Z.event.special[t.type]||{};if(a[0]=t,t.delegateTarget=this,!c.preDispatch||c.preDispatch.call(this,t)!==!1){for(s=Z.event.handlers.call(this,t,u),e=0;(i=s[e++])&&!t.isPropagationStopped();)for(t.currentTarget=i.elem,n=0;(o=i.handlers[n++])&&!t.isImmediatePropagationStopped();)(!t.namespace_re||t.namespace_re.test(o.namespace))&&(t.handleObj=o,t.data=o.data,r=((Z.event.special[o.origType]||{}).handle||o.handler).apply(i.elem,a),void 0!==r&&(t.result=r)===!1&&(t.preventDefault(),t.stopPropagation()));return c.postDispatch&&c.postDispatch.call(this,t),t.result}},handlers:function(t,e){var n,r,i,o,s=[],a=e.delegateCount,u=t.target;if(a&&u.nodeType&&(!t.button||"click"!==t.type))for(;u!==this;u=u.parentNode||this)if(u.disabled!==!0||"click"!==t.type){for(r=[],n=0;a>n;n++)o=e[n],i=o.selector+" ",void 0===r[i]&&(r[i]=o.needsContext?Z(i,this).index(u)>=0:Z.find(i,this,null,[u]).length),r[i]&&r.push(o);r.length&&s.push({elem:u,handlers:r})}return a<e.length&&s.push({elem:this,handlers:e.slice(a)}),s},props:"altKey bubbles cancelable ctrlKey currentTarget eventPhase metaKey relatedTarget shiftKey target timeStamp view which".split(" "),fixHooks:{},keyHooks:{props:"char charCode key keyCode".split(" "),filter:function(t,e){return null==t.which&&(t.which=null!=e.charCode?e.charCode:e.keyCode),t}},mouseHooks:{props:"button buttons clientX clientY offsetX offsetY pageX pageY screenX screenY toElement".split(" "),filter:function(t,e){var n,r,i,o=e.button;return null==t.pageX&&null!=e.clientX&&(n=t.target.ownerDocument||Y,r=n.documentElement,i=n.body,t.pageX=e.clientX+(r&&r.scrollLeft||i&&i.scrollLeft||0)-(r&&r.clientLeft||i&&i.clientLeft||0),t.pageY=e.clientY+(r&&r.scrollTop||i&&i.scrollTop||0)-(r&&r.clientTop||i&&i.clientTop||0)),t.which||void 0===o||(t.which=1&o?1:2&o?3:4&o?2:0),t}},fix:function(t){if(t[Z.expando])return t;var e,n,r,i=t.type,o=t,s=this.fixHooks[i];for(s||(this.fixHooks[i]=s=St.test(i)?this.mouseHooks:jt.test(i)?this.keyHooks:{}),r=s.props?this.props.concat(s.props):this.props,t=new Z.Event(o),e=r.length;e--;)n=r[e],t[n]=o[n];return t.target||(t.target=Y),3===t.target.nodeType&&(t.target=t.target.parentNode),s.filter?s.filter(t,o):t},special:{load:{noBubble:!0},focus:{trigger:function(){return this!==f()&&this.focus?(this.focus(),!1):void 0},delegateType:"focusin"},blur:{trigger:function(){return this===f()&&this.blur?(this.blur(),!1):void 0},delegateType:"focusout"},click:{trigger:function(){return"checkbox"===this.type&&this.click&&Z.nodeName(this,"input")?(this.click(),!1):void 0},_default:function(t){return Z.nodeName(t.target,"a")}},beforeunload:{postDispatch:function(t){void 0!==t.result&&t.originalEvent&&(t.originalEvent.returnValue=t.result)}}},simulate:function(t,e,n,r){var i=Z.extend(new Z.Event,n,{type:t,isSimulated:!0,originalEvent:{}});r?Z.event.trigger(i,null,e):Z.event.dispatch.call(e,i),i.isDefaultPrevented()&&n.preventDefault()}},Z.removeEvent=function(t,e,n){t.removeEventListener&&t.removeEventListener(e,n,!1)},Z.Event=function(t,e){return this instanceof Z.Event?(t&&t.type?(this.originalEvent=t,this.type=t.type,this.isDefaultPrevented=t.defaultPrevented||void 0===t.defaultPrevented&&t.returnValue===!1?c:l):this.type=t,e&&Z.extend(this,e),this.timeStamp=t&&t.timeStamp||Z.now(),void(this[Z.expando]=!0)):new Z.Event(t,e)},Z.Event.prototype={isDefaultPrevented:l,isPropagationStopped:l,isImmediatePropagationStopped:l,preventDefault:function(){var t=this.originalEvent;this.isDefaultPrevented=c,t&&t.preventDefault&&t.preventDefault()},stopPropagation:function(){var t=this.originalEvent;this.isPropagationStopped=c,t&&t.stopPropagation&&t.stopPropagation()},stopImmediatePropagation:function(){var t=this.originalEvent;this.isImmediatePropagationStopped=c,t&&t.stopImmediatePropagation&&t.stopImmediatePropagation(),this.stopPropagation()}},Z.each({mouseenter:"mouseover",mouseleave:"mouseout",pointerenter:"pointerover",pointerleave:"pointerout"},function(t,e){Z.event.special[t]={delegateType:e,bindType:e,handle:function(t){var n,r=this,i=t.relatedTarget,o=t.handleObj;return(!i||i!==r&&!Z.contains(r,i))&&(t.type=o.origType,n=o.handler.apply(this,arguments),t.type=e),n}}}),G.focusinBubbles||Z.each({focus:"focusin",blur:"focusout"},function(t,e){var n=function(t){Z.event.simulate(e,t.target,Z.event.fix(t),!0)};Z.event.special[e]={setup:function(){var r=this.ownerDocument||this,i=mt.access(r,e);i||r.addEventListener(t,n,!0),mt.access(r,e,(i||0)+1)},teardown:function(){var r=this.ownerDocument||this,i=mt.access(r,e)-1;i?mt.access(r,e,i):(r.removeEventListener(t,n,!0),mt.remove(r,e))}}}),Z.fn.extend({on:function(t,e,n,r,i){var o,s;if("object"==typeof t){"string"!=typeof e&&(n=n||e,e=void 0);for(s in t)this.on(s,e,n,t[s],i);return this}if(null==n&&null==r?(r=e,n=e=void 0):null==r&&("string"==typeof e?(r=n,n=void 0):(r=n,n=e,e=void 0)),r===!1)r=l;else if(!r)return this;return 1===i&&(o=r,r=function(t){return Z().off(t),o.apply(this,arguments)},r.guid=o.guid||(o.guid=Z.guid++)),this.each(function(){Z.event.add(this,t,r,n,e)})},one:function(t,e,n,r){return this.on(t,e,n,r,1)},off:function(t,e,n){var r,i;if(t&&t.preventDefault&&t.handleObj)return r=t.handleObj,Z(t.delegateTarget).off(r.namespace?r.origType+"."+r.namespace:r.origType,r.selector,r.handler),this;if("object"==typeof t){for(i in t)this.off(i,e,t[i]);return this}return(e===!1||"function"==typeof e)&&(n=e,e=void 0),n===!1&&(n=l),this.each(function(){Z.event.remove(this,t,n,e)})},trigger:function(t,e){return this.each(function(){Z.event.trigger(t,e,this)})},triggerHandler:function(t,e){var n=this[0];return n?Z.event.trigger(t,e,n,!0):void 0}});var At=/<(?!area|br|col|embed|hr|img|input|link|meta|param)(([\w:]+)[^>]*)\/>/gi,Ot=/<([\w:]+)/,It=/<|&#?\w+;/,Ht=/<(?:script|style|link)/i,Dt=/checked\s*(?:[^=]|=\s*.checked.)/i,qt=/^$|\/(?:java|ecma)script/i,Mt=/^true\/(.*)/,Pt=/^\s*<!(?:\[CDATA\[|--)|(?:\]\]|--)>\s*$/g,Ft={option:[1,"<select multiple='multiple'>","</select>"],thead:[1,"<table>","</table>"],col:[2,"<table><colgroup>","</colgroup></table>"],tr:[2,"<table><tbody>","</tbody></table>"],td:[3,"<table><tbody><tr>","</tr></tbody></table>"],_default:[0,"",""]};Ft.optgroup=Ft.option,Ft.tbody=Ft.tfoot=Ft.colgroup=Ft.caption=Ft.thead,Ft.th=Ft.td,Z.extend({clone:function(t,e,n){var r,i,o,s,a=t.cloneNode(!0),u=Z.contains(t.ownerDocument,t);if(!(G.noCloneChecked||1!==t.nodeType&&11!==t.nodeType||Z.isXMLDoc(t)))for(s=m(a),o=m(t),r=0,i=o.length;i>r;r++)y(o[r],s[r]);if(e)if(n)for(o=o||m(t),s=s||m(a),r=0,i=o.length;i>r;r++)v(o[r],s[r]);else v(t,a);return s=m(a,"script"),s.length>0&&g(s,!u&&m(t,"script")),a},buildFragment:function(t,e,n,r){for(var i,o,s,a,u,c,l=e.createDocumentFragment(),f=[],h=0,d=t.length;d>h;h++)if(i=t[h],i||0===i)if("object"===Z.type(i))Z.merge(f,i.nodeType?[i]:i);else if(It.test(i)){for(o=o||l.appendChild(e.createElement("div")),s=(Ot.exec(i)||["",""])[1].toLowerCase(),a=Ft[s]||Ft._default,o.innerHTML=a[1]+i.replace(At,"<$1></$2>")+a[2],c=a[0];c--;)o=o.lastChild;Z.merge(f,o.childNodes),o=l.firstChild,o.textContent=""}else f.push(e.createTextNode(i));for(l.textContent="",h=0;i=f[h++];)if((!r||-1===Z.inArray(i,r))&&(u=Z.contains(i.ownerDocument,i),o=m(l.appendChild(i),"script"),u&&g(o),n))for(c=0;i=o[c++];)qt.test(i.type||"")&&n.push(i);return l},cleanData:function(t){for(var e,n,r,i,o=Z.event.special,s=0;void 0!==(n=t[s]);s++){if(Z.acceptData(n)&&(i=n[mt.expando],i&&(e=mt.cache[i]))){if(e.events)for(r in e.events)o[r]?Z.event.remove(n,r):Z.removeEvent(n,r,e.handle);mt.cache[i]&&delete mt.cache[i]}delete yt.cache[n[yt.expando]]}}}),Z.fn.extend({text:function(t){return vt(this,function(t){return void 0===t?Z.text(this):this.empty().each(function(){(1===this.nodeType||11===this.nodeType||9===this.nodeType)&&(this.textContent=t)})},null,t,arguments.length)},append:function(){return this.domManip(arguments,function(t){if(1===this.nodeType||11===this.nodeType||9===this.nodeType){var e=h(this,t);e.appendChild(t)}})},prepend:function(){return this.domManip(arguments,function(t){if(1===this.nodeType||11===this.nodeType||9===this.nodeType){var e=h(this,t);e.insertBefore(t,e.firstChild)}})},before:function(){return this.domManip(arguments,function(t){this.parentNode&&this.parentNode.insertBefore(t,this)})},after:function(){return this.domManip(arguments,function(t){this.parentNode&&this.parentNode.insertBefore(t,this.nextSibling)})},remove:function(t,e){for(var n,r=t?Z.filter(t,this):this,i=0;null!=(n=r[i]);i++)e||1!==n.nodeType||Z.cleanData(m(n)),n.parentNode&&(e&&Z.contains(n.ownerDocument,n)&&g(m(n,"script")),n.parentNode.removeChild(n));return this},empty:function(){for(var t,e=0;null!=(t=this[e]);e++)1===t.nodeType&&(Z.cleanData(m(t,!1)),t.textContent="");return this},clone:function(t,e){return t=null==t?!1:t,e=null==e?t:e,this.map(function(){return Z.clone(this,t,e)})},html:function(t){return vt(this,function(t){var e=this[0]||{},n=0,r=this.length;if(void 0===t&&1===e.nodeType)return e.innerHTML;if("string"==typeof t&&!Ht.test(t)&&!Ft[(Ot.exec(t)||["",""])[1].toLowerCase()]){t=t.replace(At,"<$1></$2>");try{for(;r>n;n++)e=this[n]||{},1===e.nodeType&&(Z.cleanData(m(e,!1)),e.innerHTML=t);e=0}catch(i){}}e&&this.empty().append(t)},null,t,arguments.length)},replaceWith:function(){var t=arguments[0];return this.domManip(arguments,function(e){t=this.parentNode,Z.cleanData(m(this)),t&&t.replaceChild(e,this)}),t&&(t.length||t.nodeType)?this:this.remove()},detach:function(t){return this.remove(t,!0)},domManip:function(t,e){t=z.apply([],t);var n,r,i,o,s,a,u=0,c=this.length,l=this,f=c-1,h=t[0],g=Z.isFunction(h);if(g||c>1&&"string"==typeof h&&!G.checkClone&&Dt.test(h))return this.each(function(n){var r=l.eq(n);g&&(t[0]=h.call(this,n,r.html())),r.domManip(t,e)});if(c&&(n=Z.buildFragment(t,this[0].ownerDocument,!1,this),r=n.firstChild,1===n.childNodes.length&&(n=r),r)){for(i=Z.map(m(n,"script"),d),o=i.length;c>u;u++)s=n,u!==f&&(s=Z.clone(s,!0,!0),o&&Z.merge(i,m(s,"script"))),e.call(this[u],s,u);if(o)for(a=i[i.length-1].ownerDocument,Z.map(i,p),u=0;o>u;u++)s=i[u],qt.test(s.type||"")&&!mt.access(s,"globalEval")&&Z.contains(a,s)&&(s.src?Z._evalUrl&&Z._evalUrl(s.src):Z.globalEval(s.textContent.replace(Pt,"")))}return this}}),Z.each({appendTo:"append",prependTo:"prepend",insertBefore:"before",insertAfter:"after",replaceAll:"replaceWith"},function(t,e){Z.fn[t]=function(t){for(var n,r=[],i=Z(t),o=i.length-1,s=0;o>=s;s++)n=s===o?this:this.clone(!0),Z(i[s])[e](n),U.apply(r,n.get());return this.pushStack(r)}});var $t,Rt={},Lt=/^margin/,Bt=new RegExp("^("+wt+")(?!px)[a-z%]+$","i"),Wt=function(e){return e.ownerDocument.defaultView.opener?e.ownerDocument.defaultView.getComputedStyle(e,null):t.getComputedStyle(e,null)};!function(){function e(){s.style.cssText="-webkit-box-sizing:border-box;-moz-box-sizing:border-box;box-sizing:border-box;display:block;margin-top:1%;top:1%;border:1px;padding:1px;width:4px;position:absolute",s.innerHTML="",i.appendChild(o);var e=t.getComputedStyle(s,null);n="1%"!==e.top,r="4px"===e.width,i.removeChild(o)}var n,r,i=Y.documentElement,o=Y.createElement("div"),s=Y.createElement("div");s.style&&(s.style.backgroundClip="content-box",s.cloneNode(!0).style.backgroundClip="",G.clearCloneStyle="content-box"===s.style.backgroundClip,o.style.cssText="border:0;width:0;height:0;top:0;left:-9999px;margin-top:1px;position:absolute",o.appendChild(s),t.getComputedStyle&&Z.extend(G,{pixelPosition:function(){return e(),n},boxSizingReliable:function(){return null==r&&e(),r},reliableMarginRight:function(){var e,n=s.appendChild(Y.createElement("div"));return n.style.cssText=s.style.cssText="-webkit-box-sizing:content-box;-moz-box-sizing:content-box;box-sizing:content-box;display:block;margin:0;border:0;padding:0",n.style.marginRight=n.style.width="0",s.style.width="1px",i.appendChild(o),e=!parseFloat(t.getComputedStyle(n,null).marginRight),i.removeChild(o),s.removeChild(n),e}}))}(),Z.swap=function(t,e,n,r){var i,o,s={};for(o in e)s[o]=t.style[o],t.style[o]=e[o];i=n.apply(t,r||[]);for(o in e)t.style[o]=s[o];return i};var zt=/^(none|table(?!-c[ea]).+)/,Ut=new RegExp("^("+wt+")(.*)$","i"),Jt=new RegExp("^([+-])=("+wt+")","i"),Xt={position:"absolute",visibility:"hidden",display:"block"},Vt={letterSpacing:"0",fontWeight:"400"},Kt=["Webkit","O","Moz","ms"];Z.extend({cssHooks:{opacity:{get:function(t,e){if(e){var n=w(t,"opacity");return""===n?"1":n}}}},cssNumber:{columnCount:!0,fillOpacity:!0,flexGrow:!0,flexShrink:!0,fontWeight:!0,lineHeight:!0,opacity:!0,order:!0,orphans:!0,widows:!0,zIndex:!0,zoom:!0},cssProps:{"float":"cssFloat"},style:function(t,e,n,r){if(t&&3!==t.nodeType&&8!==t.nodeType&&t.style){var i,o,s,a=Z.camelCase(e),u=t.style;return e=Z.cssProps[a]||(Z.cssProps[a]=k(u,a)),s=Z.cssHooks[e]||Z.cssHooks[a],void 0===n?s&&"get"in s&&void 0!==(i=s.get(t,!1,r))?i:u[e]:(o=typeof n,"string"===o&&(i=Jt.exec(n))&&(n=(i[1]+1)*i[2]+parseFloat(Z.css(t,e)),o="number"),null!=n&&n===n&&("number"!==o||Z.cssNumber[a]||(n+="px"),G.clearCloneStyle||""!==n||0!==e.indexOf("background")||(u[e]="inherit"),s&&"set"in s&&void 0===(n=s.set(t,n,r))||(u[e]=n)),void 0)}},css:function(t,e,n,r){var i,o,s,a=Z.camelCase(e);return e=Z.cssProps[a]||(Z.cssProps[a]=k(t.style,a)),s=Z.cssHooks[e]||Z.cssHooks[a],s&&"get"in s&&(i=s.get(t,!0,n)),void 0===i&&(i=w(t,e,r)),"normal"===i&&e in Vt&&(i=Vt[e]),""===n||n?(o=parseFloat(i),n===!0||Z.isNumeric(o)?o||0:i):i}}),Z.each(["height","width"],function(t,e){Z.cssHooks[e]={get:function(t,n,r){return n?zt.test(Z.css(t,"display"))&&0===t.offsetWidth?Z.swap(t,Xt,function(){return j(t,e,r)}):j(t,e,r):void 0},set:function(t,n,r){var i=r&&Wt(t);return T(t,n,r?E(t,e,r,"border-box"===Z.css(t,"boxSizing",!1,i),i):0)}}}),Z.cssHooks.marginRight=_(G.reliableMarginRight,function(t,e){return e?Z.swap(t,{display:"inline-block"},w,[t,"marginRight"]):void 0}),Z.each({margin:"",padding:"",border:"Width"},function(t,e){Z.cssHooks[t+e]={expand:function(n){for(var r=0,i={},o="string"==typeof n?n.split(" "):[n];4>r;r++)i[t+_t[r]+e]=o[r]||o[r-2]||o[0];return i}},Lt.test(t)||(Z.cssHooks[t+e].set=T)}),Z.fn.extend({css:function(t,e){return vt(this,function(t,e,n){var r,i,o={},s=0;if(Z.isArray(e)){for(r=Wt(t),i=e.length;i>s;s++)o[e[s]]=Z.css(t,e[s],!1,r);return o}return void 0!==n?Z.style(t,e,n):Z.css(t,e)},t,e,arguments.length>1)},show:function(){return S(this,!0)},hide:function(){return S(this)},toggle:function(t){return"boolean"==typeof t?t?this.show():this.hide():this.each(function(){kt(this)?Z(this).show():Z(this).hide()})}}),Z.Tween=C,C.prototype={constructor:C,init:function(t,e,n,r,i,o){this.elem=t,this.prop=n,this.easing=i||"swing",this.options=e,this.start=this.now=this.cur(),this.end=r,this.unit=o||(Z.cssNumber[n]?"":"px")},cur:function(){var t=C.propHooks[this.prop];return t&&t.get?t.get(this):C.propHooks._default.get(this)},run:function(t){var e,n=C.propHooks[this.prop];return this.options.duration?this.pos=e=Z.easing[this.easing](t,this.options.duration*t,0,1,this.options.duration):this.pos=e=t,this.now=(this.end-this.start)*e+this.start,this.options.step&&this.options.step.call(this.elem,this.now,this),n&&n.set?n.set(this):C.propHooks._default.set(this),this}},C.prototype.init.prototype=C.prototype,C.propHooks={_default:{get:function(t){var e;return null==t.elem[t.prop]||t.elem.style&&null!=t.elem.style[t.prop]?(e=Z.css(t.elem,t.prop,""),e&&"auto"!==e?e:0):t.elem[t.prop]},set:function(t){Z.fx.step[t.prop]?Z.fx.step[t.prop](t):t.elem.style&&(null!=t.elem.style[Z.cssProps[t.prop]]||Z.cssHooks[t.prop])?Z.style(t.elem,t.prop,t.now+t.unit):t.elem[t.prop]=t.now}}},C.propHooks.scrollTop=C.propHooks.scrollLeft={set:function(t){t.elem.nodeType&&t.elem.parentNode&&(t.elem[t.prop]=t.now)}},Z.easing={linear:function(t){return t},swing:function(t){return.5-Math.cos(t*Math.PI)/2}},Z.fx=C.prototype.init,Z.fx.step={};var Gt,Yt,Qt=/^(?:toggle|show|hide)$/,Zt=new RegExp("^(?:([+-])=|)("+wt+")([a-z%]*)$","i"),te=/queueHooks$/,ee=[I],ne={"*":[function(t,e){var n=this.createTween(t,e),r=n.cur(),i=Zt.exec(e),o=i&&i[3]||(Z.cssNumber[t]?"":"px"),s=(Z.cssNumber[t]||"px"!==o&&+r)&&Zt.exec(Z.css(n.elem,t)),a=1,u=20;if(s&&s[3]!==o){o=o||s[3],i=i||[],s=+r||1;do a=a||".5",s/=a,Z.style(n.elem,t,s+o);while(a!==(a=n.cur()/r)&&1!==a&&--u)}return i&&(s=n.start=+s||+r||0,n.unit=o,n.end=i[1]?s+(i[1]+1)*i[2]:+i[2]),n}]};Z.Animation=Z.extend(D,{tweener:function(t,e){Z.isFunction(t)?(e=t,t=["*"]):t=t.split(" ");for(var n,r=0,i=t.length;i>r;r++)n=t[r],ne[n]=ne[n]||[],ne[n].unshift(e)},prefilter:function(t,e){e?ee.unshift(t):ee.push(t)}}),Z.speed=function(t,e,n){var r=t&&"object"==typeof t?Z.extend({},t):{complete:n||!n&&e||Z.isFunction(t)&&t,duration:t,easing:n&&e||e&&!Z.isFunction(e)&&e};return r.duration=Z.fx.off?0:"number"==typeof r.duration?r.duration:r.duration in Z.fx.speeds?Z.fx.speeds[r.duration]:Z.fx.speeds._default,(null==r.queue||r.queue===!0)&&(r.queue="fx"),r.old=r.complete,r.complete=function(){Z.isFunction(r.old)&&r.old.call(this),r.queue&&Z.dequeue(this,r.queue)},r},Z.fn.extend({fadeTo:function(t,e,n,r){return this.filter(kt).css("opacity",0).show().end().animate({opacity:e},t,n,r)},animate:function(t,e,n,r){var i=Z.isEmptyObject(t),o=Z.speed(e,n,r),s=function(){var e=D(this,Z.extend({},t),o);(i||mt.get(this,"finish"))&&e.stop(!0)};return s.finish=s,i||o.queue===!1?this.each(s):this.queue(o.queue,s)},stop:function(t,e,n){var r=function(t){var e=t.stop;delete t.stop,e(n)};return"string"!=typeof t&&(n=e,e=t,t=void 0),e&&t!==!1&&this.queue(t||"fx",[]),this.each(function(){var e=!0,i=null!=t&&t+"queueHooks",o=Z.timers,s=mt.get(this);if(i)s[i]&&s[i].stop&&r(s[i]);else for(i in s)s[i]&&s[i].stop&&te.test(i)&&r(s[i]);for(i=o.length;i--;)o[i].elem!==this||null!=t&&o[i].queue!==t||(o[i].anim.stop(n),e=!1,o.splice(i,1));(e||!n)&&Z.dequeue(this,t)})},finish:function(t){return t!==!1&&(t=t||"fx"),this.each(function(){var e,n=mt.get(this),r=n[t+"queue"],i=n[t+"queueHooks"],o=Z.timers,s=r?r.length:0;for(n.finish=!0,Z.queue(this,t,[]),i&&i.stop&&i.stop.call(this,!0),e=o.length;e--;)o[e].elem===this&&o[e].queue===t&&(o[e].anim.stop(!0),o.splice(e,1));for(e=0;s>e;e++)r[e]&&r[e].finish&&r[e].finish.call(this);delete n.finish})}}),Z.each(["toggle","show","hide"],function(t,e){var n=Z.fn[e];Z.fn[e]=function(t,r,i){return null==t||"boolean"==typeof t?n.apply(this,arguments):this.animate(A(e,!0),t,r,i)}}),Z.each({slideDown:A("show"),slideUp:A("hide"),slideToggle:A("toggle"),fadeIn:{opacity:"show"},fadeOut:{opacity:"hide"},fadeToggle:{opacity:"toggle"}},function(t,e){Z.fn[t]=function(t,n,r){return this.animate(e,t,n,r)}}),Z.timers=[],Z.fx.tick=function(){var t,e=0,n=Z.timers;for(Gt=Z.now();e<n.length;e++)t=n[e],t()||n[e]!==t||n.splice(e--,1);n.length||Z.fx.stop(),Gt=void 0},Z.fx.timer=function(t){Z.timers.push(t),t()?Z.fx.start():Z.timers.pop()},Z.fx.interval=13,Z.fx.start=function(){Yt||(Yt=setInterval(Z.fx.tick,Z.fx.interval))},Z.fx.stop=function(){clearInterval(Yt),Yt=null},Z.fx.speeds={slow:600,fast:200,_default:400},Z.fn.delay=function(t,e){return t=Z.fx?Z.fx.speeds[t]||t:t,e=e||"fx",this.queue(e,function(e,n){var r=setTimeout(e,t);n.stop=function(){clearTimeout(r)}})},function(){var t=Y.createElement("input"),e=Y.createElement("select"),n=e.appendChild(Y.createElement("option"));t.type="checkbox",G.checkOn=""!==t.value,G.optSelected=n.selected,e.disabled=!0,G.optDisabled=!n.disabled,t=Y.createElement("input"),t.value="t",t.type="radio",G.radioValue="t"===t.value}();var re,ie,oe=Z.expr.attrHandle;Z.fn.extend({attr:function(t,e){return vt(this,Z.attr,t,e,arguments.length>1)},removeAttr:function(t){return this.each(function(){Z.removeAttr(this,t)})}}),Z.extend({attr:function(t,e,n){var r,i,o=t.nodeType;if(t&&3!==o&&8!==o&&2!==o)return typeof t.getAttribute===Et?Z.prop(t,e,n):(1===o&&Z.isXMLDoc(t)||(e=e.toLowerCase(),r=Z.attrHooks[e]||(Z.expr.match.bool.test(e)?ie:re)),void 0===n?r&&"get"in r&&null!==(i=r.get(t,e))?i:(i=Z.find.attr(t,e),null==i?void 0:i):null!==n?r&&"set"in r&&void 0!==(i=r.set(t,n,e))?i:(t.setAttribute(e,n+""),n):void Z.removeAttr(t,e))},removeAttr:function(t,e){var n,r,i=0,o=e&&e.match(dt);if(o&&1===t.nodeType)for(;n=o[i++];)r=Z.propFix[n]||n,Z.expr.match.bool.test(n)&&(t[r]=!1),t.removeAttribute(n)},attrHooks:{type:{set:function(t,e){if(!G.radioValue&&"radio"===e&&Z.nodeName(t,"input")){var n=t.value;return t.setAttribute("type",e),n&&(t.value=n),e}}}}}),ie={set:function(t,e,n){return e===!1?Z.removeAttr(t,n):t.setAttribute(n,n),n}},Z.each(Z.expr.match.bool.source.match(/\w+/g),function(t,e){var n=oe[e]||Z.find.attr;oe[e]=function(t,e,r){var i,o;return r||(o=oe[e],oe[e]=i,i=null!=n(t,e,r)?e.toLowerCase():null,oe[e]=o),i}});var se=/^(?:input|select|textarea|button)$/i;Z.fn.extend({prop:function(t,e){return vt(this,Z.prop,t,e,arguments.length>1)},removeProp:function(t){return this.each(function(){delete this[Z.propFix[t]||t]})}}),Z.extend({propFix:{"for":"htmlFor","class":"className"},prop:function(t,e,n){var r,i,o,s=t.nodeType;if(t&&3!==s&&8!==s&&2!==s)return o=1!==s||!Z.isXMLDoc(t),o&&(e=Z.propFix[e]||e,i=Z.propHooks[e]),void 0!==n?i&&"set"in i&&void 0!==(r=i.set(t,n,e))?r:t[e]=n:i&&"get"in i&&null!==(r=i.get(t,e))?r:t[e]},propHooks:{tabIndex:{get:function(t){return t.hasAttribute("tabindex")||se.test(t.nodeName)||t.href?t.tabIndex:-1}}}}),G.optSelected||(Z.propHooks.selected={get:function(t){var e=t.parentNode;return e&&e.parentNode&&e.parentNode.selectedIndex,null}}),Z.each(["tabIndex","readOnly","maxLength","cellSpacing","cellPadding","rowSpan","colSpan","useMap","frameBorder","contentEditable"],function(){Z.propFix[this.toLowerCase()]=this});var ae=/[\t\r\n\f]/g;Z.fn.extend({addClass:function(t){var e,n,r,i,o,s,a="string"==typeof t&&t,u=0,c=this.length;if(Z.isFunction(t))return this.each(function(e){Z(this).addClass(t.call(this,e,this.className))});if(a)for(e=(t||"").match(dt)||[];c>u;u++)if(n=this[u],r=1===n.nodeType&&(n.className?(" "+n.className+" ").replace(ae," "):" ")){for(o=0;i=e[o++];)r.indexOf(" "+i+" ")<0&&(r+=i+" ");s=Z.trim(r),n.className!==s&&(n.className=s)}return this},removeClass:function(t){var e,n,r,i,o,s,a=0===arguments.length||"string"==typeof t&&t,u=0,c=this.length;if(Z.isFunction(t))return this.each(function(e){Z(this).removeClass(t.call(this,e,this.className))});if(a)for(e=(t||"").match(dt)||[];c>u;u++)if(n=this[u],r=1===n.nodeType&&(n.className?(" "+n.className+" ").replace(ae," "):"")){for(o=0;i=e[o++];)for(;r.indexOf(" "+i+" ")>=0;)r=r.replace(" "+i+" "," ");s=t?Z.trim(r):"",n.className!==s&&(n.className=s)}return this},toggleClass:function(t,e){var n=typeof t;return"boolean"==typeof e&&"string"===n?e?this.addClass(t):this.removeClass(t):Z.isFunction(t)?this.each(function(n){Z(this).toggleClass(t.call(this,n,this.className,e),e)}):this.each(function(){if("string"===n)for(var e,r=0,i=Z(this),o=t.match(dt)||[];e=o[r++];)i.hasClass(e)?i.removeClass(e):i.addClass(e);else(n===Et||"boolean"===n)&&(this.className&&mt.set(this,"__className__",this.className),this.className=this.className||t===!1?"":mt.get(this,"__className__")||"")})},hasClass:function(t){for(var e=" "+t+" ",n=0,r=this.length;r>n;n++)if(1===this[n].nodeType&&(" "+this[n].className+" ").replace(ae," ").indexOf(e)>=0)return!0;return!1}});var ue=/\r/g;Z.fn.extend({val:function(t){var e,n,r,i=this[0];{if(arguments.length)return r=Z.isFunction(t),this.each(function(n){var i;1===this.nodeType&&(i=r?t.call(this,n,Z(this).val()):t,null==i?i="":"number"==typeof i?i+="":Z.isArray(i)&&(i=Z.map(i,function(t){return null==t?"":t+""})),e=Z.valHooks[this.type]||Z.valHooks[this.nodeName.toLowerCase()],e&&"set"in e&&void 0!==e.set(this,i,"value")||(this.value=i))});if(i)return e=Z.valHooks[i.type]||Z.valHooks[i.nodeName.toLowerCase()],e&&"get"in e&&void 0!==(n=e.get(i,"value"))?n:(n=i.value,"string"==typeof n?n.replace(ue,""):null==n?"":n)}}}),Z.extend({valHooks:{option:{get:function(t){var e=Z.find.attr(t,"value");return null!=e?e:Z.trim(Z.text(t))}},select:{get:function(t){for(var e,n,r=t.options,i=t.selectedIndex,o="select-one"===t.type||0>i,s=o?null:[],a=o?i+1:r.length,u=0>i?a:o?i:0;a>u;u++)if(n=r[u],(n.selected||u===i)&&(G.optDisabled?!n.disabled:null===n.getAttribute("disabled"))&&(!n.parentNode.disabled||!Z.nodeName(n.parentNode,"optgroup"))){if(e=Z(n).val(),o)return e;s.push(e)}return s},set:function(t,e){for(var n,r,i=t.options,o=Z.makeArray(e),s=i.length;s--;)r=i[s],(r.selected=Z.inArray(r.value,o)>=0)&&(n=!0);return n||(t.selectedIndex=-1),o}}}}),Z.each(["radio","checkbox"],function(){Z.valHooks[this]={set:function(t,e){return Z.isArray(e)?t.checked=Z.inArray(Z(t).val(),e)>=0:void 0}},G.checkOn||(Z.valHooks[this].get=function(t){return null===t.getAttribute("value")?"on":t.value})}),Z.each("blur focus focusin focusout load resize scroll unload click dblclick mousedown mouseup mousemove mouseover mouseout mouseenter mouseleave change select submit keydown keypress keyup error contextmenu".split(" "),function(t,e){Z.fn[e]=function(t,n){return arguments.length>0?this.on(e,null,t,n):this.trigger(e)}}),Z.fn.extend({hover:function(t,e){return this.mouseenter(t).mouseleave(e||t)},bind:function(t,e,n){return this.on(t,null,e,n)},unbind:function(t,e){return this.off(t,null,e)},delegate:function(t,e,n,r){return this.on(e,t,n,r)},undelegate:function(t,e,n){return 1===arguments.length?this.off(t,"**"):this.off(e,t||"**",n)}});var ce=Z.now(),le=/\?/;Z.parseJSON=function(t){return JSON.parse(t+"")},Z.parseXML=function(t){var e,n;if(!t||"string"!=typeof t)return null;try{n=new DOMParser,e=n.parseFromString(t,"text/xml")}catch(r){e=void 0}return(!e||e.getElementsByTagName("parsererror").length)&&Z.error("Invalid XML: "+t),e};var fe=/#.*$/,he=/([?&])_=[^&]*/,de=/^(.*?):[ \t]*([^\r\n]*)$/gm,pe=/^(?:about|app|app-storage|.+-extension|file|res|widget):$/,ge=/^(?:GET|HEAD)$/,ve=/^\/\//,me=/^([\w.+-]+:)(?:\/\/(?:[^\/?#]*@|)([^\/?#:]*)(?::(\d+)|)|)/,ye={},xe={},be="*/".concat("*"),we=t.location.href,_e=me.exec(we.toLowerCase())||[];Z.extend({active:0,lastModified:{},etag:{},ajaxSettings:{url:we,type:"GET",isLocal:pe.test(_e[1]),global:!0,processData:!0,async:!0,contentType:"application/x-www-form-urlencoded; charset=UTF-8",accepts:{"*":be,text:"text/plain",html:"text/html",xml:"application/xml, text/xml",json:"application/json, text/javascript"},contents:{xml:/xml/,html:/html/,json:/json/},responseFields:{xml:"responseXML",text:"responseText",json:"responseJSON"},converters:{"* text":String,"text html":!0,"text json":Z.parseJSON,"text xml":Z.parseXML},flatOptions:{url:!0,context:!0}},ajaxSetup:function(t,e){return e?P(P(t,Z.ajaxSettings),e):P(Z.ajaxSettings,t)},ajaxPrefilter:q(ye),ajaxTransport:q(xe),ajax:function(t,e){function n(t,e,n,s){var u,l,m,y,b,_=e;2!==x&&(x=2,a&&clearTimeout(a),r=void 0,o=s||"",w.readyState=t>0?4:0,u=t>=200&&300>t||304===t,n&&(y=F(f,w,n)),y=$(f,y,w,u),u?(f.ifModified&&(b=w.getResponseHeader("Last-Modified"),b&&(Z.lastModified[i]=b),b=w.getResponseHeader("etag"),b&&(Z.etag[i]=b)),204===t||"HEAD"===f.type?_="nocontent":304===t?_="notmodified":(_=y.state,l=y.data,m=y.error,u=!m)):(m=_,(t||!_)&&(_="error",0>t&&(t=0))),w.status=t,w.statusText=(e||_)+"",u?p.resolveWith(h,[l,_,w]):p.rejectWith(h,[w,_,m]),w.statusCode(v),v=void 0,c&&d.trigger(u?"ajaxSuccess":"ajaxError",[w,f,u?l:m]),g.fireWith(h,[w,_]),c&&(d.trigger("ajaxComplete",[w,f]),--Z.active||Z.event.trigger("ajaxStop")))}"object"==typeof t&&(e=t,t=void 0),e=e||{};var r,i,o,s,a,u,c,l,f=Z.ajaxSetup({},e),h=f.context||f,d=f.context&&(h.nodeType||h.jquery)?Z(h):Z.event,p=Z.Deferred(),g=Z.Callbacks("once memory"),v=f.statusCode||{},m={},y={},x=0,b="canceled",w={readyState:0,getResponseHeader:function(t){var e;if(2===x){if(!s)for(s={};e=de.exec(o);)s[e[1].toLowerCase()]=e[2];e=s[t.toLowerCase()]}return null==e?null:e},getAllResponseHeaders:function(){return 2===x?o:null},setRequestHeader:function(t,e){var n=t.toLowerCase();return x||(t=y[n]=y[n]||t,m[t]=e),this},overrideMimeType:function(t){return x||(f.mimeType=t),this},statusCode:function(t){var e;if(t)if(2>x)for(e in t)v[e]=[v[e],t[e]];else w.always(t[w.status]);return this},abort:function(t){var e=t||b;return r&&r.abort(e),n(0,e),this}};if(p.promise(w).complete=g.add,w.success=w.done,w.error=w.fail,f.url=((t||f.url||we)+"").replace(fe,"").replace(ve,_e[1]+"//"),f.type=e.method||e.type||f.method||f.type,f.dataTypes=Z.trim(f.dataType||"*").toLowerCase().match(dt)||[""],null==f.crossDomain&&(u=me.exec(f.url.toLowerCase()),f.crossDomain=!(!u||u[1]===_e[1]&&u[2]===_e[2]&&(u[3]||("http:"===u[1]?"80":"443"))===(_e[3]||("http:"===_e[1]?"80":"443")))),f.data&&f.processData&&"string"!=typeof f.data&&(f.data=Z.param(f.data,f.traditional)),M(ye,f,e,w),2===x)return w;c=Z.event&&f.global,c&&0===Z.active++&&Z.event.trigger("ajaxStart"),f.type=f.type.toUpperCase(),f.hasContent=!ge.test(f.type),i=f.url,f.hasContent||(f.data&&(i=f.url+=(le.test(i)?"&":"?")+f.data,delete f.data),f.cache===!1&&(f.url=he.test(i)?i.replace(he,"$1_="+ce++):i+(le.test(i)?"&":"?")+"_="+ce++)),f.ifModified&&(Z.lastModified[i]&&w.setRequestHeader("If-Modified-Since",Z.lastModified[i]),Z.etag[i]&&w.setRequestHeader("If-None-Match",Z.etag[i])),(f.data&&f.hasContent&&f.contentType!==!1||e.contentType)&&w.setRequestHeader("Content-Type",f.contentType),w.setRequestHeader("Accept",f.dataTypes[0]&&f.accepts[f.dataTypes[0]]?f.accepts[f.dataTypes[0]]+("*"!==f.dataTypes[0]?", "+be+"; q=0.01":""):f.accepts["*"]);for(l in f.headers)w.setRequestHeader(l,f.headers[l]);if(f.beforeSend&&(f.beforeSend.call(h,w,f)===!1||2===x))return w.abort();b="abort";for(l in{success:1,error:1,complete:1})w[l](f[l]);if(r=M(xe,f,e,w)){w.readyState=1,c&&d.trigger("ajaxSend",[w,f]),f.async&&f.timeout>0&&(a=setTimeout(function(){w.abort("timeout")},f.timeout));try{x=1,r.send(m,n)}catch(_){if(!(2>x))throw _;n(-1,_)}}else n(-1,"No Transport");return w},getJSON:function(t,e,n){return Z.get(t,e,n,"json")},getScript:function(t,e){return Z.get(t,void 0,e,"script")}}),Z.each(["get","post"],function(t,e){Z[e]=function(t,n,r,i){return Z.isFunction(n)&&(i=i||r,r=n,n=void 0),Z.ajax({url:t,type:e,dataType:i,data:n,success:r})}}),Z._evalUrl=function(t){return Z.ajax({url:t,type:"GET",dataType:"script",async:!1,global:!1,"throws":!0})},Z.fn.extend({wrapAll:function(t){var e;return Z.isFunction(t)?this.each(function(e){Z(this).wrapAll(t.call(this,e))}):(this[0]&&(e=Z(t,this[0].ownerDocument).eq(0).clone(!0),this[0].parentNode&&e.insertBefore(this[0]),e.map(function(){for(var t=this;t.firstElementChild;)t=t.firstElementChild;return t}).append(this)),this)},wrapInner:function(t){return Z.isFunction(t)?this.each(function(e){Z(this).wrapInner(t.call(this,e))}):this.each(function(){var e=Z(this),n=e.contents();n.length?n.wrapAll(t):e.append(t)})},wrap:function(t){var e=Z.isFunction(t);return this.each(function(n){Z(this).wrapAll(e?t.call(this,n):t)})},unwrap:function(){return this.parent().each(function(){Z.nodeName(this,"body")||Z(this).replaceWith(this.childNodes)}).end()}}),Z.expr.filters.hidden=function(t){return t.offsetWidth<=0&&t.offsetHeight<=0},Z.expr.filters.visible=function(t){return!Z.expr.filters.hidden(t)};var ke=/%20/g,Te=/\[\]$/,Ee=/\r?\n/g,je=/^(?:submit|button|image|reset|file)$/i,Se=/^(?:input|select|textarea|keygen)/i;Z.param=function(t,e){var n,r=[],i=function(t,e){e=Z.isFunction(e)?e():null==e?"":e,
+r[r.length]=encodeURIComponent(t)+"="+encodeURIComponent(e)};if(void 0===e&&(e=Z.ajaxSettings&&Z.ajaxSettings.traditional),Z.isArray(t)||t.jquery&&!Z.isPlainObject(t))Z.each(t,function(){i(this.name,this.value)});else for(n in t)R(n,t[n],e,i);return r.join("&").replace(ke,"+")},Z.fn.extend({serialize:function(){return Z.param(this.serializeArray())},serializeArray:function(){return this.map(function(){var t=Z.prop(this,"elements");return t?Z.makeArray(t):this}).filter(function(){var t=this.type;return this.name&&!Z(this).is(":disabled")&&Se.test(this.nodeName)&&!je.test(t)&&(this.checked||!Tt.test(t))}).map(function(t,e){var n=Z(this).val();return null==n?null:Z.isArray(n)?Z.map(n,function(t){return{name:e.name,value:t.replace(Ee,"\r\n")}}):{name:e.name,value:n.replace(Ee,"\r\n")}}).get()}}),Z.ajaxSettings.xhr=function(){try{return new XMLHttpRequest}catch(t){}};var Ce=0,Ne={},Ae={0:200,1223:204},Oe=Z.ajaxSettings.xhr();t.attachEvent&&t.attachEvent("onunload",function(){for(var t in Ne)Ne[t]()}),G.cors=!!Oe&&"withCredentials"in Oe,G.ajax=Oe=!!Oe,Z.ajaxTransport(function(t){var e;return G.cors||Oe&&!t.crossDomain?{send:function(n,r){var i,o=t.xhr(),s=++Ce;if(o.open(t.type,t.url,t.async,t.username,t.password),t.xhrFields)for(i in t.xhrFields)o[i]=t.xhrFields[i];t.mimeType&&o.overrideMimeType&&o.overrideMimeType(t.mimeType),t.crossDomain||n["X-Requested-With"]||(n["X-Requested-With"]="XMLHttpRequest");for(i in n)o.setRequestHeader(i,n[i]);e=function(t){return function(){e&&(delete Ne[s],e=o.onload=o.onerror=null,"abort"===t?o.abort():"error"===t?r(o.status,o.statusText):r(Ae[o.status]||o.status,o.statusText,"string"==typeof o.responseText?{text:o.responseText}:void 0,o.getAllResponseHeaders()))}},o.onload=e(),o.onerror=e("error"),e=Ne[s]=e("abort");try{o.send(t.hasContent&&t.data||null)}catch(a){if(e)throw a}},abort:function(){e&&e()}}:void 0}),Z.ajaxSetup({accepts:{script:"text/javascript, application/javascript, application/ecmascript, application/x-ecmascript"},contents:{script:/(?:java|ecma)script/},converters:{"text script":function(t){return Z.globalEval(t),t}}}),Z.ajaxPrefilter("script",function(t){void 0===t.cache&&(t.cache=!1),t.crossDomain&&(t.type="GET")}),Z.ajaxTransport("script",function(t){if(t.crossDomain){var e,n;return{send:function(r,i){e=Z("<script>").prop({async:!0,charset:t.scriptCharset,src:t.url}).on("load error",n=function(t){e.remove(),n=null,t&&i("error"===t.type?404:200,t.type)}),Y.head.appendChild(e[0])},abort:function(){n&&n()}}}});var Ie=[],He=/(=)\?(?=&|$)|\?\?/;Z.ajaxSetup({jsonp:"callback",jsonpCallback:function(){var t=Ie.pop()||Z.expando+"_"+ce++;return this[t]=!0,t}}),Z.ajaxPrefilter("json jsonp",function(e,n,r){var i,o,s,a=e.jsonp!==!1&&(He.test(e.url)?"url":"string"==typeof e.data&&!(e.contentType||"").indexOf("application/x-www-form-urlencoded")&&He.test(e.data)&&"data");return a||"jsonp"===e.dataTypes[0]?(i=e.jsonpCallback=Z.isFunction(e.jsonpCallback)?e.jsonpCallback():e.jsonpCallback,a?e[a]=e[a].replace(He,"$1"+i):e.jsonp!==!1&&(e.url+=(le.test(e.url)?"&":"?")+e.jsonp+"="+i),e.converters["script json"]=function(){return s||Z.error(i+" was not called"),s[0]},e.dataTypes[0]="json",o=t[i],t[i]=function(){s=arguments},r.always(function(){t[i]=o,e[i]&&(e.jsonpCallback=n.jsonpCallback,Ie.push(i)),s&&Z.isFunction(o)&&o(s[0]),s=o=void 0}),"script"):void 0}),Z.parseHTML=function(t,e,n){if(!t||"string"!=typeof t)return null;"boolean"==typeof e&&(n=e,e=!1),e=e||Y;var r=st.exec(t),i=!n&&[];return r?[e.createElement(r[1])]:(r=Z.buildFragment([t],e,i),i&&i.length&&Z(i).remove(),Z.merge([],r.childNodes))};var De=Z.fn.load;Z.fn.load=function(t,e,n){if("string"!=typeof t&&De)return De.apply(this,arguments);var r,i,o,s=this,a=t.indexOf(" ");return a>=0&&(r=Z.trim(t.slice(a)),t=t.slice(0,a)),Z.isFunction(e)?(n=e,e=void 0):e&&"object"==typeof e&&(i="POST"),s.length>0&&Z.ajax({url:t,type:i,dataType:"html",data:e}).done(function(t){o=arguments,s.html(r?Z("<div>").append(Z.parseHTML(t)).find(r):t)}).complete(n&&function(t,e){s.each(n,o||[t.responseText,e,t])}),this},Z.each(["ajaxStart","ajaxStop","ajaxComplete","ajaxError","ajaxSuccess","ajaxSend"],function(t,e){Z.fn[e]=function(t){return this.on(e,t)}}),Z.expr.filters.animated=function(t){return Z.grep(Z.timers,function(e){return t===e.elem}).length};var qe=t.document.documentElement;Z.offset={setOffset:function(t,e,n){var r,i,o,s,a,u,c,l=Z.css(t,"position"),f=Z(t),h={};"static"===l&&(t.style.position="relative"),a=f.offset(),o=Z.css(t,"top"),u=Z.css(t,"left"),c=("absolute"===l||"fixed"===l)&&(o+u).indexOf("auto")>-1,c?(r=f.position(),s=r.top,i=r.left):(s=parseFloat(o)||0,i=parseFloat(u)||0),Z.isFunction(e)&&(e=e.call(t,n,a)),null!=e.top&&(h.top=e.top-a.top+s),null!=e.left&&(h.left=e.left-a.left+i),"using"in e?e.using.call(t,h):f.css(h)}},Z.fn.extend({offset:function(t){if(arguments.length)return void 0===t?this:this.each(function(e){Z.offset.setOffset(this,t,e)});var e,n,r=this[0],i={top:0,left:0},o=r&&r.ownerDocument;if(o)return e=o.documentElement,Z.contains(e,r)?(typeof r.getBoundingClientRect!==Et&&(i=r.getBoundingClientRect()),n=L(o),{top:i.top+n.pageYOffset-e.clientTop,left:i.left+n.pageXOffset-e.clientLeft}):i},position:function(){if(this[0]){var t,e,n=this[0],r={top:0,left:0};return"fixed"===Z.css(n,"position")?e=n.getBoundingClientRect():(t=this.offsetParent(),e=this.offset(),Z.nodeName(t[0],"html")||(r=t.offset()),r.top+=Z.css(t[0],"borderTopWidth",!0),r.left+=Z.css(t[0],"borderLeftWidth",!0)),{top:e.top-r.top-Z.css(n,"marginTop",!0),left:e.left-r.left-Z.css(n,"marginLeft",!0)}}},offsetParent:function(){return this.map(function(){for(var t=this.offsetParent||qe;t&&!Z.nodeName(t,"html")&&"static"===Z.css(t,"position");)t=t.offsetParent;return t||qe})}}),Z.each({scrollLeft:"pageXOffset",scrollTop:"pageYOffset"},function(e,n){var r="pageYOffset"===n;Z.fn[e]=function(i){return vt(this,function(e,i,o){var s=L(e);return void 0===o?s?s[n]:e[i]:void(s?s.scrollTo(r?t.pageXOffset:o,r?o:t.pageYOffset):e[i]=o)},e,i,arguments.length,null)}}),Z.each(["top","left"],function(t,e){Z.cssHooks[e]=_(G.pixelPosition,function(t,n){return n?(n=w(t,e),Bt.test(n)?Z(t).position()[e]+"px":n):void 0})}),Z.each({Height:"height",Width:"width"},function(t,e){Z.each({padding:"inner"+t,content:e,"":"outer"+t},function(n,r){Z.fn[r]=function(r,i){var o=arguments.length&&(n||"boolean"!=typeof r),s=n||(r===!0||i===!0?"margin":"border");return vt(this,function(e,n,r){var i;return Z.isWindow(e)?e.document.documentElement["client"+t]:9===e.nodeType?(i=e.documentElement,Math.max(e.body["scroll"+t],i["scroll"+t],e.body["offset"+t],i["offset"+t],i["client"+t])):void 0===r?Z.css(e,n,s):Z.style(e,n,r,s)},e,o?r:void 0,o,null)}})}),Z.fn.size=function(){return this.length},Z.fn.andSelf=Z.fn.addBack,"function"==typeof define&&define.amd&&define("jquery",[],function(){return Z});var Me=t.jQuery,Pe=t.$;return Z.noConflict=function(e){return t.$===Z&&(t.$=Pe),e&&t.jQuery===Z&&(t.jQuery=Me),Z},typeof e===Et&&(t.jQuery=t.$=Z),Z})}},"dist/jquery"),i.createPackage("vague-time",{"lib/vagueTime":function(t,e,n,r){!function(e){"use strict";function n(t){var e,n=r(t.units),o=Date.now(),s=i(t.from,n,o),u=i(t.to,n,o),c=s-u;return c>=0?e="past":(e="future",c=-c),a(c,e,t.lang)}function r(t){if("undefined"==typeof t)return"ms";if("s"===t||"ms"===t)return t;throw new Error("Invalid units")}function i(t,e,n){if("undefined"==typeof t)return n;if("string"==typeof t&&(t=parseInt(t,10)),o(t)&&s(t))throw new Error("Invalid time");return"number"==typeof t&&"s"===e&&(t*=1e3),t}function o(t){return"[object Date]"!==Object.prototype.toString.call(t)||isNaN(t.getTime())}function s(t){return"number"!=typeof t||isNaN(t)}function a(t,e,n){var r,i,o=l[n]||l[f];for(r in c)if(c.hasOwnProperty(r)&&t>=c[r])return i=Math.floor(t/c[r]),o[e](i,o[r][(i>1)+0]);return o.defaults[e]}function u(){"function"==typeof define&&define.amd?define(function(){return h}):"undefined"!=typeof t&&null!==t?t.exports=h:e.vagueTime=h}var c={year:315576e5,month:26298e5,week:6048e5,day:864e5,hour:36e5,minute:6e4},l={br:{year:["ano","anos"],month:["mês","meses"],week:["semana","semanas"],day:["dia","dias"],hour:["hora","horas"],minute:["minuto","minutos"],past:function(t,e){return t+" "+e+" atrás"},future:function(t,e){return"em "+t+" "+e},defaults:{past:"agora mesmo",future:"em breve"}},da:{year:["år","år"],month:["måned","måneder"],week:["uge","uger"],day:["dag","dage"],hour:["time","timer"],minute:["minut","minutter"],past:function(t,e){return t+" "+e+" siden"},future:function(t,e){return"om "+t+" "+e},defaults:{past:"lige nu",future:"snart"}},de:{year:["Jahr","Jahren"],month:["Monat","Monaten"],week:["Woche","Wochen"],day:["Tag","Tagen"],hour:["Stunde","Stunden"],minute:["Minute","Minuten"],past:function(t,e){return"vor "+t+" "+e},future:function(t,e){return"in "+t+" "+e},defaults:{past:"jetzt gerade",future:"bald"}},en:{year:["year","years"],month:["month","months"],week:["week","weeks"],day:["day","days"],hour:["hour","hours"],minute:["minute","minutes"],past:function(t,e){return t+" "+e+" ago"},future:function(t,e){return"in "+t+" "+e},defaults:{past:"just now",future:"soon"}},es:{year:["año","años"],month:["mes","meses"],week:["semana","semanas"],day:["día","días"],hour:["hora","horas"],minute:["minuto","minutos"],past:function(t,e){return"hace "+t+" "+e},future:function(t,e){return"en "+t+" "+e},defaults:{past:"recién",future:"dentro de poco"}},fr:{year:["an","ans"],month:["mois","mois"],week:["semaine","semaines"],day:["jour","jours"],hour:["heure","heures"],minute:["minute","minutes"],past:function(t,e){return"il y a "+t+" "+e},future:function(t,e){return"dans "+t+" "+e},defaults:{past:"tout de suite",future:"bientôt"}},jp:{year:["年","年"],month:["ヶ月","ヶ月"],week:["週間","週間"],day:["日","日"],hour:["時間","時間"],minute:["分","分"],past:function(t,e){return t+" "+e+"前"},future:function(t,e){return t+" "+e+"後"},defaults:{past:"今",future:"すぐに"}},ko:{year:["년","년"],month:["개월","개월"],week:["주","주"],day:["일","일"],hour:["시간","시간"],minute:["분","분"],past:function(t,e){return t+" "+e+" 전"},future:function(t,e){return t+" "+e+" 후"},defaults:{past:"지금",future:"곧"}},nl:{year:["jaar","jaar"],month:["maand","maanden"],week:["week","weken"],day:["dag","dagen"],hour:["uur","uur"],minute:["minuut","minuten"],past:function(t,e){return t+" "+e+" geleden"},future:function(t,e){return"over "+t+" "+e},defaults:{past:"juist nu",future:"binnenkort"}},zh:{year:["年","年"],month:["个月","个月"],week:["周","周"],day:["天","天"],hour:["小时","小时"],minute:["分钟","分钟"],past:function(t,e){return t+" "+e+" 之前"},future:function(t,e){return"in "+t+" "+e},defaults:{past:"刚刚",future:"马上"}}},f="en",h={get:n};u()}(this)}},"lib/vagueTime"),i.createPackage("underscore",{underscore:function(t,e,n,r){(function(){function n(t){function e(e,n,r,i,o,s){for(;o>=0&&s>o;o+=t){var a=i?i[o]:o;r=n(r,e[a],a,e)}return r}return function(n,r,i,o){r=w(r,o,4);var s=!C(n)&&b.keys(n),a=(s||n).length,u=t>0?0:a-1;return arguments.length<3&&(i=n[s?s[u]:u],u+=t),e(n,r,i,s,u,a)}}function r(t){return function(e,n,r){n=_(n,r);for(var i=S(e),o=t>0?0:i-1;o>=0&&i>o;o+=t)if(n(e[o],o,e))return o;return-1}}function i(t,e,n){return function(r,i,o){var s=0,a=S(r);if("number"==typeof o)t>0?s=o>=0?o:Math.max(o+a,s):a=o>=0?Math.min(o+1,a):o+a+1;else if(n&&o&&a)return o=n(r,i),r[o]===i?o:-1;if(i!==i)return o=e(h.call(r,s,a),b.isNaN),o>=0?o+s:-1;for(o=t>0?s:a-1;o>=0&&a>o;o+=t)if(r[o]===i)return o;return-1}}function o(t,e){var n=H.length,r=t.constructor,i=b.isFunction(r)&&r.prototype||c,o="constructor";for(b.has(t,o)&&!b.contains(e,o)&&e.push(o);n--;)o=H[n],o in t&&t[o]!==i[o]&&!b.contains(e,o)&&e.push(o)}var s=this,a=s._,u=Array.prototype,c=Object.prototype,l=Function.prototype,f=u.push,h=u.slice,d=c.toString,p=c.hasOwnProperty,g=Array.isArray,v=Object.keys,m=l.bind,y=Object.create,x=function(){},b=function(t){return t instanceof b?t:this instanceof b?void(this._wrapped=t):new b(t)};"undefined"!=typeof e?("undefined"!=typeof t&&t.exports&&(e=t.exports=b),e._=b):s._=b,b.VERSION="1.8.3";var w=function(t,e,n){if(void 0===e)return t;switch(null==n?3:n){case 1:return function(n){return t.call(e,n)};case 2:return function(n,r){return t.call(e,n,r)};case 3:return function(n,r,i){return t.call(e,n,r,i)};case 4:return function(n,r,i,o){return t.call(e,n,r,i,o)}}return function(){return t.apply(e,arguments)}},_=function(t,e,n){return null==t?b.identity:b.isFunction(t)?w(t,e,n):b.isObject(t)?b.matcher(t):b.property(t)};b.iteratee=function(t,e){return _(t,e,1/0)};var k=function(t,e){return function(n){var r=arguments.length;if(2>r||null==n)return n;for(var i=1;r>i;i++)for(var o=arguments[i],s=t(o),a=s.length,u=0;a>u;u++){var c=s[u];e&&void 0!==n[c]||(n[c]=o[c])}return n}},T=function(t){if(!b.isObject(t))return{};if(y)return y(t);x.prototype=t;var e=new x;return x.prototype=null,e},E=function(t){return function(e){return null==e?void 0:e[t]}},j=Math.pow(2,53)-1,S=E("length"),C=function(t){var e=S(t);return"number"==typeof e&&e>=0&&j>=e};b.each=b.forEach=function(t,e,n){e=w(e,n);var r,i;if(C(t))for(r=0,i=t.length;i>r;r++)e(t[r],r,t);else{var o=b.keys(t);for(r=0,i=o.length;i>r;r++)e(t[o[r]],o[r],t)}return t},b.map=b.collect=function(t,e,n){e=_(e,n);for(var r=!C(t)&&b.keys(t),i=(r||t).length,o=Array(i),s=0;i>s;s++){var a=r?r[s]:s;o[s]=e(t[a],a,t)}return o},b.reduce=b.foldl=b.inject=n(1),b.reduceRight=b.foldr=n(-1),b.find=b.detect=function(t,e,n){var r;return r=C(t)?b.findIndex(t,e,n):b.findKey(t,e,n),void 0!==r&&-1!==r?t[r]:void 0},b.filter=b.select=function(t,e,n){var r=[];return e=_(e,n),b.each(t,function(t,n,i){e(t,n,i)&&r.push(t)}),r},b.reject=function(t,e,n){return b.filter(t,b.negate(_(e)),n)},b.every=b.all=function(t,e,n){e=_(e,n);for(var r=!C(t)&&b.keys(t),i=(r||t).length,o=0;i>o;o++){var s=r?r[o]:o;if(!e(t[s],s,t))return!1}return!0},b.some=b.any=function(t,e,n){e=_(e,n);for(var r=!C(t)&&b.keys(t),i=(r||t).length,o=0;i>o;o++){var s=r?r[o]:o;if(e(t[s],s,t))return!0}return!1},b.contains=b.includes=b.include=function(t,e,n,r){return C(t)||(t=b.values(t)),("number"!=typeof n||r)&&(n=0),b.indexOf(t,e,n)>=0},b.invoke=function(t,e){var n=h.call(arguments,2),r=b.isFunction(e);return b.map(t,function(t){var i=r?e:t[e];return null==i?i:i.apply(t,n)})},b.pluck=function(t,e){return b.map(t,b.property(e))},b.where=function(t,e){return b.filter(t,b.matcher(e))},b.findWhere=function(t,e){return b.find(t,b.matcher(e))},b.max=function(t,e,n){var r,i,o=-(1/0),s=-(1/0);if(null==e&&null!=t){t=C(t)?t:b.values(t);for(var a=0,u=t.length;u>a;a++)r=t[a],r>o&&(o=r)}else e=_(e,n),b.each(t,function(t,n,r){i=e(t,n,r),(i>s||i===-(1/0)&&o===-(1/0))&&(o=t,s=i)});return o},b.min=function(t,e,n){var r,i,o=1/0,s=1/0;if(null==e&&null!=t){t=C(t)?t:b.values(t);for(var a=0,u=t.length;u>a;a++)r=t[a],o>r&&(o=r)}else e=_(e,n),b.each(t,function(t,n,r){i=e(t,n,r),(s>i||i===1/0&&o===1/0)&&(o=t,s=i)});return o},b.shuffle=function(t){for(var e,n=C(t)?t:b.values(t),r=n.length,i=Array(r),o=0;r>o;o++)e=b.random(0,o),e!==o&&(i[o]=i[e]),i[e]=n[o];return i},b.sample=function(t,e,n){return null==e||n?(C(t)||(t=b.values(t)),t[b.random(t.length-1)]):b.shuffle(t).slice(0,Math.max(0,e))},b.sortBy=function(t,e,n){return e=_(e,n),b.pluck(b.map(t,function(t,n,r){return{value:t,index:n,criteria:e(t,n,r)}}).sort(function(t,e){var n=t.criteria,r=e.criteria;if(n!==r){if(n>r||void 0===n)return 1;if(r>n||void 0===r)return-1}return t.index-e.index}),"value")};var N=function(t){return function(e,n,r){var i={};return n=_(n,r),b.each(e,function(r,o){var s=n(r,o,e);t(i,r,s)}),i}};b.groupBy=N(function(t,e,n){b.has(t,n)?t[n].push(e):t[n]=[e]}),b.indexBy=N(function(t,e,n){t[n]=e}),b.countBy=N(function(t,e,n){b.has(t,n)?t[n]++:t[n]=1}),b.toArray=function(t){return t?b.isArray(t)?h.call(t):C(t)?b.map(t,b.identity):b.values(t):[]},b.size=function(t){return null==t?0:C(t)?t.length:b.keys(t).length},b.partition=function(t,e,n){e=_(e,n);var r=[],i=[];return b.each(t,function(t,n,o){(e(t,n,o)?r:i).push(t)}),[r,i]},b.first=b.head=b.take=function(t,e,n){return null!=t?null==e||n?t[0]:b.initial(t,t.length-e):void 0},b.initial=function(t,e,n){return h.call(t,0,Math.max(0,t.length-(null==e||n?1:e)))},b.last=function(t,e,n){return null!=t?null==e||n?t[t.length-1]:b.rest(t,Math.max(0,t.length-e)):void 0},b.rest=b.tail=b.drop=function(t,e,n){return h.call(t,null==e||n?1:e)},b.compact=function(t){return b.filter(t,b.identity)};var A=function(t,e,n,r){for(var i=[],o=0,s=r||0,a=S(t);a>s;s++){var u=t[s];if(C(u)&&(b.isArray(u)||b.isArguments(u))){e||(u=A(u,e,n));var c=0,l=u.length;for(i.length+=l;l>c;)i[o++]=u[c++]}else n||(i[o++]=u)}return i};b.flatten=function(t,e){return A(t,e,!1)},b.without=function(t){return b.difference(t,h.call(arguments,1))},b.uniq=b.unique=function(t,e,n,r){b.isBoolean(e)||(r=n,n=e,e=!1),null!=n&&(n=_(n,r));for(var i=[],o=[],s=0,a=S(t);a>s;s++){var u=t[s],c=n?n(u,s,t):u;e?(s&&o===c||i.push(u),o=c):n?b.contains(o,c)||(o.push(c),i.push(u)):b.contains(i,u)||i.push(u)}return i},b.union=function(){return b.uniq(A(arguments,!0,!0))},b.intersection=function(t){for(var e=[],n=arguments.length,r=0,i=S(t);i>r;r++){var o=t[r];if(!b.contains(e,o)){for(var s=1;n>s&&b.contains(arguments[s],o);s++);s===n&&e.push(o)}}return e},b.difference=function(t){var e=A(arguments,!0,!0,1);return b.filter(t,function(t){return!b.contains(e,t)})},b.zip=function(){return b.unzip(arguments)},b.unzip=function(t){for(var e=t&&b.max(t,S).length||0,n=Array(e),r=0;e>r;r++)n[r]=b.pluck(t,r);return n},b.object=function(t,e){for(var n={},r=0,i=S(t);i>r;r++)e?n[t[r]]=e[r]:n[t[r][0]]=t[r][1];return n},b.findIndex=r(1),b.findLastIndex=r(-1),b.sortedIndex=function(t,e,n,r){n=_(n,r,1);for(var i=n(e),o=0,s=S(t);s>o;){var a=Math.floor((o+s)/2);n(t[a])<i?o=a+1:s=a}return o},b.indexOf=i(1,b.findIndex,b.sortedIndex),b.lastIndexOf=i(-1,b.findLastIndex),b.range=function(t,e,n){null==e&&(e=t||0,t=0),n=n||1;for(var r=Math.max(Math.ceil((e-t)/n),0),i=Array(r),o=0;r>o;o++,t+=n)i[o]=t;return i};var O=function(t,e,n,r,i){if(!(r instanceof e))return t.apply(n,i);var o=T(t.prototype),s=t.apply(o,i);return b.isObject(s)?s:o};b.bind=function(t,e){if(m&&t.bind===m)return m.apply(t,h.call(arguments,1));if(!b.isFunction(t))throw new TypeError("Bind must be called on a function");var n=h.call(arguments,2),r=function(){return O(t,r,e,this,n.concat(h.call(arguments)))};return r},b.partial=function(t){var e=h.call(arguments,1),n=function(){for(var r=0,i=e.length,o=Array(i),s=0;i>s;s++)o[s]=e[s]===b?arguments[r++]:e[s];for(;r<arguments.length;)o.push(arguments[r++]);return O(t,n,this,this,o)};return n},b.bindAll=function(t){var e,n,r=arguments.length;if(1>=r)throw new Error("bindAll must be passed function names");for(e=1;r>e;e++)n=arguments[e],t[n]=b.bind(t[n],t);return t},b.memoize=function(t,e){var n=function(r){var i=n.cache,o=""+(e?e.apply(this,arguments):r);return b.has(i,o)||(i[o]=t.apply(this,arguments)),i[o]};return n.cache={},n},b.delay=function(t,e){var n=h.call(arguments,2);return setTimeout(function(){return t.apply(null,n)},e)},b.defer=b.partial(b.delay,b,1),b.throttle=function(t,e,n){var r,i,o,s=null,a=0;n||(n={});var u=function(){a=n.leading===!1?0:b.now(),s=null,o=t.apply(r,i),s||(r=i=null)};return function(){var c=b.now();a||n.leading!==!1||(a=c);var l=e-(c-a);return r=this,i=arguments,0>=l||l>e?(s&&(clearTimeout(s),s=null),a=c,o=t.apply(r,i),s||(r=i=null)):s||n.trailing===!1||(s=setTimeout(u,l)),o}},b.debounce=function(t,e,n){var r,i,o,s,a,u=function(){var c=b.now()-s;e>c&&c>=0?r=setTimeout(u,e-c):(r=null,n||(a=t.apply(o,i),r||(o=i=null)))};return function(){o=this,i=arguments,s=b.now();var c=n&&!r;return r||(r=setTimeout(u,e)),c&&(a=t.apply(o,i),o=i=null),a}},b.wrap=function(t,e){return b.partial(e,t)},b.negate=function(t){return function(){return!t.apply(this,arguments)}},b.compose=function(){var t=arguments,e=t.length-1;return function(){for(var n=e,r=t[e].apply(this,arguments);n--;)r=t[n].call(this,r);return r}},b.after=function(t,e){return function(){return--t<1?e.apply(this,arguments):void 0}},b.before=function(t,e){var n;return function(){return--t>0&&(n=e.apply(this,arguments)),1>=t&&(e=null),n}},b.once=b.partial(b.before,2);var I=!{toString:null}.propertyIsEnumerable("toString"),H=["valueOf","isPrototypeOf","toString","propertyIsEnumerable","hasOwnProperty","toLocaleString"];b.keys=function(t){if(!b.isObject(t))return[];if(v)return v(t);var e=[];for(var n in t)b.has(t,n)&&e.push(n);return I&&o(t,e),e},b.allKeys=function(t){if(!b.isObject(t))return[];var e=[];for(var n in t)e.push(n);return I&&o(t,e),e},b.values=function(t){for(var e=b.keys(t),n=e.length,r=Array(n),i=0;n>i;i++)r[i]=t[e[i]];return r},b.mapObject=function(t,e,n){e=_(e,n);for(var r,i=b.keys(t),o=i.length,s={},a=0;o>a;a++)r=i[a],s[r]=e(t[r],r,t);return s},b.pairs=function(t){for(var e=b.keys(t),n=e.length,r=Array(n),i=0;n>i;i++)r[i]=[e[i],t[e[i]]];return r},b.invert=function(t){for(var e={},n=b.keys(t),r=0,i=n.length;i>r;r++)e[t[n[r]]]=n[r];return e},b.functions=b.methods=function(t){var e=[];for(var n in t)b.isFunction(t[n])&&e.push(n);return e.sort()},b.extend=k(b.allKeys),b.extendOwn=b.assign=k(b.keys),b.findKey=function(t,e,n){e=_(e,n);for(var r,i=b.keys(t),o=0,s=i.length;s>o;o++)if(r=i[o],e(t[r],r,t))return r},b.pick=function(t,e,n){var r,i,o={},s=t;if(null==s)return o;b.isFunction(e)?(i=b.allKeys(s),r=w(e,n)):(i=A(arguments,!1,!1,1),r=function(t,e,n){return e in n},s=Object(s));for(var a=0,u=i.length;u>a;a++){var c=i[a],l=s[c];r(l,c,s)&&(o[c]=l)}return o},b.omit=function(t,e,n){if(b.isFunction(e))e=b.negate(e);else{var r=b.map(A(arguments,!1,!1,1),String);e=function(t,e){return!b.contains(r,e)}}return b.pick(t,e,n)},b.defaults=k(b.allKeys,!0),b.create=function(t,e){var n=T(t);return e&&b.extendOwn(n,e),n},b.clone=function(t){return b.isObject(t)?b.isArray(t)?t.slice():b.extend({},t):t},b.tap=function(t,e){return e(t),t},b.isMatch=function(t,e){var n=b.keys(e),r=n.length;if(null==t)return!r;for(var i=Object(t),o=0;r>o;o++){var s=n[o];if(e[s]!==i[s]||!(s in i))return!1}return!0};var D=function(t,e,n,r){if(t===e)return 0!==t||1/t===1/e;if(null==t||null==e)return t===e;t instanceof b&&(t=t._wrapped),e instanceof b&&(e=e._wrapped);var i=d.call(t);if(i!==d.call(e))return!1;switch(i){case"[object RegExp]":case"[object String]":return""+t==""+e;case"[object Number]":return+t!==+t?+e!==+e:0===+t?1/+t===1/e:+t===+e;case"[object Date]":case"[object Boolean]":return+t===+e}var o="[object Array]"===i;if(!o){if("object"!=typeof t||"object"!=typeof e)return!1;var s=t.constructor,a=e.constructor;if(s!==a&&!(b.isFunction(s)&&s instanceof s&&b.isFunction(a)&&a instanceof a)&&"constructor"in t&&"constructor"in e)return!1}n=n||[],r=r||[];for(var u=n.length;u--;)if(n[u]===t)return r[u]===e;if(n.push(t),r.push(e),o){if(u=t.length,u!==e.length)return!1;for(;u--;)if(!D(t[u],e[u],n,r))return!1}else{var c,l=b.keys(t);if(u=l.length,b.keys(e).length!==u)return!1;for(;u--;)if(c=l[u],!b.has(e,c)||!D(t[c],e[c],n,r))return!1}return n.pop(),r.pop(),!0};b.isEqual=function(t,e){return D(t,e)},b.isEmpty=function(t){return null==t?!0:C(t)&&(b.isArray(t)||b.isString(t)||b.isArguments(t))?0===t.length:0===b.keys(t).length},b.isElement=function(t){return!(!t||1!==t.nodeType)},b.isArray=g||function(t){return"[object Array]"===d.call(t)},b.isObject=function(t){var e=typeof t;return"function"===e||"object"===e&&!!t},b.each(["Arguments","Function","String","Number","Date","RegExp","Error"],function(t){b["is"+t]=function(e){return d.call(e)==="[object "+t+"]"}}),b.isArguments(arguments)||(b.isArguments=function(t){return b.has(t,"callee")}),"function"!=typeof/./&&"object"!=typeof Int8Array&&(b.isFunction=function(t){return"function"==typeof t||!1}),b.isFinite=function(t){return isFinite(t)&&!isNaN(parseFloat(t))},b.isNaN=function(t){return b.isNumber(t)&&t!==+t},b.isBoolean=function(t){return t===!0||t===!1||"[object Boolean]"===d.call(t)},b.isNull=function(t){return null===t},b.isUndefined=function(t){return void 0===t},b.has=function(t,e){return null!=t&&p.call(t,e)},b.noConflict=function(){return s._=a,this},b.identity=function(t){return t},b.constant=function(t){return function(){return t}},b.noop=function(){},b.property=E,b.propertyOf=function(t){return null==t?function(){}:function(e){return t[e]}},b.matcher=b.matches=function(t){return t=b.extendOwn({},t),function(e){return b.isMatch(e,t)}},b.times=function(t,e,n){var r=Array(Math.max(0,t));e=w(e,n,1);for(var i=0;t>i;i++)r[i]=e(i);return r},b.random=function(t,e){return null==e&&(e=t,t=0),t+Math.floor(Math.random()*(e-t+1))},b.now=Date.now||function(){return(new Date).getTime()};var q={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#x27;","`":"&#x60;"},M=b.invert(q),P=function(t){var e=function(e){return t[e]},n="(?:"+b.keys(t).join("|")+")",r=RegExp(n),i=RegExp(n,"g");return function(t){return t=null==t?"":""+t,r.test(t)?t.replace(i,e):t}};b.escape=P(q),b.unescape=P(M),b.result=function(t,e,n){var r=null==t?void 0:t[e];return void 0===r&&(r=n),b.isFunction(r)?r.call(t):r};var F=0;b.uniqueId=function(t){var e=++F+"";return t?t+e:e},b.templateSettings={evaluate:/<%([\s\S]+?)%>/g,interpolate:/<%=([\s\S]+?)%>/g,escape:/<%-([\s\S]+?)%>/g};var $=/(.)^/,R={"'":"'","\\":"\\","\r":"r","\n":"n","\u2028":"u2028","\u2029":"u2029"},L=/\\|'|\r|\n|\u2028|\u2029/g,B=function(t){return"\\"+R[t]};b.template=function(t,e,n){!e&&n&&(e=n),e=b.defaults({},e,b.templateSettings);var r=RegExp([(e.escape||$).source,(e.interpolate||$).source,(e.evaluate||$).source].join("|")+"|$","g"),i=0,o="__p+='";t.replace(r,function(e,n,r,s,a){return o+=t.slice(i,a).replace(L,B),i=a+e.length,n?o+="'+\n((__t=("+n+"))==null?'':_.escape(__t))+\n'":r?o+="'+\n((__t=("+r+"))==null?'':__t)+\n'":s&&(o+="';\n"+s+"\n__p+='"),e}),o+="';\n",e.variable||(o="with(obj||{}){\n"+o+"}\n"),o="var __t,__p='',__j=Array.prototype.join,print=function(){__p+=__j.call(arguments,'');};\n"+o+"return __p;\n";try{var s=new Function(e.variable||"obj","_",o)}catch(a){throw a.source=o,a}var u=function(t){return s.call(this,t,b)},c=e.variable||"obj";return u.source="function("+c+"){\n"+o+"}",u},b.chain=function(t){var e=b(t);return e._chain=!0,e};var W=function(t,e){return t._chain?b(e).chain():e};b.mixin=function(t){b.each(b.functions(t),function(e){var n=b[e]=t[e];b.prototype[e]=function(){var t=[this._wrapped];return f.apply(t,arguments),W(this,n.apply(b,t))}})},b.mixin(b),b.each(["pop","push","reverse","shift","sort","splice","unshift"],function(t){var e=u[t];b.prototype[t]=function(){var n=this._wrapped;return e.apply(n,arguments),"shift"!==t&&"splice"!==t||0!==n.length||delete n[0],W(this,n)}}),b.each(["concat","join","slice"],function(t){var e=u[t];b.prototype[t]=function(){return W(this,e.apply(this._wrapped,arguments))}}),b.prototype.value=function(){return this._wrapped},b.prototype.valueOf=b.prototype.toJSON=b.prototype.value,b.prototype.toString=function(){return""+this._wrapped},"function"==typeof define&&define.amd&&define("underscore",[],function(){return b})}).call(this)},"underscore-min":function(t,e,n,r){(function(){function n(t){function e(e,n,r,i,o,s){for(;o>=0&&s>o;o+=t){var a=i?i[o]:o;r=n(r,e[a],a,e)}return r}return function(n,r,i,o){r=w(r,o,4);var s=!C(n)&&b.keys(n),a=(s||n).length,u=t>0?0:a-1;return arguments.length<3&&(i=n[s?s[u]:u],u+=t),e(n,r,i,s,u,a)}}function r(t){return function(e,n,r){n=_(n,r);for(var i=S(e),o=t>0?0:i-1;o>=0&&i>o;o+=t)if(n(e[o],o,e))return o;return-1}}function i(t,e,n){return function(r,i,o){var s=0,a=S(r);if("number"==typeof o)t>0?s=o>=0?o:Math.max(o+a,s):a=o>=0?Math.min(o+1,a):o+a+1;else if(n&&o&&a)return o=n(r,i),r[o]===i?o:-1;if(i!==i)return o=e(h.call(r,s,a),b.isNaN),o>=0?o+s:-1;for(o=t>0?s:a-1;o>=0&&a>o;o+=t)if(r[o]===i)return o;return-1}}function o(t,e){var n=H.length,r=t.constructor,i=b.isFunction(r)&&r.prototype||c,o="constructor";for(b.has(t,o)&&!b.contains(e,o)&&e.push(o);n--;)o=H[n],o in t&&t[o]!==i[o]&&!b.contains(e,o)&&e.push(o)}var s=this,a=s._,u=Array.prototype,c=Object.prototype,l=Function.prototype,f=u.push,h=u.slice,d=c.toString,p=c.hasOwnProperty,g=Array.isArray,v=Object.keys,m=l.bind,y=Object.create,x=function(){},b=function(t){return t instanceof b?t:this instanceof b?void(this._wrapped=t):new b(t)};"undefined"!=typeof e?("undefined"!=typeof t&&t.exports&&(e=t.exports=b),e._=b):s._=b,b.VERSION="1.8.3";var w=function(t,e,n){if(void 0===e)return t;switch(null==n?3:n){case 1:return function(n){return t.call(e,n)};case 2:return function(n,r){return t.call(e,n,r)};case 3:return function(n,r,i){return t.call(e,n,r,i)};case 4:return function(n,r,i,o){return t.call(e,n,r,i,o)}}return function(){return t.apply(e,arguments)}},_=function(t,e,n){return null==t?b.identity:b.isFunction(t)?w(t,e,n):b.isObject(t)?b.matcher(t):b.property(t)};b.iteratee=function(t,e){return _(t,e,1/0)};var k=function(t,e){return function(n){var r=arguments.length;if(2>r||null==n)return n;for(var i=1;r>i;i++)for(var o=arguments[i],s=t(o),a=s.length,u=0;a>u;u++){var c=s[u];e&&void 0!==n[c]||(n[c]=o[c])}return n}},T=function(t){if(!b.isObject(t))return{};if(y)return y(t);x.prototype=t;var e=new x;return x.prototype=null,e},E=function(t){return function(e){return null==e?void 0:e[t]}},j=Math.pow(2,53)-1,S=E("length"),C=function(t){var e=S(t);return"number"==typeof e&&e>=0&&j>=e};b.each=b.forEach=function(t,e,n){e=w(e,n);var r,i;if(C(t))for(r=0,i=t.length;i>r;r++)e(t[r],r,t);else{var o=b.keys(t);for(r=0,i=o.length;i>r;r++)e(t[o[r]],o[r],t)}return t},b.map=b.collect=function(t,e,n){e=_(e,n);for(var r=!C(t)&&b.keys(t),i=(r||t).length,o=Array(i),s=0;i>s;s++){var a=r?r[s]:s;o[s]=e(t[a],a,t)}return o},b.reduce=b.foldl=b.inject=n(1),b.reduceRight=b.foldr=n(-1),b.find=b.detect=function(t,e,n){var r;return r=C(t)?b.findIndex(t,e,n):b.findKey(t,e,n),void 0!==r&&-1!==r?t[r]:void 0},b.filter=b.select=function(t,e,n){var r=[];return e=_(e,n),b.each(t,function(t,n,i){e(t,n,i)&&r.push(t)}),r},b.reject=function(t,e,n){return b.filter(t,b.negate(_(e)),n)},b.every=b.all=function(t,e,n){e=_(e,n);for(var r=!C(t)&&b.keys(t),i=(r||t).length,o=0;i>o;o++){var s=r?r[o]:o;if(!e(t[s],s,t))return!1}return!0},b.some=b.any=function(t,e,n){e=_(e,n);for(var r=!C(t)&&b.keys(t),i=(r||t).length,o=0;i>o;o++){var s=r?r[o]:o;if(e(t[s],s,t))return!0}return!1},b.contains=b.includes=b.include=function(t,e,n,r){return C(t)||(t=b.values(t)),("number"!=typeof n||r)&&(n=0),b.indexOf(t,e,n)>=0},b.invoke=function(t,e){var n=h.call(arguments,2),r=b.isFunction(e);return b.map(t,function(t){var i=r?e:t[e];return null==i?i:i.apply(t,n)})},b.pluck=function(t,e){return b.map(t,b.property(e))},b.where=function(t,e){return b.filter(t,b.matcher(e))},b.findWhere=function(t,e){return b.find(t,b.matcher(e))},b.max=function(t,e,n){var r,i,o=-1/0,s=-1/0;if(null==e&&null!=t){t=C(t)?t:b.values(t);for(var a=0,u=t.length;u>a;a++)r=t[a],r>o&&(o=r)}else e=_(e,n),b.each(t,function(t,n,r){i=e(t,n,r),(i>s||i===-1/0&&o===-1/0)&&(o=t,s=i)});return o},b.min=function(t,e,n){var r,i,o=1/0,s=1/0;if(null==e&&null!=t){t=C(t)?t:b.values(t);for(var a=0,u=t.length;u>a;a++)r=t[a],o>r&&(o=r)}else e=_(e,n),b.each(t,function(t,n,r){i=e(t,n,r),(s>i||1/0===i&&1/0===o)&&(o=t,s=i)});return o},b.shuffle=function(t){for(var e,n=C(t)?t:b.values(t),r=n.length,i=Array(r),o=0;r>o;o++)e=b.random(0,o),e!==o&&(i[o]=i[e]),i[e]=n[o];return i},b.sample=function(t,e,n){return null==e||n?(C(t)||(t=b.values(t)),t[b.random(t.length-1)]):b.shuffle(t).slice(0,Math.max(0,e))},b.sortBy=function(t,e,n){return e=_(e,n),b.pluck(b.map(t,function(t,n,r){return{value:t,index:n,criteria:e(t,n,r)}}).sort(function(t,e){var n=t.criteria,r=e.criteria;if(n!==r){if(n>r||void 0===n)return 1;if(r>n||void 0===r)return-1}return t.index-e.index}),"value")};var N=function(t){return function(e,n,r){var i={};return n=_(n,r),b.each(e,function(r,o){var s=n(r,o,e);t(i,r,s)}),i}};b.groupBy=N(function(t,e,n){b.has(t,n)?t[n].push(e):t[n]=[e]}),b.indexBy=N(function(t,e,n){t[n]=e}),b.countBy=N(function(t,e,n){b.has(t,n)?t[n]++:t[n]=1}),b.toArray=function(t){return t?b.isArray(t)?h.call(t):C(t)?b.map(t,b.identity):b.values(t):[]},b.size=function(t){return null==t?0:C(t)?t.length:b.keys(t).length},b.partition=function(t,e,n){
+e=_(e,n);var r=[],i=[];return b.each(t,function(t,n,o){(e(t,n,o)?r:i).push(t)}),[r,i]},b.first=b.head=b.take=function(t,e,n){return null==t?void 0:null==e||n?t[0]:b.initial(t,t.length-e)},b.initial=function(t,e,n){return h.call(t,0,Math.max(0,t.length-(null==e||n?1:e)))},b.last=function(t,e,n){return null==t?void 0:null==e||n?t[t.length-1]:b.rest(t,Math.max(0,t.length-e))},b.rest=b.tail=b.drop=function(t,e,n){return h.call(t,null==e||n?1:e)},b.compact=function(t){return b.filter(t,b.identity)};var A=function(t,e,n,r){for(var i=[],o=0,s=r||0,a=S(t);a>s;s++){var u=t[s];if(C(u)&&(b.isArray(u)||b.isArguments(u))){e||(u=A(u,e,n));var c=0,l=u.length;for(i.length+=l;l>c;)i[o++]=u[c++]}else n||(i[o++]=u)}return i};b.flatten=function(t,e){return A(t,e,!1)},b.without=function(t){return b.difference(t,h.call(arguments,1))},b.uniq=b.unique=function(t,e,n,r){b.isBoolean(e)||(r=n,n=e,e=!1),null!=n&&(n=_(n,r));for(var i=[],o=[],s=0,a=S(t);a>s;s++){var u=t[s],c=n?n(u,s,t):u;e?(s&&o===c||i.push(u),o=c):n?b.contains(o,c)||(o.push(c),i.push(u)):b.contains(i,u)||i.push(u)}return i},b.union=function(){return b.uniq(A(arguments,!0,!0))},b.intersection=function(t){for(var e=[],n=arguments.length,r=0,i=S(t);i>r;r++){var o=t[r];if(!b.contains(e,o)){for(var s=1;n>s&&b.contains(arguments[s],o);s++);s===n&&e.push(o)}}return e},b.difference=function(t){var e=A(arguments,!0,!0,1);return b.filter(t,function(t){return!b.contains(e,t)})},b.zip=function(){return b.unzip(arguments)},b.unzip=function(t){for(var e=t&&b.max(t,S).length||0,n=Array(e),r=0;e>r;r++)n[r]=b.pluck(t,r);return n},b.object=function(t,e){for(var n={},r=0,i=S(t);i>r;r++)e?n[t[r]]=e[r]:n[t[r][0]]=t[r][1];return n},b.findIndex=r(1),b.findLastIndex=r(-1),b.sortedIndex=function(t,e,n,r){n=_(n,r,1);for(var i=n(e),o=0,s=S(t);s>o;){var a=Math.floor((o+s)/2);n(t[a])<i?o=a+1:s=a}return o},b.indexOf=i(1,b.findIndex,b.sortedIndex),b.lastIndexOf=i(-1,b.findLastIndex),b.range=function(t,e,n){null==e&&(e=t||0,t=0),n=n||1;for(var r=Math.max(Math.ceil((e-t)/n),0),i=Array(r),o=0;r>o;o++,t+=n)i[o]=t;return i};var O=function(t,e,n,r,i){if(!(r instanceof e))return t.apply(n,i);var o=T(t.prototype),s=t.apply(o,i);return b.isObject(s)?s:o};b.bind=function(t,e){if(m&&t.bind===m)return m.apply(t,h.call(arguments,1));if(!b.isFunction(t))throw new TypeError("Bind must be called on a function");var n=h.call(arguments,2),r=function(){return O(t,r,e,this,n.concat(h.call(arguments)))};return r},b.partial=function(t){var e=h.call(arguments,1),n=function(){for(var r=0,i=e.length,o=Array(i),s=0;i>s;s++)o[s]=e[s]===b?arguments[r++]:e[s];for(;r<arguments.length;)o.push(arguments[r++]);return O(t,n,this,this,o)};return n},b.bindAll=function(t){var e,n,r=arguments.length;if(1>=r)throw new Error("bindAll must be passed function names");for(e=1;r>e;e++)n=arguments[e],t[n]=b.bind(t[n],t);return t},b.memoize=function(t,e){var n=function(r){var i=n.cache,o=""+(e?e.apply(this,arguments):r);return b.has(i,o)||(i[o]=t.apply(this,arguments)),i[o]};return n.cache={},n},b.delay=function(t,e){var n=h.call(arguments,2);return setTimeout(function(){return t.apply(null,n)},e)},b.defer=b.partial(b.delay,b,1),b.throttle=function(t,e,n){var r,i,o,s=null,a=0;n||(n={});var u=function(){a=n.leading===!1?0:b.now(),s=null,o=t.apply(r,i),s||(r=i=null)};return function(){var c=b.now();a||n.leading!==!1||(a=c);var l=e-(c-a);return r=this,i=arguments,0>=l||l>e?(s&&(clearTimeout(s),s=null),a=c,o=t.apply(r,i),s||(r=i=null)):s||n.trailing===!1||(s=setTimeout(u,l)),o}},b.debounce=function(t,e,n){var r,i,o,s,a,u=function(){var c=b.now()-s;e>c&&c>=0?r=setTimeout(u,e-c):(r=null,n||(a=t.apply(o,i),r||(o=i=null)))};return function(){o=this,i=arguments,s=b.now();var c=n&&!r;return r||(r=setTimeout(u,e)),c&&(a=t.apply(o,i),o=i=null),a}},b.wrap=function(t,e){return b.partial(e,t)},b.negate=function(t){return function(){return!t.apply(this,arguments)}},b.compose=function(){var t=arguments,e=t.length-1;return function(){for(var n=e,r=t[e].apply(this,arguments);n--;)r=t[n].call(this,r);return r}},b.after=function(t,e){return function(){return--t<1?e.apply(this,arguments):void 0}},b.before=function(t,e){var n;return function(){return--t>0&&(n=e.apply(this,arguments)),1>=t&&(e=null),n}},b.once=b.partial(b.before,2);var I=!{toString:null}.propertyIsEnumerable("toString"),H=["valueOf","isPrototypeOf","toString","propertyIsEnumerable","hasOwnProperty","toLocaleString"];b.keys=function(t){if(!b.isObject(t))return[];if(v)return v(t);var e=[];for(var n in t)b.has(t,n)&&e.push(n);return I&&o(t,e),e},b.allKeys=function(t){if(!b.isObject(t))return[];var e=[];for(var n in t)e.push(n);return I&&o(t,e),e},b.values=function(t){for(var e=b.keys(t),n=e.length,r=Array(n),i=0;n>i;i++)r[i]=t[e[i]];return r},b.mapObject=function(t,e,n){e=_(e,n);for(var r,i=b.keys(t),o=i.length,s={},a=0;o>a;a++)r=i[a],s[r]=e(t[r],r,t);return s},b.pairs=function(t){for(var e=b.keys(t),n=e.length,r=Array(n),i=0;n>i;i++)r[i]=[e[i],t[e[i]]];return r},b.invert=function(t){for(var e={},n=b.keys(t),r=0,i=n.length;i>r;r++)e[t[n[r]]]=n[r];return e},b.functions=b.methods=function(t){var e=[];for(var n in t)b.isFunction(t[n])&&e.push(n);return e.sort()},b.extend=k(b.allKeys),b.extendOwn=b.assign=k(b.keys),b.findKey=function(t,e,n){e=_(e,n);for(var r,i=b.keys(t),o=0,s=i.length;s>o;o++)if(r=i[o],e(t[r],r,t))return r},b.pick=function(t,e,n){var r,i,o={},s=t;if(null==s)return o;b.isFunction(e)?(i=b.allKeys(s),r=w(e,n)):(i=A(arguments,!1,!1,1),r=function(t,e,n){return e in n},s=Object(s));for(var a=0,u=i.length;u>a;a++){var c=i[a],l=s[c];r(l,c,s)&&(o[c]=l)}return o},b.omit=function(t,e,n){if(b.isFunction(e))e=b.negate(e);else{var r=b.map(A(arguments,!1,!1,1),String);e=function(t,e){return!b.contains(r,e)}}return b.pick(t,e,n)},b.defaults=k(b.allKeys,!0),b.create=function(t,e){var n=T(t);return e&&b.extendOwn(n,e),n},b.clone=function(t){return b.isObject(t)?b.isArray(t)?t.slice():b.extend({},t):t},b.tap=function(t,e){return e(t),t},b.isMatch=function(t,e){var n=b.keys(e),r=n.length;if(null==t)return!r;for(var i=Object(t),o=0;r>o;o++){var s=n[o];if(e[s]!==i[s]||!(s in i))return!1}return!0};var D=function(t,e,n,r){if(t===e)return 0!==t||1/t===1/e;if(null==t||null==e)return t===e;t instanceof b&&(t=t._wrapped),e instanceof b&&(e=e._wrapped);var i=d.call(t);if(i!==d.call(e))return!1;switch(i){case"[object RegExp]":case"[object String]":return""+t==""+e;case"[object Number]":return+t!==+t?+e!==+e:0===+t?1/+t===1/e:+t===+e;case"[object Date]":case"[object Boolean]":return+t===+e}var o="[object Array]"===i;if(!o){if("object"!=typeof t||"object"!=typeof e)return!1;var s=t.constructor,a=e.constructor;if(s!==a&&!(b.isFunction(s)&&s instanceof s&&b.isFunction(a)&&a instanceof a)&&"constructor"in t&&"constructor"in e)return!1}n=n||[],r=r||[];for(var u=n.length;u--;)if(n[u]===t)return r[u]===e;if(n.push(t),r.push(e),o){if(u=t.length,u!==e.length)return!1;for(;u--;)if(!D(t[u],e[u],n,r))return!1}else{var c,l=b.keys(t);if(u=l.length,b.keys(e).length!==u)return!1;for(;u--;)if(c=l[u],!b.has(e,c)||!D(t[c],e[c],n,r))return!1}return n.pop(),r.pop(),!0};b.isEqual=function(t,e){return D(t,e)},b.isEmpty=function(t){return null==t?!0:C(t)&&(b.isArray(t)||b.isString(t)||b.isArguments(t))?0===t.length:0===b.keys(t).length},b.isElement=function(t){return!(!t||1!==t.nodeType)},b.isArray=g||function(t){return"[object Array]"===d.call(t)},b.isObject=function(t){var e=typeof t;return"function"===e||"object"===e&&!!t},b.each(["Arguments","Function","String","Number","Date","RegExp","Error"],function(t){b["is"+t]=function(e){return d.call(e)==="[object "+t+"]"}}),b.isArguments(arguments)||(b.isArguments=function(t){return b.has(t,"callee")}),"function"!=typeof/./&&"object"!=typeof Int8Array&&(b.isFunction=function(t){return"function"==typeof t||!1}),b.isFinite=function(t){return isFinite(t)&&!isNaN(parseFloat(t))},b.isNaN=function(t){return b.isNumber(t)&&t!==+t},b.isBoolean=function(t){return t===!0||t===!1||"[object Boolean]"===d.call(t)},b.isNull=function(t){return null===t},b.isUndefined=function(t){return void 0===t},b.has=function(t,e){return null!=t&&p.call(t,e)},b.noConflict=function(){return s._=a,this},b.identity=function(t){return t},b.constant=function(t){return function(){return t}},b.noop=function(){},b.property=E,b.propertyOf=function(t){return null==t?function(){}:function(e){return t[e]}},b.matcher=b.matches=function(t){return t=b.extendOwn({},t),function(e){return b.isMatch(e,t)}},b.times=function(t,e,n){var r=Array(Math.max(0,t));e=w(e,n,1);for(var i=0;t>i;i++)r[i]=e(i);return r},b.random=function(t,e){return null==e&&(e=t,t=0),t+Math.floor(Math.random()*(e-t+1))},b.now=Date.now||function(){return(new Date).getTime()};var q={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#x27;","`":"&#x60;"},M=b.invert(q),P=function(t){var e=function(e){return t[e]},n="(?:"+b.keys(t).join("|")+")",r=RegExp(n),i=RegExp(n,"g");return function(t){return t=null==t?"":""+t,r.test(t)?t.replace(i,e):t}};b.escape=P(q),b.unescape=P(M),b.result=function(t,e,n){var r=null==t?void 0:t[e];return void 0===r&&(r=n),b.isFunction(r)?r.call(t):r};var F=0;b.uniqueId=function(t){var e=++F+"";return t?t+e:e},b.templateSettings={evaluate:/<%([\s\S]+?)%>/g,interpolate:/<%=([\s\S]+?)%>/g,escape:/<%-([\s\S]+?)%>/g};var $=/(.)^/,R={"'":"'","\\":"\\","\r":"r","\n":"n","\u2028":"u2028","\u2029":"u2029"},L=/\\|'|\r|\n|\u2028|\u2029/g,B=function(t){return"\\"+R[t]};b.template=function(t,e,n){!e&&n&&(e=n),e=b.defaults({},e,b.templateSettings);var r=RegExp([(e.escape||$).source,(e.interpolate||$).source,(e.evaluate||$).source].join("|")+"|$","g"),i=0,o="__p+='";t.replace(r,function(e,n,r,s,a){return o+=t.slice(i,a).replace(L,B),i=a+e.length,n?o+="'+\n((__t=("+n+"))==null?'':_.escape(__t))+\n'":r?o+="'+\n((__t=("+r+"))==null?'':__t)+\n'":s&&(o+="';\n"+s+"\n__p+='"),e}),o+="';\n",e.variable||(o="with(obj||{}){\n"+o+"}\n"),o="var __t,__p='',__j=Array.prototype.join,print=function(){__p+=__j.call(arguments,'');};\n"+o+"return __p;\n";try{var s=new Function(e.variable||"obj","_",o)}catch(a){throw a.source=o,a}var u=function(t){return s.call(this,t,b)},c=e.variable||"obj";return u.source="function("+c+"){\n"+o+"}",u},b.chain=function(t){var e=b(t);return e._chain=!0,e};var W=function(t,e){return t._chain?b(e).chain():e};b.mixin=function(t){b.each(b.functions(t),function(e){var n=b[e]=t[e];b.prototype[e]=function(){var t=[this._wrapped];return f.apply(t,arguments),W(this,n.apply(b,t))}})},b.mixin(b),b.each(["pop","push","reverse","shift","sort","splice","unshift"],function(t){var e=u[t];b.prototype[t]=function(){var n=this._wrapped;return e.apply(n,arguments),"shift"!==t&&"splice"!==t||0!==n.length||delete n[0],W(this,n)}}),b.each(["concat","join","slice"],function(t){var e=u[t];b.prototype[t]=function(){return W(this,e.apply(this._wrapped,arguments))}}),b.prototype.value=function(){return this._wrapped},b.prototype.valueOf=b.prototype.toJSON=b.prototype.value,b.prototype.toString=function(){return""+this._wrapped},"function"==typeof define&&define.amd&&define("underscore",[],function(){return b})}).call(this)}},"underscore"),i.createPackage("backbone",{backbone:function(t,e,n,r){!function(t){var i="object"==typeof self&&self.self==self&&self||"object"==typeof r&&r.global==r&&r;if("function"==typeof define&&define.amd)define(["underscore","jquery","exports"],function(e,n,r){i.Backbone=t(i,r,e,n)});else if("undefined"!=typeof e){var o,s=n("underscore");try{o=n("jquery")}catch(a){}t(i,e,s,o)}else i.Backbone=t(i,{},i._,i.jQuery||i.Zepto||i.ender||i.$)}(function(t,e,n,r){var i=t.Backbone,o=Array.prototype.slice;e.VERSION="1.2.3",e.$=r,e.noConflict=function(){return t.Backbone=i,this},e.emulateHTTP=!1,e.emulateJSON=!1;var s=function(t,e,r){switch(t){case 1:return function(){return n[e](this[r])};case 2:return function(t){return n[e](this[r],t)};case 3:return function(t,i){return n[e](this[r],u(t,this),i)};case 4:return function(t,i,o){return n[e](this[r],u(t,this),i,o)};default:return function(){var t=o.call(arguments);return t.unshift(this[r]),n[e].apply(n,t)}}},a=function(t,e,r){n.each(e,function(e,i){n[i]&&(t.prototype[i]=s(e,i,r))})},u=function(t,e){return n.isFunction(t)?t:n.isObject(t)&&!e._isModel(t)?c(t):n.isString(t)?function(e){return e.get(t)}:t},c=function(t){var e=n.matches(t);return function(t){return e(t.attributes)}},l=e.Events={},f=/\s+/,h=function(t,e,r,i,o){var s,a=0;if(r&&"object"==typeof r){void 0!==i&&"context"in o&&void 0===o.context&&(o.context=i);for(s=n.keys(r);a<s.length;a++)e=h(t,e,s[a],r[s[a]],o)}else if(r&&f.test(r))for(s=r.split(f);a<s.length;a++)e=t(e,s[a],i,o);else e=t(e,r,i,o);return e};l.on=function(t,e,n){return d(this,t,e,n)};var d=function(t,e,n,r,i){if(t._events=h(p,t._events||{},e,n,{context:r,ctx:t,listening:i}),i){var o=t._listeners||(t._listeners={});o[i.id]=i}return t};l.listenTo=function(t,e,r){if(!t)return this;var i=t._listenId||(t._listenId=n.uniqueId("l")),o=this._listeningTo||(this._listeningTo={}),s=o[i];if(!s){var a=this._listenId||(this._listenId=n.uniqueId("l"));s=o[i]={obj:t,objId:i,id:a,listeningTo:o,count:0}}return d(t,e,r,this,s),this};var p=function(t,e,n,r){if(n){var i=t[e]||(t[e]=[]),o=r.context,s=r.ctx,a=r.listening;a&&a.count++,i.push({callback:n,context:o,ctx:o||s,listening:a})}return t};l.off=function(t,e,n){return this._events?(this._events=h(g,this._events,t,e,{context:n,listeners:this._listeners}),this):this},l.stopListening=function(t,e,r){var i=this._listeningTo;if(!i)return this;for(var o=t?[t._listenId]:n.keys(i),s=0;s<o.length;s++){var a=i[o[s]];if(!a)break;a.obj.off(e,r,this)}return n.isEmpty(i)&&(this._listeningTo=void 0),this};var g=function(t,e,r,i){if(t){var o,s=0,a=i.context,u=i.listeners;if(e||r||a){for(var c=e?[e]:n.keys(t);s<c.length;s++){e=c[s];var l=t[e];if(!l)break;for(var f=[],h=0;h<l.length;h++){var d=l[h];r&&r!==d.callback&&r!==d.callback._callback||a&&a!==d.context?f.push(d):(o=d.listening,o&&0===--o.count&&(delete u[o.id],delete o.listeningTo[o.objId]))}f.length?t[e]=f:delete t[e]}return n.size(t)?t:void 0}for(var p=n.keys(u);s<p.length;s++)o=u[p[s]],delete u[o.id],delete o.listeningTo[o.objId]}};l.once=function(t,e,r){var i=h(v,{},t,e,n.bind(this.off,this));return this.on(i,void 0,r)},l.listenToOnce=function(t,e,r){var i=h(v,{},e,r,n.bind(this.stopListening,this,t));return this.listenTo(t,i)};var v=function(t,e,r,i){if(r){var o=t[e]=n.once(function(){i(e,o),r.apply(this,arguments)});o._callback=r}return t};l.trigger=function(t){if(!this._events)return this;for(var e=Math.max(0,arguments.length-1),n=Array(e),r=0;e>r;r++)n[r]=arguments[r+1];return h(m,this._events,t,void 0,n),this};var m=function(t,e,n,r){if(t){var i=t[e],o=t.all;i&&o&&(o=o.slice()),i&&y(i,r),o&&y(o,[e].concat(r))}return t},y=function(t,e){var n,r=-1,i=t.length,o=e[0],s=e[1],a=e[2];switch(e.length){case 0:for(;++r<i;)(n=t[r]).callback.call(n.ctx);return;case 1:for(;++r<i;)(n=t[r]).callback.call(n.ctx,o);return;case 2:for(;++r<i;)(n=t[r]).callback.call(n.ctx,o,s);return;case 3:for(;++r<i;)(n=t[r]).callback.call(n.ctx,o,s,a);return;default:for(;++r<i;)(n=t[r]).callback.apply(n.ctx,e);return}};l.bind=l.on,l.unbind=l.off,n.extend(e,l);var x=e.Model=function(t,e){var r=t||{};e||(e={}),this.cid=n.uniqueId(this.cidPrefix),this.attributes={},e.collection&&(this.collection=e.collection),e.parse&&(r=this.parse(r,e)||{}),r=n.defaults({},r,n.result(this,"defaults")),this.set(r,e),this.changed={},this.initialize.apply(this,arguments)};n.extend(x.prototype,l,{changed:null,validationError:null,idAttribute:"id",cidPrefix:"c",initialize:function(){},toJSON:function(t){return n.clone(this.attributes)},sync:function(){return e.sync.apply(this,arguments)},get:function(t){return this.attributes[t]},escape:function(t){return n.escape(this.get(t))},has:function(t){return null!=this.get(t)},matches:function(t){return!!n.iteratee(t,this)(this.attributes)},set:function(t,e,r){if(null==t)return this;var i;if("object"==typeof t?(i=t,r=e):(i={})[t]=e,r||(r={}),!this._validate(i,r))return!1;var o=r.unset,s=r.silent,a=[],u=this._changing;this._changing=!0,u||(this._previousAttributes=n.clone(this.attributes),this.changed={});var c=this.attributes,l=this.changed,f=this._previousAttributes;for(var h in i)e=i[h],n.isEqual(c[h],e)||a.push(h),n.isEqual(f[h],e)?delete l[h]:l[h]=e,o?delete c[h]:c[h]=e;if(this.id=this.get(this.idAttribute),!s){a.length&&(this._pending=r);for(var d=0;d<a.length;d++)this.trigger("change:"+a[d],this,c[a[d]],r)}if(u)return this;if(!s)for(;this._pending;)r=this._pending,this._pending=!1,this.trigger("change",this,r);return this._pending=!1,this._changing=!1,this},unset:function(t,e){return this.set(t,void 0,n.extend({},e,{unset:!0}))},clear:function(t){var e={};for(var r in this.attributes)e[r]=void 0;return this.set(e,n.extend({},t,{unset:!0}))},hasChanged:function(t){return null==t?!n.isEmpty(this.changed):n.has(this.changed,t)},changedAttributes:function(t){if(!t)return this.hasChanged()?n.clone(this.changed):!1;var e=this._changing?this._previousAttributes:this.attributes,r={};for(var i in t){var o=t[i];n.isEqual(e[i],o)||(r[i]=o)}return n.size(r)?r:!1},previous:function(t){return null!=t&&this._previousAttributes?this._previousAttributes[t]:null},previousAttributes:function(){return n.clone(this._previousAttributes)},fetch:function(t){t=n.extend({parse:!0},t);var e=this,r=t.success;return t.success=function(n){var i=t.parse?e.parse(n,t):n;return e.set(i,t)?(r&&r.call(t.context,e,n,t),void e.trigger("sync",e,n,t)):!1},L(this,t),this.sync("read",this,t)},save:function(t,e,r){var i;null==t||"object"==typeof t?(i=t,r=e):(i={})[t]=e,r=n.extend({validate:!0,parse:!0},r);var o=r.wait;if(i&&!o){if(!this.set(i,r))return!1}else if(!this._validate(i,r))return!1;var s=this,a=r.success,u=this.attributes;r.success=function(t){s.attributes=u;var e=r.parse?s.parse(t,r):t;return o&&(e=n.extend({},i,e)),e&&!s.set(e,r)?!1:(a&&a.call(r.context,s,t,r),void s.trigger("sync",s,t,r))},L(this,r),i&&o&&(this.attributes=n.extend({},u,i));var c=this.isNew()?"create":r.patch?"patch":"update";"patch"!==c||r.attrs||(r.attrs=i);var l=this.sync(c,this,r);return this.attributes=u,l},destroy:function(t){t=t?n.clone(t):{};var e=this,r=t.success,i=t.wait,o=function(){e.stopListening(),e.trigger("destroy",e,e.collection,t)};t.success=function(n){i&&o(),r&&r.call(t.context,e,n,t),e.isNew()||e.trigger("sync",e,n,t)};var s=!1;return this.isNew()?n.defer(t.success):(L(this,t),s=this.sync("delete",this,t)),i||o(),s},url:function(){var t=n.result(this,"urlRoot")||n.result(this.collection,"url")||R();if(this.isNew())return t;var e=this.get(this.idAttribute);return t.replace(/[^\/]$/,"$&/")+encodeURIComponent(e)},parse:function(t,e){return t},clone:function(){return new this.constructor(this.attributes)},isNew:function(){return!this.has(this.idAttribute)},isValid:function(t){return this._validate({},n.defaults({validate:!0},t))},_validate:function(t,e){if(!e.validate||!this.validate)return!0;t=n.extend({},this.attributes,t);var r=this.validationError=this.validate(t,e)||null;return r?(this.trigger("invalid",this,r,n.extend(e,{validationError:r})),!1):!0}});var b={keys:1,values:1,pairs:1,invert:1,pick:0,omit:0,chain:1,isEmpty:1};a(x,b,"attributes");var w=e.Collection=function(t,e){e||(e={}),e.model&&(this.model=e.model),void 0!==e.comparator&&(this.comparator=e.comparator),this._reset(),this.initialize.apply(this,arguments),t&&this.reset(t,n.extend({silent:!0},e))},_={add:!0,remove:!0,merge:!0},k={add:!0,remove:!1},T=function(t,e,n){n=Math.min(Math.max(n,0),t.length);for(var r=Array(t.length-n),i=e.length,o=0;o<r.length;o++)r[o]=t[o+n];for(o=0;i>o;o++)t[o+n]=e[o];for(o=0;o<r.length;o++)t[o+i+n]=r[o]};n.extend(w.prototype,l,{model:x,initialize:function(){},toJSON:function(t){return this.map(function(e){return e.toJSON(t)})},sync:function(){return e.sync.apply(this,arguments)},add:function(t,e){return this.set(t,n.extend({merge:!1},e,k))},remove:function(t,e){e=n.extend({},e);var r=!n.isArray(t);t=r?[t]:n.clone(t);var i=this._removeModels(t,e);return!e.silent&&i&&this.trigger("update",this,e),r?i[0]:i},set:function(t,e){if(null!=t){e=n.defaults({},e,_),e.parse&&!this._isModel(t)&&(t=this.parse(t,e));var r=!n.isArray(t);t=r?[t]:t.slice();var i=e.at;null!=i&&(i=+i),0>i&&(i+=this.length+1);for(var o,s=[],a=[],u=[],c={},l=e.add,f=e.merge,h=e.remove,d=!1,p=this.comparator&&null==i&&e.sort!==!1,g=n.isString(this.comparator)?this.comparator:null,v=0;v<t.length;v++){o=t[v];var m=this.get(o);if(m){if(f&&o!==m){var y=this._isModel(o)?o.attributes:o;e.parse&&(y=m.parse(y,e)),m.set(y,e),p&&!d&&(d=m.hasChanged(g))}c[m.cid]||(c[m.cid]=!0,s.push(m)),t[v]=m}else l&&(o=t[v]=this._prepareModel(o,e),o&&(a.push(o),this._addReference(o,e),c[o.cid]=!0,s.push(o)))}if(h){for(v=0;v<this.length;v++)o=this.models[v],c[o.cid]||u.push(o);u.length&&this._removeModels(u,e)}var x=!1,b=!p&&l&&h;if(s.length&&b?(x=this.length!=s.length||n.some(this.models,function(t,e){return t!==s[e]}),this.models.length=0,T(this.models,s,0),this.length=this.models.length):a.length&&(p&&(d=!0),T(this.models,a,null==i?this.length:i),this.length=this.models.length),d&&this.sort({silent:!0}),!e.silent){for(v=0;v<a.length;v++)null!=i&&(e.index=i+v),o=a[v],o.trigger("add",o,this,e);(d||x)&&this.trigger("sort",this,e),(a.length||u.length)&&this.trigger("update",this,e)}return r?t[0]:t}},reset:function(t,e){e=e?n.clone(e):{};for(var r=0;r<this.models.length;r++)this._removeReference(this.models[r],e);return e.previousModels=this.models,this._reset(),t=this.add(t,n.extend({silent:!0},e)),e.silent||this.trigger("reset",this,e),t},push:function(t,e){return this.add(t,n.extend({at:this.length},e))},pop:function(t){var e=this.at(this.length-1);return this.remove(e,t)},unshift:function(t,e){return this.add(t,n.extend({at:0},e))},shift:function(t){var e=this.at(0);return this.remove(e,t)},slice:function(){return o.apply(this.models,arguments)},get:function(t){if(null!=t){var e=this.modelId(this._isModel(t)?t.attributes:t);return this._byId[t]||this._byId[e]||this._byId[t.cid]}},at:function(t){return 0>t&&(t+=this.length),this.models[t]},where:function(t,e){return this[e?"find":"filter"](t)},findWhere:function(t){return this.where(t,!0)},sort:function(t){var e=this.comparator;if(!e)throw new Error("Cannot sort a set without a comparator");t||(t={});var r=e.length;return n.isFunction(e)&&(e=n.bind(e,this)),1===r||n.isString(e)?this.models=this.sortBy(e):this.models.sort(e),t.silent||this.trigger("sort",this,t),this},pluck:function(t){return n.invoke(this.models,"get",t)},fetch:function(t){t=n.extend({parse:!0},t);var e=t.success,r=this;return t.success=function(n){var i=t.reset?"reset":"set";r[i](n,t),e&&e.call(t.context,r,n,t),r.trigger("sync",r,n,t)},L(this,t),this.sync("read",this,t)},create:function(t,e){e=e?n.clone(e):{};var r=e.wait;if(t=this._prepareModel(t,e),!t)return!1;r||this.add(t,e);var i=this,o=e.success;return e.success=function(t,e,n){r&&i.add(t,n),o&&o.call(n.context,t,e,n)},t.save(null,e),t},parse:function(t,e){return t},clone:function(){return new this.constructor(this.models,{model:this.model,comparator:this.comparator})},modelId:function(t){return t[this.model.prototype.idAttribute||"id"]},_reset:function(){this.length=0,this.models=[],this._byId={}},_prepareModel:function(t,e){if(this._isModel(t))return t.collection||(t.collection=this),t;e=e?n.clone(e):{},e.collection=this;var r=new this.model(t,e);return r.validationError?(this.trigger("invalid",this,r.validationError,e),!1):r},_removeModels:function(t,e){for(var n=[],r=0;r<t.length;r++){var i=this.get(t[r]);if(i){var o=this.indexOf(i);this.models.splice(o,1),this.length--,e.silent||(e.index=o,i.trigger("remove",i,this,e)),n.push(i),this._removeReference(i,e)}}return n.length?n:!1},_isModel:function(t){return t instanceof x},_addReference:function(t,e){this._byId[t.cid]=t;var n=this.modelId(t.attributes);null!=n&&(this._byId[n]=t),t.on("all",this._onModelEvent,this)},_removeReference:function(t,e){delete this._byId[t.cid];var n=this.modelId(t.attributes);null!=n&&delete this._byId[n],this===t.collection&&delete t.collection,t.off("all",this._onModelEvent,this)},_onModelEvent:function(t,e,n,r){if("add"!==t&&"remove"!==t||n===this){if("destroy"===t&&this.remove(e,r),"change"===t){var i=this.modelId(e.previousAttributes()),o=this.modelId(e.attributes);i!==o&&(null!=i&&delete this._byId[i],null!=o&&(this._byId[o]=e))}this.trigger.apply(this,arguments)}}});var E={forEach:3,each:3,map:3,collect:3,reduce:4,foldl:4,inject:4,reduceRight:4,foldr:4,find:3,detect:3,filter:3,select:3,reject:3,every:3,all:3,some:3,any:3,include:3,includes:3,contains:3,invoke:0,max:3,min:3,toArray:1,size:1,first:3,head:3,take:3,initial:3,rest:3,tail:3,drop:3,last:3,without:0,difference:0,indexOf:3,shuffle:1,lastIndexOf:3,isEmpty:1,chain:1,sample:3,partition:3,groupBy:3,countBy:3,sortBy:3,indexBy:3};a(w,E,"models");var j=e.View=function(t){this.cid=n.uniqueId("view"),n.extend(this,n.pick(t,C)),this._ensureElement(),this.initialize.apply(this,arguments)},S=/^(\S+)\s*(.*)$/,C=["model","collection","el","id","attributes","className","tagName","events"];n.extend(j.prototype,l,{tagName:"div",$:function(t){return this.$el.find(t)},initialize:function(){},render:function(){return this},remove:function(){return this._removeElement(),this.stopListening(),this},_removeElement:function(){this.$el.remove()},setElement:function(t){return this.undelegateEvents(),this._setElement(t),this.delegateEvents(),this},_setElement:function(t){this.$el=t instanceof e.$?t:e.$(t),this.el=this.$el[0]},delegateEvents:function(t){if(t||(t=n.result(this,"events")),!t)return this;this.undelegateEvents();for(var e in t){var r=t[e];if(n.isFunction(r)||(r=this[r]),r){var i=e.match(S);this.delegate(i[1],i[2],n.bind(r,this))}}return this},delegate:function(t,e,n){return this.$el.on(t+".delegateEvents"+this.cid,e,n),this},undelegateEvents:function(){return this.$el&&this.$el.off(".delegateEvents"+this.cid),this},undelegate:function(t,e,n){return this.$el.off(t+".delegateEvents"+this.cid,e,n),this},_createElement:function(t){return document.createElement(t)},_ensureElement:function(){if(this.el)this.setElement(n.result(this,"el"));else{var t=n.extend({},n.result(this,"attributes"));this.id&&(t.id=n.result(this,"id")),this.className&&(t["class"]=n.result(this,"className")),this.setElement(this._createElement(n.result(this,"tagName"))),this._setAttributes(t)}},_setAttributes:function(t){this.$el.attr(t)}}),e.sync=function(t,r,i){var o=N[t];n.defaults(i||(i={}),{emulateHTTP:e.emulateHTTP,emulateJSON:e.emulateJSON});var s={type:o,dataType:"json"};if(i.url||(s.url=n.result(r,"url")||R()),null!=i.data||!r||"create"!==t&&"update"!==t&&"patch"!==t||(s.contentType="application/json",s.data=JSON.stringify(i.attrs||r.toJSON(i))),i.emulateJSON&&(s.contentType="application/x-www-form-urlencoded",s.data=s.data?{model:s.data}:{}),i.emulateHTTP&&("PUT"===o||"DELETE"===o||"PATCH"===o)){s.type="POST",i.emulateJSON&&(s.data._method=o);var a=i.beforeSend;i.beforeSend=function(t){return t.setRequestHeader("X-HTTP-Method-Override",o),a?a.apply(this,arguments):void 0}}"GET"===s.type||i.emulateJSON||(s.processData=!1);var u=i.error;i.error=function(t,e,n){i.textStatus=e,i.errorThrown=n,u&&u.call(i.context,t,e,n)};var c=i.xhr=e.ajax(n.extend(s,i));return r.trigger("request",r,c,i),c};var N={create:"POST",update:"PUT",patch:"PATCH","delete":"DELETE",read:"GET"};e.ajax=function(){return e.$.ajax.apply(e.$,arguments)};var A=e.Router=function(t){t||(t={}),t.routes&&(this.routes=t.routes),this._bindRoutes(),this.initialize.apply(this,arguments)},O=/\((.*?)\)/g,I=/(\(\?)?:\w+/g,H=/\*\w+/g,D=/[\-{}\[\]+?.,\\\^$|#\s]/g;n.extend(A.prototype,l,{initialize:function(){},route:function(t,r,i){n.isRegExp(t)||(t=this._routeToRegExp(t)),n.isFunction(r)&&(i=r,r=""),i||(i=this[r]);var o=this;return e.history.route(t,function(n){var s=o._extractParameters(t,n);o.execute(i,s,r)!==!1&&(o.trigger.apply(o,["route:"+r].concat(s)),o.trigger("route",r,s),e.history.trigger("route",o,r,s))}),this},execute:function(t,e,n){t&&t.apply(this,e)},navigate:function(t,n){return e.history.navigate(t,n),this},_bindRoutes:function(){if(this.routes){this.routes=n.result(this,"routes");for(var t,e=n.keys(this.routes);null!=(t=e.pop());)this.route(t,this.routes[t])}},_routeToRegExp:function(t){return t=t.replace(D,"\\$&").replace(O,"(?:$1)?").replace(I,function(t,e){return e?t:"([^/?]+)"}).replace(H,"([^?]*?)"),new RegExp("^"+t+"(?:\\?([\\s\\S]*))?$")},_extractParameters:function(t,e){var r=t.exec(e).slice(1);return n.map(r,function(t,e){return e===r.length-1?t||null:t?decodeURIComponent(t):null})}});var q=e.History=function(){this.handlers=[],this.checkUrl=n.bind(this.checkUrl,this),"undefined"!=typeof window&&(this.location=window.location,this.history=window.history)},M=/^[#\/]|\s+$/g,P=/^\/+|\/+$/g,F=/#.*$/;q.started=!1,n.extend(q.prototype,l,{interval:50,atRoot:function(){var t=this.location.pathname.replace(/[^\/]$/,"$&/");return t===this.root&&!this.getSearch()},matchRoot:function(){var t=this.decodeFragment(this.location.pathname),e=t.slice(0,this.root.length-1)+"/";return e===this.root},decodeFragment:function(t){return decodeURI(t.replace(/%25/g,"%2525"))},getSearch:function(){var t=this.location.href.replace(/#.*/,"").match(/\?.+/);return t?t[0]:""},getHash:function(t){var e=(t||this).location.href.match(/#(.*)$/);return e?e[1]:""},getPath:function(){var t=this.decodeFragment(this.location.pathname+this.getSearch()).slice(this.root.length-1);return"/"===t.charAt(0)?t.slice(1):t},getFragment:function(t){return null==t&&(t=this._usePushState||!this._wantsHashChange?this.getPath():this.getHash()),t.replace(M,"")},start:function(t){if(q.started)throw new Error("Backbone.history has already been started");if(q.started=!0,this.options=n.extend({root:"/"},this.options,t),this.root=this.options.root,this._wantsHashChange=this.options.hashChange!==!1,this._hasHashChange="onhashchange"in window&&(void 0===document.documentMode||document.documentMode>7),this._useHashChange=this._wantsHashChange&&this._hasHashChange,this._wantsPushState=!!this.options.pushState,this._hasPushState=!(!this.history||!this.history.pushState),this._usePushState=this._wantsPushState&&this._hasPushState,this.fragment=this.getFragment(),this.root=("/"+this.root+"/").replace(P,"/"),this._wantsHashChange&&this._wantsPushState){if(!this._hasPushState&&!this.atRoot()){var e=this.root.slice(0,-1)||"/";return this.location.replace(e+"#"+this.getPath()),!0}this._hasPushState&&this.atRoot()&&this.navigate(this.getHash(),{replace:!0})}if(!this._hasHashChange&&this._wantsHashChange&&!this._usePushState){this.iframe=document.createElement("iframe"),this.iframe.src="javascript:0",this.iframe.style.display="none",this.iframe.tabIndex=-1;var r=document.body,i=r.insertBefore(this.iframe,r.firstChild).contentWindow;i.document.open(),i.document.close(),i.location.hash="#"+this.fragment}var o=window.addEventListener||function(t,e){return attachEvent("on"+t,e)};return this._usePushState?o("popstate",this.checkUrl,!1):this._useHashChange&&!this.iframe?o("hashchange",this.checkUrl,!1):this._wantsHashChange&&(this._checkUrlInterval=setInterval(this.checkUrl,this.interval)),this.options.silent?void 0:this.loadUrl()},stop:function(){var t=window.removeEventListener||function(t,e){return detachEvent("on"+t,e)};this._usePushState?t("popstate",this.checkUrl,!1):this._useHashChange&&!this.iframe&&t("hashchange",this.checkUrl,!1),this.iframe&&(document.body.removeChild(this.iframe),this.iframe=null),this._checkUrlInterval&&clearInterval(this._checkUrlInterval),q.started=!1},route:function(t,e){this.handlers.unshift({route:t,callback:e})},checkUrl:function(t){var e=this.getFragment();return e===this.fragment&&this.iframe&&(e=this.getHash(this.iframe.contentWindow)),e===this.fragment?!1:(this.iframe&&this.navigate(e),void this.loadUrl())},loadUrl:function(t){return this.matchRoot()?(t=this.fragment=this.getFragment(t),n.some(this.handlers,function(e){return e.route.test(t)?(e.callback(t),!0):void 0})):!1},navigate:function(t,e){
+if(!q.started)return!1;e&&e!==!0||(e={trigger:!!e}),t=this.getFragment(t||"");var n=this.root;(""===t||"?"===t.charAt(0))&&(n=n.slice(0,-1)||"/");var r=n+t;if(t=this.decodeFragment(t.replace(F,"")),this.fragment!==t){if(this.fragment=t,this._usePushState)this.history[e.replace?"replaceState":"pushState"]({},document.title,r);else{if(!this._wantsHashChange)return this.location.assign(r);if(this._updateHash(this.location,t,e.replace),this.iframe&&t!==this.getHash(this.iframe.contentWindow)){var i=this.iframe.contentWindow;e.replace||(i.document.open(),i.document.close()),this._updateHash(i.location,t,e.replace)}}return e.trigger?this.loadUrl(t):void 0}},_updateHash:function(t,e,n){if(n){var r=t.href.replace(/(javascript:|#).*$/,"");t.replace(r+"#"+e)}else t.hash="#"+e}}),e.history=new q;var $=function(t,e){var r,i=this;r=t&&n.has(t,"constructor")?t.constructor:function(){return i.apply(this,arguments)},n.extend(r,i,e);var o=function(){this.constructor=r};return o.prototype=i.prototype,r.prototype=new o,t&&n.extend(r.prototype,t),r.__super__=i.prototype,r};x.extend=w.extend=A.extend=j.extend=q.extend=$;var R=function(){throw new Error('A "url" property or function must be specified')},L=function(t,e){var n=e.error;e.error=function(r){n&&n.call(e.context,t,r,e),t.trigger("error",t,r,e)}};return e})},"backbone-min":function(t,e,n,r){!function(t){var i="object"==typeof self&&self.self==self&&self||"object"==typeof r&&r.global==r&&r;if("function"==typeof define&&define.amd)define(["underscore","jquery","exports"],function(e,n,r){i.Backbone=t(i,r,e,n)});else if("undefined"!=typeof e){var o,s=n("underscore");try{o=n("jquery")}catch(a){}t(i,e,s,o)}else i.Backbone=t(i,{},i._,i.jQuery||i.Zepto||i.ender||i.$)}(function(t,e,n,r){var i=t.Backbone,o=Array.prototype.slice;e.VERSION="1.2.3",e.$=r,e.noConflict=function(){return t.Backbone=i,this},e.emulateHTTP=!1,e.emulateJSON=!1;var s=function(t,e,r){switch(t){case 1:return function(){return n[e](this[r])};case 2:return function(t){return n[e](this[r],t)};case 3:return function(t,i){return n[e](this[r],u(t,this),i)};case 4:return function(t,i,o){return n[e](this[r],u(t,this),i,o)};default:return function(){var t=o.call(arguments);return t.unshift(this[r]),n[e].apply(n,t)}}},a=function(t,e,r){n.each(e,function(e,i){n[i]&&(t.prototype[i]=s(e,i,r))})},u=function(t,e){return n.isFunction(t)?t:n.isObject(t)&&!e._isModel(t)?c(t):n.isString(t)?function(e){return e.get(t)}:t},c=function(t){var e=n.matches(t);return function(t){return e(t.attributes)}},l=e.Events={},f=/\s+/,h=function(t,e,r,i,o){var s,a=0;if(r&&"object"==typeof r){void 0!==i&&"context"in o&&void 0===o.context&&(o.context=i);for(s=n.keys(r);a<s.length;a++)e=h(t,e,s[a],r[s[a]],o)}else if(r&&f.test(r))for(s=r.split(f);a<s.length;a++)e=t(e,s[a],i,o);else e=t(e,r,i,o);return e};l.on=function(t,e,n){return d(this,t,e,n)};var d=function(t,e,n,r,i){if(t._events=h(p,t._events||{},e,n,{context:r,ctx:t,listening:i}),i){var o=t._listeners||(t._listeners={});o[i.id]=i}return t};l.listenTo=function(t,e,r){if(!t)return this;var i=t._listenId||(t._listenId=n.uniqueId("l")),o=this._listeningTo||(this._listeningTo={}),s=o[i];if(!s){var a=this._listenId||(this._listenId=n.uniqueId("l"));s=o[i]={obj:t,objId:i,id:a,listeningTo:o,count:0}}return d(t,e,r,this,s),this};var p=function(t,e,n,r){if(n){var i=t[e]||(t[e]=[]),o=r.context,s=r.ctx,a=r.listening;a&&a.count++,i.push({callback:n,context:o,ctx:o||s,listening:a})}return t};l.off=function(t,e,n){return this._events?(this._events=h(g,this._events,t,e,{context:n,listeners:this._listeners}),this):this},l.stopListening=function(t,e,r){var i=this._listeningTo;if(!i)return this;for(var o=t?[t._listenId]:n.keys(i),s=0;s<o.length;s++){var a=i[o[s]];if(!a)break;a.obj.off(e,r,this)}return n.isEmpty(i)&&(this._listeningTo=void 0),this};var g=function(t,e,r,i){if(t){var o,s=0,a=i.context,u=i.listeners;if(e||r||a){for(var c=e?[e]:n.keys(t);s<c.length;s++){e=c[s];var l=t[e];if(!l)break;for(var f=[],h=0;h<l.length;h++){var d=l[h];r&&r!==d.callback&&r!==d.callback._callback||a&&a!==d.context?f.push(d):(o=d.listening,o&&0===--o.count&&(delete u[o.id],delete o.listeningTo[o.objId]))}f.length?t[e]=f:delete t[e]}return n.size(t)?t:void 0}for(var p=n.keys(u);s<p.length;s++)o=u[p[s]],delete u[o.id],delete o.listeningTo[o.objId]}};l.once=function(t,e,r){var i=h(v,{},t,e,n.bind(this.off,this));return this.on(i,void 0,r)},l.listenToOnce=function(t,e,r){var i=h(v,{},e,r,n.bind(this.stopListening,this,t));return this.listenTo(t,i)};var v=function(t,e,r,i){if(r){var o=t[e]=n.once(function(){i(e,o),r.apply(this,arguments)});o._callback=r}return t};l.trigger=function(t){if(!this._events)return this;for(var e=Math.max(0,arguments.length-1),n=Array(e),r=0;e>r;r++)n[r]=arguments[r+1];return h(m,this._events,t,void 0,n),this};var m=function(t,e,n,r){if(t){var i=t[e],o=t.all;i&&o&&(o=o.slice()),i&&y(i,r),o&&y(o,[e].concat(r))}return t},y=function(t,e){var n,r=-1,i=t.length,o=e[0],s=e[1],a=e[2];switch(e.length){case 0:for(;++r<i;)(n=t[r]).callback.call(n.ctx);return;case 1:for(;++r<i;)(n=t[r]).callback.call(n.ctx,o);return;case 2:for(;++r<i;)(n=t[r]).callback.call(n.ctx,o,s);return;case 3:for(;++r<i;)(n=t[r]).callback.call(n.ctx,o,s,a);return;default:for(;++r<i;)(n=t[r]).callback.apply(n.ctx,e);return}};l.bind=l.on,l.unbind=l.off,n.extend(e,l);var x=e.Model=function(t,e){var r=t||{};e||(e={}),this.cid=n.uniqueId(this.cidPrefix),this.attributes={},e.collection&&(this.collection=e.collection),e.parse&&(r=this.parse(r,e)||{}),r=n.defaults({},r,n.result(this,"defaults")),this.set(r,e),this.changed={},this.initialize.apply(this,arguments)};n.extend(x.prototype,l,{changed:null,validationError:null,idAttribute:"id",cidPrefix:"c",initialize:function(){},toJSON:function(t){return n.clone(this.attributes)},sync:function(){return e.sync.apply(this,arguments)},get:function(t){return this.attributes[t]},escape:function(t){return n.escape(this.get(t))},has:function(t){return null!=this.get(t)},matches:function(t){return!!n.iteratee(t,this)(this.attributes)},set:function(t,e,r){if(null==t)return this;var i;if("object"==typeof t?(i=t,r=e):(i={})[t]=e,r||(r={}),!this._validate(i,r))return!1;var o=r.unset,s=r.silent,a=[],u=this._changing;this._changing=!0,u||(this._previousAttributes=n.clone(this.attributes),this.changed={});var c=this.attributes,l=this.changed,f=this._previousAttributes;for(var h in i)e=i[h],n.isEqual(c[h],e)||a.push(h),n.isEqual(f[h],e)?delete l[h]:l[h]=e,o?delete c[h]:c[h]=e;if(this.id=this.get(this.idAttribute),!s){a.length&&(this._pending=r);for(var d=0;d<a.length;d++)this.trigger("change:"+a[d],this,c[a[d]],r)}if(u)return this;if(!s)for(;this._pending;)r=this._pending,this._pending=!1,this.trigger("change",this,r);return this._pending=!1,this._changing=!1,this},unset:function(t,e){return this.set(t,void 0,n.extend({},e,{unset:!0}))},clear:function(t){var e={};for(var r in this.attributes)e[r]=void 0;return this.set(e,n.extend({},t,{unset:!0}))},hasChanged:function(t){return null==t?!n.isEmpty(this.changed):n.has(this.changed,t)},changedAttributes:function(t){if(!t)return this.hasChanged()?n.clone(this.changed):!1;var e=this._changing?this._previousAttributes:this.attributes,r={};for(var i in t){var o=t[i];n.isEqual(e[i],o)||(r[i]=o)}return n.size(r)?r:!1},previous:function(t){return null!=t&&this._previousAttributes?this._previousAttributes[t]:null},previousAttributes:function(){return n.clone(this._previousAttributes)},fetch:function(t){t=n.extend({parse:!0},t);var e=this,r=t.success;return t.success=function(n){var i=t.parse?e.parse(n,t):n;return e.set(i,t)?(r&&r.call(t.context,e,n,t),void e.trigger("sync",e,n,t)):!1},L(this,t),this.sync("read",this,t)},save:function(t,e,r){var i;null==t||"object"==typeof t?(i=t,r=e):(i={})[t]=e,r=n.extend({validate:!0,parse:!0},r);var o=r.wait;if(i&&!o){if(!this.set(i,r))return!1}else if(!this._validate(i,r))return!1;var s=this,a=r.success,u=this.attributes;r.success=function(t){s.attributes=u;var e=r.parse?s.parse(t,r):t;return o&&(e=n.extend({},i,e)),e&&!s.set(e,r)?!1:(a&&a.call(r.context,s,t,r),void s.trigger("sync",s,t,r))},L(this,r),i&&o&&(this.attributes=n.extend({},u,i));var c=this.isNew()?"create":r.patch?"patch":"update";"patch"!==c||r.attrs||(r.attrs=i);var l=this.sync(c,this,r);return this.attributes=u,l},destroy:function(t){t=t?n.clone(t):{};var e=this,r=t.success,i=t.wait,o=function(){e.stopListening(),e.trigger("destroy",e,e.collection,t)};t.success=function(n){i&&o(),r&&r.call(t.context,e,n,t),e.isNew()||e.trigger("sync",e,n,t)};var s=!1;return this.isNew()?n.defer(t.success):(L(this,t),s=this.sync("delete",this,t)),i||o(),s},url:function(){var t=n.result(this,"urlRoot")||n.result(this.collection,"url")||R();if(this.isNew())return t;var e=this.get(this.idAttribute);return t.replace(/[^\/]$/,"$&/")+encodeURIComponent(e)},parse:function(t,e){return t},clone:function(){return new this.constructor(this.attributes)},isNew:function(){return!this.has(this.idAttribute)},isValid:function(t){return this._validate({},n.defaults({validate:!0},t))},_validate:function(t,e){if(!e.validate||!this.validate)return!0;t=n.extend({},this.attributes,t);var r=this.validationError=this.validate(t,e)||null;return r?(this.trigger("invalid",this,r,n.extend(e,{validationError:r})),!1):!0}});var b={keys:1,values:1,pairs:1,invert:1,pick:0,omit:0,chain:1,isEmpty:1};a(x,b,"attributes");var w=e.Collection=function(t,e){e||(e={}),e.model&&(this.model=e.model),void 0!==e.comparator&&(this.comparator=e.comparator),this._reset(),this.initialize.apply(this,arguments),t&&this.reset(t,n.extend({silent:!0},e))},_={add:!0,remove:!0,merge:!0},k={add:!0,remove:!1},T=function(t,e,n){n=Math.min(Math.max(n,0),t.length);for(var r=Array(t.length-n),i=e.length,o=0;o<r.length;o++)r[o]=t[o+n];for(o=0;i>o;o++)t[o+n]=e[o];for(o=0;o<r.length;o++)t[o+i+n]=r[o]};n.extend(w.prototype,l,{model:x,initialize:function(){},toJSON:function(t){return this.map(function(e){return e.toJSON(t)})},sync:function(){return e.sync.apply(this,arguments)},add:function(t,e){return this.set(t,n.extend({merge:!1},e,k))},remove:function(t,e){e=n.extend({},e);var r=!n.isArray(t);t=r?[t]:n.clone(t);var i=this._removeModels(t,e);return!e.silent&&i&&this.trigger("update",this,e),r?i[0]:i},set:function(t,e){if(null!=t){e=n.defaults({},e,_),e.parse&&!this._isModel(t)&&(t=this.parse(t,e));var r=!n.isArray(t);t=r?[t]:t.slice();var i=e.at;null!=i&&(i=+i),0>i&&(i+=this.length+1);for(var o,s=[],a=[],u=[],c={},l=e.add,f=e.merge,h=e.remove,d=!1,p=this.comparator&&null==i&&e.sort!==!1,g=n.isString(this.comparator)?this.comparator:null,v=0;v<t.length;v++){o=t[v];var m=this.get(o);if(m){if(f&&o!==m){var y=this._isModel(o)?o.attributes:o;e.parse&&(y=m.parse(y,e)),m.set(y,e),p&&!d&&(d=m.hasChanged(g))}c[m.cid]||(c[m.cid]=!0,s.push(m)),t[v]=m}else l&&(o=t[v]=this._prepareModel(o,e),o&&(a.push(o),this._addReference(o,e),c[o.cid]=!0,s.push(o)))}if(h){for(v=0;v<this.length;v++)o=this.models[v],c[o.cid]||u.push(o);u.length&&this._removeModels(u,e)}var x=!1,b=!p&&l&&h;if(s.length&&b?(x=this.length!=s.length||n.some(this.models,function(t,e){return t!==s[e]}),this.models.length=0,T(this.models,s,0),this.length=this.models.length):a.length&&(p&&(d=!0),T(this.models,a,null==i?this.length:i),this.length=this.models.length),d&&this.sort({silent:!0}),!e.silent){for(v=0;v<a.length;v++)null!=i&&(e.index=i+v),o=a[v],o.trigger("add",o,this,e);(d||x)&&this.trigger("sort",this,e),(a.length||u.length)&&this.trigger("update",this,e)}return r?t[0]:t}},reset:function(t,e){e=e?n.clone(e):{};for(var r=0;r<this.models.length;r++)this._removeReference(this.models[r],e);return e.previousModels=this.models,this._reset(),t=this.add(t,n.extend({silent:!0},e)),e.silent||this.trigger("reset",this,e),t},push:function(t,e){return this.add(t,n.extend({at:this.length},e))},pop:function(t){var e=this.at(this.length-1);return this.remove(e,t)},unshift:function(t,e){return this.add(t,n.extend({at:0},e))},shift:function(t){var e=this.at(0);return this.remove(e,t)},slice:function(){return o.apply(this.models,arguments)},get:function(t){if(null!=t){var e=this.modelId(this._isModel(t)?t.attributes:t);return this._byId[t]||this._byId[e]||this._byId[t.cid]}},at:function(t){return 0>t&&(t+=this.length),this.models[t]},where:function(t,e){return this[e?"find":"filter"](t)},findWhere:function(t){return this.where(t,!0)},sort:function(t){var e=this.comparator;if(!e)throw new Error("Cannot sort a set without a comparator");t||(t={});var r=e.length;return n.isFunction(e)&&(e=n.bind(e,this)),1===r||n.isString(e)?this.models=this.sortBy(e):this.models.sort(e),t.silent||this.trigger("sort",this,t),this},pluck:function(t){return n.invoke(this.models,"get",t)},fetch:function(t){t=n.extend({parse:!0},t);var e=t.success,r=this;return t.success=function(n){var i=t.reset?"reset":"set";r[i](n,t),e&&e.call(t.context,r,n,t),r.trigger("sync",r,n,t)},L(this,t),this.sync("read",this,t)},create:function(t,e){e=e?n.clone(e):{};var r=e.wait;if(t=this._prepareModel(t,e),!t)return!1;r||this.add(t,e);var i=this,o=e.success;return e.success=function(t,e,n){r&&i.add(t,n),o&&o.call(n.context,t,e,n)},t.save(null,e),t},parse:function(t,e){return t},clone:function(){return new this.constructor(this.models,{model:this.model,comparator:this.comparator})},modelId:function(t){return t[this.model.prototype.idAttribute||"id"]},_reset:function(){this.length=0,this.models=[],this._byId={}},_prepareModel:function(t,e){if(this._isModel(t))return t.collection||(t.collection=this),t;e=e?n.clone(e):{},e.collection=this;var r=new this.model(t,e);return r.validationError?(this.trigger("invalid",this,r.validationError,e),!1):r},_removeModels:function(t,e){for(var n=[],r=0;r<t.length;r++){var i=this.get(t[r]);if(i){var o=this.indexOf(i);this.models.splice(o,1),this.length--,e.silent||(e.index=o,i.trigger("remove",i,this,e)),n.push(i),this._removeReference(i,e)}}return n.length?n:!1},_isModel:function(t){return t instanceof x},_addReference:function(t,e){this._byId[t.cid]=t;var n=this.modelId(t.attributes);null!=n&&(this._byId[n]=t),t.on("all",this._onModelEvent,this)},_removeReference:function(t,e){delete this._byId[t.cid];var n=this.modelId(t.attributes);null!=n&&delete this._byId[n],this===t.collection&&delete t.collection,t.off("all",this._onModelEvent,this)},_onModelEvent:function(t,e,n,r){if("add"!==t&&"remove"!==t||n===this){if("destroy"===t&&this.remove(e,r),"change"===t){var i=this.modelId(e.previousAttributes()),o=this.modelId(e.attributes);i!==o&&(null!=i&&delete this._byId[i],null!=o&&(this._byId[o]=e))}this.trigger.apply(this,arguments)}}});var E={forEach:3,each:3,map:3,collect:3,reduce:4,foldl:4,inject:4,reduceRight:4,foldr:4,find:3,detect:3,filter:3,select:3,reject:3,every:3,all:3,some:3,any:3,include:3,includes:3,contains:3,invoke:0,max:3,min:3,toArray:1,size:1,first:3,head:3,take:3,initial:3,rest:3,tail:3,drop:3,last:3,without:0,difference:0,indexOf:3,shuffle:1,lastIndexOf:3,isEmpty:1,chain:1,sample:3,partition:3,groupBy:3,countBy:3,sortBy:3,indexBy:3};a(w,E,"models");var j=e.View=function(t){this.cid=n.uniqueId("view"),n.extend(this,n.pick(t,C)),this._ensureElement(),this.initialize.apply(this,arguments)},S=/^(\S+)\s*(.*)$/,C=["model","collection","el","id","attributes","className","tagName","events"];n.extend(j.prototype,l,{tagName:"div",$:function(t){return this.$el.find(t)},initialize:function(){},render:function(){return this},remove:function(){return this._removeElement(),this.stopListening(),this},_removeElement:function(){this.$el.remove()},setElement:function(t){return this.undelegateEvents(),this._setElement(t),this.delegateEvents(),this},_setElement:function(t){this.$el=t instanceof e.$?t:e.$(t),this.el=this.$el[0]},delegateEvents:function(t){if(t||(t=n.result(this,"events")),!t)return this;this.undelegateEvents();for(var e in t){var r=t[e];if(n.isFunction(r)||(r=this[r]),r){var i=e.match(S);this.delegate(i[1],i[2],n.bind(r,this))}}return this},delegate:function(t,e,n){return this.$el.on(t+".delegateEvents"+this.cid,e,n),this},undelegateEvents:function(){return this.$el&&this.$el.off(".delegateEvents"+this.cid),this},undelegate:function(t,e,n){return this.$el.off(t+".delegateEvents"+this.cid,e,n),this},_createElement:function(t){return document.createElement(t)},_ensureElement:function(){if(this.el)this.setElement(n.result(this,"el"));else{var t=n.extend({},n.result(this,"attributes"));this.id&&(t.id=n.result(this,"id")),this.className&&(t["class"]=n.result(this,"className")),this.setElement(this._createElement(n.result(this,"tagName"))),this._setAttributes(t)}},_setAttributes:function(t){this.$el.attr(t)}}),e.sync=function(t,r,i){var o=N[t];n.defaults(i||(i={}),{emulateHTTP:e.emulateHTTP,emulateJSON:e.emulateJSON});var s={type:o,dataType:"json"};if(i.url||(s.url=n.result(r,"url")||R()),null!=i.data||!r||"create"!==t&&"update"!==t&&"patch"!==t||(s.contentType="application/json",s.data=JSON.stringify(i.attrs||r.toJSON(i))),i.emulateJSON&&(s.contentType="application/x-www-form-urlencoded",s.data=s.data?{model:s.data}:{}),i.emulateHTTP&&("PUT"===o||"DELETE"===o||"PATCH"===o)){s.type="POST",i.emulateJSON&&(s.data._method=o);var a=i.beforeSend;i.beforeSend=function(t){return t.setRequestHeader("X-HTTP-Method-Override",o),a?a.apply(this,arguments):void 0}}"GET"===s.type||i.emulateJSON||(s.processData=!1);var u=i.error;i.error=function(t,e,n){i.textStatus=e,i.errorThrown=n,u&&u.call(i.context,t,e,n)};var c=i.xhr=e.ajax(n.extend(s,i));return r.trigger("request",r,c,i),c};var N={create:"POST",update:"PUT",patch:"PATCH","delete":"DELETE",read:"GET"};e.ajax=function(){return e.$.ajax.apply(e.$,arguments)};var A=e.Router=function(t){t||(t={}),t.routes&&(this.routes=t.routes),this._bindRoutes(),this.initialize.apply(this,arguments)},O=/\((.*?)\)/g,I=/(\(\?)?:\w+/g,H=/\*\w+/g,D=/[\-{}\[\]+?.,\\\^$|#\s]/g;n.extend(A.prototype,l,{initialize:function(){},route:function(t,r,i){n.isRegExp(t)||(t=this._routeToRegExp(t)),n.isFunction(r)&&(i=r,r=""),i||(i=this[r]);var o=this;return e.history.route(t,function(n){var s=o._extractParameters(t,n);o.execute(i,s,r)!==!1&&(o.trigger.apply(o,["route:"+r].concat(s)),o.trigger("route",r,s),e.history.trigger("route",o,r,s))}),this},execute:function(t,e,n){t&&t.apply(this,e)},navigate:function(t,n){return e.history.navigate(t,n),this},_bindRoutes:function(){if(this.routes){this.routes=n.result(this,"routes");for(var t,e=n.keys(this.routes);null!=(t=e.pop());)this.route(t,this.routes[t])}},_routeToRegExp:function(t){return t=t.replace(D,"\\$&").replace(O,"(?:$1)?").replace(I,function(t,e){return e?t:"([^/?]+)"}).replace(H,"([^?]*?)"),new RegExp("^"+t+"(?:\\?([\\s\\S]*))?$")},_extractParameters:function(t,e){var r=t.exec(e).slice(1);return n.map(r,function(t,e){return e===r.length-1?t||null:t?decodeURIComponent(t):null})}});var q=e.History=function(){this.handlers=[],this.checkUrl=n.bind(this.checkUrl,this),"undefined"!=typeof window&&(this.location=window.location,this.history=window.history)},M=/^[#\/]|\s+$/g,P=/^\/+|\/+$/g,F=/#.*$/;q.started=!1,n.extend(q.prototype,l,{interval:50,atRoot:function(){var t=this.location.pathname.replace(/[^\/]$/,"$&/");return t===this.root&&!this.getSearch()},matchRoot:function(){var t=this.decodeFragment(this.location.pathname),e=t.slice(0,this.root.length-1)+"/";return e===this.root},decodeFragment:function(t){return decodeURI(t.replace(/%25/g,"%2525"))},getSearch:function(){var t=this.location.href.replace(/#.*/,"").match(/\?.+/);return t?t[0]:""},getHash:function(t){var e=(t||this).location.href.match(/#(.*)$/);return e?e[1]:""},getPath:function(){var t=this.decodeFragment(this.location.pathname+this.getSearch()).slice(this.root.length-1);return"/"===t.charAt(0)?t.slice(1):t},getFragment:function(t){return null==t&&(t=this._usePushState||!this._wantsHashChange?this.getPath():this.getHash()),t.replace(M,"")},start:function(t){if(q.started)throw new Error("Backbone.history has already been started");if(q.started=!0,this.options=n.extend({root:"/"},this.options,t),this.root=this.options.root,this._wantsHashChange=this.options.hashChange!==!1,this._hasHashChange="onhashchange"in window&&(void 0===document.documentMode||document.documentMode>7),this._useHashChange=this._wantsHashChange&&this._hasHashChange,this._wantsPushState=!!this.options.pushState,this._hasPushState=!(!this.history||!this.history.pushState),this._usePushState=this._wantsPushState&&this._hasPushState,this.fragment=this.getFragment(),this.root=("/"+this.root+"/").replace(P,"/"),this._wantsHashChange&&this._wantsPushState){if(!this._hasPushState&&!this.atRoot()){var e=this.root.slice(0,-1)||"/";return this.location.replace(e+"#"+this.getPath()),!0}this._hasPushState&&this.atRoot()&&this.navigate(this.getHash(),{replace:!0})}if(!this._hasHashChange&&this._wantsHashChange&&!this._usePushState){this.iframe=document.createElement("iframe"),this.iframe.src="javascript:0",this.iframe.style.display="none",this.iframe.tabIndex=-1;var r=document.body,i=r.insertBefore(this.iframe,r.firstChild).contentWindow;i.document.open(),i.document.close(),i.location.hash="#"+this.fragment}var o=window.addEventListener||function(t,e){return attachEvent("on"+t,e)};return this._usePushState?o("popstate",this.checkUrl,!1):this._useHashChange&&!this.iframe?o("hashchange",this.checkUrl,!1):this._wantsHashChange&&(this._checkUrlInterval=setInterval(this.checkUrl,this.interval)),this.options.silent?void 0:this.loadUrl()},stop:function(){var t=window.removeEventListener||function(t,e){return detachEvent("on"+t,e)};this._usePushState?t("popstate",this.checkUrl,!1):this._useHashChange&&!this.iframe&&t("hashchange",this.checkUrl,!1),this.iframe&&(document.body.removeChild(this.iframe),this.iframe=null),this._checkUrlInterval&&clearInterval(this._checkUrlInterval),q.started=!1},route:function(t,e){this.handlers.unshift({route:t,callback:e})},checkUrl:function(t){var e=this.getFragment();return e===this.fragment&&this.iframe&&(e=this.getHash(this.iframe.contentWindow)),e===this.fragment?!1:(this.iframe&&this.navigate(e),void this.loadUrl())},loadUrl:function(t){return this.matchRoot()?(t=this.fragment=this.getFragment(t),n.some(this.handlers,function(e){return e.route.test(t)?(e.callback(t),!0):void 0})):!1},navigate:function(t,e){if(!q.started)return!1;e&&e!==!0||(e={trigger:!!e}),t=this.getFragment(t||"");var n=this.root;(""===t||"?"===t.charAt(0))&&(n=n.slice(0,-1)||"/");var r=n+t;if(t=this.decodeFragment(t.replace(F,"")),this.fragment!==t){if(this.fragment=t,this._usePushState)this.history[e.replace?"replaceState":"pushState"]({},document.title,r);else{if(!this._wantsHashChange)return this.location.assign(r);if(this._updateHash(this.location,t,e.replace),this.iframe&&t!==this.getHash(this.iframe.contentWindow)){var i=this.iframe.contentWindow;e.replace||(i.document.open(),i.document.close()),this._updateHash(i.location,t,e.replace)}}return e.trigger?this.loadUrl(t):void 0}},_updateHash:function(t,e,n){if(n){var r=t.href.replace(/(javascript:|#).*$/,"");t.replace(r+"#"+e)}else t.hash="#"+e}}),e.history=new q;var $=function(t,e){var r,i=this;r=t&&n.has(t,"constructor")?t.constructor:function(){return i.apply(this,arguments)},n.extend(r,i,e);var o=function(){this.constructor=r};return o.prototype=i.prototype,r.prototype=new o,t&&n.extend(r.prototype,t),r.__super__=i.prototype,r};x.extend=w.extend=A.extend=j.extend=q.extend=$;var R=function(){throw new Error('A "url" property or function must be specified')},L=function(t,e){var n=e.error;e.error=function(r){n&&n.call(e.context,t,r,e),t.trigger("error",t,r,e)}};return e})}},"backbone"),n("jquery"),n("vague-time"),n("underscore"),n("backbone")}).call(window);
 /*! Hammer.JS - v1.0.9 - 2014-03-18
  * http://eightmedia.github.com/hammer.js
  *

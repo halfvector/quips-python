@@ -1,7 +1,7 @@
 import _ from 'underscore'
 import Polyfill from './polyfill.js'
 
-export class AudioCapture {
+class AudioCapture {
     constructor() {
         // spawn background worker
         this._encodingWorker = new Worker("/assets/js/worker-encoder.min.js");
@@ -275,6 +275,7 @@ export class AudioCapture {
     };
 }
 
+/*
 // unused at the moment
 function Analyzer() {
 
@@ -437,3 +438,6 @@ function Analyzer() {
     //_canvasBg.src = "/img/bg5s.jpg";
     _canvasBg.src = "/img/bg6-wide.jpg";
 }
+*/
+
+export { AudioCapture }
