@@ -1,10 +1,10 @@
 import Backbone from 'backbone'
 import _ from 'underscore'
-import RecordingsList from './homepage'
+import HomepageView from './homepage'
 import { RecorderView, Recorder } from './recording-control'
+import { UserPodCollectionView } from './user-pod-collection'
 
 class Router extends Backbone.Router {
-
     constructor() {
         super({
             routes: {
@@ -18,12 +18,14 @@ class Router extends Backbone.Router {
     home() {
         console.log('Router#home called');
 
-        var view = new RecordingsList();
+        var view = new HomepageView();
         this.switchView(view);
     }
 
     user(username) {
         console.log('Router#user called for username = ' + username);
+        var view = new UserPodCollectionView(username);
+        this.switchView(view);
     }
 
     record() {

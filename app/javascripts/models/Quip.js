@@ -12,23 +12,14 @@ class QuipModel extends Backbone.Model {
         }
     }
 
-    constructor(props) {
-        super(props);
+    constructor(opts) {
+        super(opts);
+
         this.urlRoot = "/quips";
 
         // save listening progress at most every 3 seconds
         this.throttledSave = _.throttle(this.save, 3000);
     }
-
-    //save(attributes) {
-    //    console.log("Quip Model saving to localStorage");
-    //    localStorage.setItem(this.id, JSON.stringify(this.toJSON()));
-    //}
-    //
-    //fetch() {
-    //    console.log("Quip Model loading from localStorage");
-    //    this.set(JSON.parse(localStorage.getItem(this.id)));
-    //}
 }
 
 class MyQuipCollection extends Backbone.Collection {

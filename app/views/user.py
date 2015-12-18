@@ -8,37 +8,10 @@ bp = Blueprint('user', __name__, template_folder='templates')
 
 @bp.route('/u/<username>')
 def user_recordings(username):
-    # TODO: boo, get_or_create() is deprecated. need another one-liner
-
-    try:
-        user = User.objects.get(username=username)
-    except DoesNotExist:
-        return render_template('user_not_found.html')
-
-    if user.id == g.user['id']:
-        # looking at our own feed
-        recordings = Recording.objects(Q(user=user)).order_by('-postedAt')
-    else:
-        # looking at someone else's feed
-        recordings = Recording.objects(Q(isPublic=True, user=user)).order_by('-postedAt')
-
-    for record in recordings:
-        # create timestamp for javascript's vague-time lib
-        record.timestamp = record.postedAt.isoformat()
-        record.isMine = record.user.id == g.user['id']
-
-        tiny_id = tinyurl.encode(str(record.id))
-        record.publicUrl = url_for('user.one_recording', recordingId=tiny_id)
-
-        # replace empty descriptions with something
-        # TODO: do this client-side
-        if not record.description:
-            record.description = "N/A"
-
     return render_template(
-        'user_recordings.html', recordings=recordings, user=g.user
+        'homepage.html',
+        user=g.user
     )
-
 
 @bp.route('/listen/<recordingId>')
 def one_recording(recordingId):

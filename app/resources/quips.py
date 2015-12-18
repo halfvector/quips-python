@@ -65,3 +65,15 @@ class QuipListResource(Resource):
 
     def post(self):
         return {}
+
+
+
+class UserQuipListResource(Resource):
+    def get(self, user_id):
+        dbref_user_id = User.objects.get(username=user_id)
+
+        entities = Recording.objects(Q(isPublic=True) & Q(user=dbref_user_id))[:50].order_by('-postedAt')
+        return map(QuipMapper.to_web_dto, entities)
+
+    def post(self):
+        return {}

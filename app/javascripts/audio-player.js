@@ -2,7 +2,9 @@ import Backbone from 'backbone'
 import _ from 'underscore'
 
 class AudioPlayerEvents extends Backbone.Model {
-
+    pause() {
+        this.trigger("pause");
+    }
 }
 
 export let AudioPlayer = new AudioPlayerEvents();
@@ -19,6 +21,7 @@ class AudioPlayerView extends Backbone.View {
         console.log("AudioPlayerView initialized");
         this.audioPlayer = document.getElementById("audio-player");
         AudioPlayer.on("toggle", (quip) => this.onToggle(quip), this);
+        AudioPlayer.on("pause", (quip) => this.pause(quip), this);
     }
 
     close() {
@@ -80,7 +83,9 @@ class AudioPlayerView extends Backbone.View {
 
     pause(quipModel) {
         this.audioPlayer.pause();
-        AudioPlayer.trigger("/" + quipModel.id + "/paused");
+        if(quipModel != null) {
+            AudioPlayer.trigger("/" + quipModel.id + "/paused");
+        }
         this.stopPeriodicTimer();
     }
 

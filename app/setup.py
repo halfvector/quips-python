@@ -22,6 +22,7 @@ api.add_resource(UserListResource, '/users')
 api.add_resource(CurrentUserResource, '/current_user')
 api.add_resource(QuipResource, '/quips/<string:quip_id>')
 api.add_resource(QuipListResource, '/quips')
+api.add_resource(UserQuipListResource, '/api/u/<string:user_id>/quips')
 api.add_resource(ListenResource, '/listen/<string:user_id>/<string:recording_id>')
 api.add_resource(ListenListResource, '/listen')
 

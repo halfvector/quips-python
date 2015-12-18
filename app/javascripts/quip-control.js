@@ -1,9 +1,8 @@
+import vagueTime from 'vague-time'
 import Backbone from 'backbone'
 import _ from 'underscore'
 import { AudioPlayer } from './audio-player.js'
 import { QuipModel } from './models/Quip'
-
-
 
 
 //class AudioPlayerEvents extends Backbone.Events {
@@ -25,7 +24,9 @@ class QuipView extends Backbone.View {
         }
     }
 
-    get tagName() { return 'div'; }
+    get tagName() {
+        return 'div';
+    }
 
     onPause() {
         console.log("QuipView; paused");
@@ -69,8 +70,6 @@ class QuipView extends Backbone.View {
         this.model.on('change:progress', (model, progress) => {
             $(this.el).find(".progress-bar").css("width", progress + "%");
         });
-
-        //this.on(this.model, "change", this.render);
     }
 
     shutdown() {
@@ -107,7 +106,10 @@ class QuipView extends Backbone.View {
     }
 
     render() {
-        this.$el.html(this.template(this.model.toJSON()));
+        var viewModel = this.model.toJSON();
+        viewModel.vagueTime = vagueTime.get({from: new Date(), to: new Date(this.model.get("timestamp"))});
+
+        this.$el.html(this.template(viewModel));
         return this;
     }
 }
