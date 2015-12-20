@@ -1,5 +1,7 @@
 import Backbone from 'backbone'
 import _ from 'underscore'
+import Handlebars from 'handlebars'
+import template from '../templates/create_recording.hbs'
 import { QuipModel, QuipView, Quips } from './quip-control.js'
 import { AudioCapture } from './audio-capture'
 import { AudioPlayerView } from './audio-player'
@@ -45,8 +47,7 @@ export class RecorderView extends Backbone.View {
 
     render() {
         console.log("rendering recorder control");
-        this.template = _.template($('#quip-recorder-template').html());
-        this.$el.html(this.template(this.model.toJSON()));
+        this.$el.html(template(this.model.toJSON()));
     }
 
     initialize(options) {

@@ -59,13 +59,9 @@ export let app = new Application();
 
 $(() => {
     // setup raven to push messages to our sentry
-    //Raven.config('https://d098712cb7064cf08b74d01b6f3be3da@app.getsentry.com/20973', {
+    //Raven.config('https://db2a7d58107c4975ae7de736a6308a1e@app.getsentry.com/53456', {
     //    whitelistUrls: ['staging.couchpod.com', 'couchpod.com'] // production only
-    //}).install();
-
-    Raven.config('https://db2a7d58107c4975ae7de736a6308a1e@app.getsentry.com/53456', {
-        whitelistUrls: ['staging.couchpod.com', 'couchpod.com'] // production only
-    }).install()
+    //}).install()
 
     app.initialize();
 

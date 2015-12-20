@@ -1,22 +1,17 @@
-from app.services import app
-from bson import ObjectId
-from mongoengine import Q
-from flask import url_for, redirect, render_template, g, request, session, jsonify, Blueprint
-from ..models import Recording, User
 import os
+
+from bson import ObjectId
+from flask import url_for, redirect, render_template, g, request, session, jsonify, Blueprint
+
+from app.services import app
+from ..models import Recording, User
 
 bp = Blueprint('recordings', __name__, template_folder='templates')
 
 
 @bp.route('/record')
 def show_recorder():
-    recording_count = Recording.objects(Q(user=session.get('userId'))).count()
-
-    return render_template(
-        'record.html',
-        user=g.user,
-        recording_count=recording_count
-    )
+    return render_template('homepage.html', user=g.user)
 
 
 @bp.route('/recording/publish/<recording_id>', methods=['POST'])

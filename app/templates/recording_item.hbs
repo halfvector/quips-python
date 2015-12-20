@@ -1,0 +1,32 @@
+<div class="quip">
+    <div class="flex-row">
+        <div class="quip-profile">
+            <a class="btn" href="/u/<%= username %>">
+                <img src="/profile_images<%= profileImage %>"/>
+            </a>
+        </div>
+        <div class="quip-details">
+            <div class="flex-row">
+                <span class="name"><%= username %></span>
+                <time><%= vagueTime %></time>
+            </div>
+            <div class="text"><%= description %></div>
+        </div>
+    </div>
+    <div class="quip-player">
+        <div class="progress-bar"></div>
+        <i class="fa fa-play"></i>
+    </div>
+    <div class="quip-actions">
+        <a class="button" href="<%= publicUrl %>" title="Share">
+            <i class="fa fa-share-square-o"></i> <span class="caption">Share</span>
+        </a>
+        <a class="button lock-indicator" title="Toggle visibility">
+            <% if (isPublic) { %>
+            <i class="fa fa-unlock"></i> <span class="caption">Make Private</span>
+            <% } else { %>
+            <i class="fa fa-lock"></i> <span class="caption">Make Public</span>
+            <% } %>
+        </a>
+    </div>
+</div>

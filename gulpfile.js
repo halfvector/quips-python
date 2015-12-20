@@ -8,6 +8,11 @@ var sourcemaps = require('gulp-sourcemaps');
 var browserify = require('browserify');
 var babelify = require('babelify');
 var notify = require('gulp-notify');
+var template = require('gulp-underscore-template');
+var define = require('gulp-define-module');
+var declare = require('gulp-declare');
+var wrap = require('gulp-wrap');
+var hbsfy = require("hbsfy");
 
 var http = require('http'),
     runSequence = require('run-sequence'),
@@ -99,9 +104,15 @@ gulp.task('worker-scripts', function () {
 
 // js: primary scripts
 gulp.task('main-scripts', function () {
+
+    //hbsfy.configure({
+    //    extensions: ['hbs']
+    //});
+
     return browserify({entries: config.main_src_js, debug: true})
         .external(['backbone', 'vague-time', 'underscore', 'jquery'])
-        .transform([babelify])
+        .transform(hbsfy)
+        .transform(babelify)
         .bundle()
         .on('error', notify.onError())
         .pipe(source('app.js'))
@@ -123,6 +134,22 @@ gulp.task('main-scripts', function () {
     //    .pipe(concat('all.js'))
     //    .pipe(sourcemaps.write('.'))
     //    .pipe(gulp.dest(config.dest_js))
+});
+
+gulp.task('templates', function () {
+    "use strict";
+    gulp.src("app/templates/**/*.hbs")
+        .pipe(template())
+        .pipe(define('hybrid', {require: {'_': 'underscore'}}))
+        .pipe(declare({
+            namespace: 'templates',
+            noRedeclare: true,
+            root: 'window'
+        }))
+        .pipe(concat('templates.js'))
+        //.pipe(gulp.dest('app/javascripts/'))
+        .pipe(gulp.dest(config.dest_js))
+    ;
 });
 
 function onError(err) {
@@ -151,6 +178,7 @@ gulp.task('watch', ['build'], function (completed) {
     gulp.watch(config.external_src_js, ['external-scripts']);
     gulp.watch(config.workers_src_js, ['worker-scripts']);
     gulp.watch(config.all_src_js, ['main-scripts']);
+    gulp.watch('app/templates/**/*.hbs', ['main-scripts']);
 
     // live reload when asset is changed
     gulp.watch(config.src_html, livereload.changed);
