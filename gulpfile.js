@@ -110,7 +110,8 @@ gulp.task('main-scripts', function () {
     //});
 
     return browserify({entries: config.main_src_js, debug: true})
-        .external(['backbone', 'vague-time', 'underscore', 'jquery'])
+        .external(['backbone', 'vague-time', 'underscore', 'jquery', 'babel/polyfill'])
+        //.add(require.resolve("babel/polyfill"))
         .transform(hbsfy)
         .transform(babelify)
         .bundle()

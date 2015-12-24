@@ -1,57 +1,31 @@
 import Backbone from 'backbone'
 import _ from 'underscore'
 import Handlebars from 'handlebars'
-import template from '../templates/create_recording.hbs'
 import { QuipModel, QuipView, Quips } from './quip-control.js'
 import { AudioCapture } from './audio-capture'
 import { AudioPlayerView } from './audio-player'
 import { CreateRecordingModel } from './models/CreateRecordingModel'
 
-export class Recorder extends Backbone.Model {
+import template from '../templates/get_microphone.hbs'
+
+export class GetMicrophoneView extends Backbone.View {
     defaults() {
-        return {
-            recordingTime: 0
-        }
-    }
-}
-
-export class RecorderView extends Backbone.View {
-    //    el: '.m-recording-container',
-
-    IntToTime(value) {
-        var minutes = Math.floor(value / 60);
-        var seconds = Math.round(value - minutes * 60);
-
-        return ("00" + minutes).substr(-2) + ":" + ("00" + seconds).substr(-2);
-    }
-
-    defaults() {
-        return {
-            audioCapture: null,
-            audioBlob: null,
-            audioBlobUrl: null,
-            audioPlayer: null,
-            isRecording: false,
-            timerId: 0,
-            timerStart: 3
-        }
+        return {}
     }
 
     events() {
-        return {
-            "click .recording-toggle": "toggle",
-            "click #cancel-recording": "cancelRecording",
-            "click #upload-recording": "uploadRecording",
-            "click #helper-btn": "playPreview"
-        }
+        return {}
     }
 
     render() {
+        console.log("rendering recorder control");
         this.$el.html(template(this.model.toJSON()));
     }
 
     build(model) {
         this.model = model;
+
+        this.audioCapture = new AudioCapture();
 
         this.render();
 
@@ -60,22 +34,107 @@ export class RecorderView extends Backbone.View {
             return;
         }
 
-        //console.log("can play vorbis: ", !!this.audioPlayer.canPlayType && "" != this.audioPlayer.canPlayType('audio/ogg; codecs="vorbis"'));
+        console.log("can play vorbis: ", !!this.audioPlayer.canPlayType && "" != this.audioPlayer.canPlayType('audio/ogg; codecs="vorbis"'));
 
-        // play a beep
+        //this.audioPlayer.loop = "loop";
+        //this.audioPlayer.autoplay = "autoplay";
         this.audioPlayer.src = "/assets/sounds/beep_short_on.ogg";
         this.audioPlayer.play();
 
         this.model.on('change:recordingTime', function (model, time) {
             $(".recording-time").text(time);
         })
+
+        // attempt to fetch media-stream on page-load
+        this.audioCapture.grabMicrophone(onMicrophoneGranted, onMicrophoneDenied);
     }
 
-    initialize(microphoneMediaStream) {
-        this.audioCapture = new AudioCapture(microphoneMediaStream);
+    onMicrophoneDenied() {
+        // show screen asking user for permission
+    }
 
+    onMicrophoneGranted() {
+        // show recorder
+    }
+
+    initialize(options) {
+        console.log("RecorderView init");
         new CreateRecordingModel().fetch()
             .then(model => this.build(new CreateRecordingModel(model)));
+
+
+        // TODO: a pretty advanced but neat feature may be to store a backup copy of a recording locally in case of a crash or user-error
+        /*
+         // check how much temporary storage space we have. it's a good way to save recording without losing it
+         window.webkitStorageInfo.queryUsageAndQuota(
+         webkitStorageInfo.TEMPORARY,
+         function(used, remaining) {
+         var rmb = (remaining / 1024 / 1024).toFixed(4);
+         var umb = (used / 1024 / 1024).toFixed(4);
+         console.log("Used quota: " + umb + "mb, remaining quota: " + rmb + "mb");
+         }, function(e) {
+         console.log('Error', e);
+         }
+         );
+
+         function onErrorInFS() {
+         var msg = '';
+
+         switch (e.code) {
+         case FileError.QUOTA_EXCEEDED_ERR:
+         msg = 'QUOTA_EXCEEDED_ERR';
+         break;
+         case FileError.NOT_FOUND_ERR:
+         msg = 'NOT_FOUND_ERR';
+         break;
+         case FileError.SECURITY_ERR:
+         msg = 'SECURITY_ERR';
+         break;
+         case FileError.INVALID_MODIFICATION_ERR:
+         msg = 'INVALID_MODIFICATION_ERR';
+         break;
+         case FileError.INVALID_STATE_ERR:
+         msg = 'INVALID_STATE_ERR';
+         break;
+         default:
+         msg = 'Unknown Error';
+         break;
+         }
+
+         console.log('Error: ' + msg);
+         }
+
+         window.requestFileSystem  = window.requestFileSystem || window.webkitRequestFileSystem;
+
+         window.requestFileSystem(window.TEMPORARY, 5 * 1024 * 1024, function onSuccess(fs) {
+
+         console.log('opening file');
+
+         fs.root.getFile("test", {create:true}, function(fe) {
+
+         console.log('spawned writer');
+
+         fe.createWriter(function(fw) {
+
+         fw.onwriteend = function(e) {
+         console.log('write completed');
+         };
+
+         fw.onerror = function(e) {
+         console.log('write failed: ' + e.toString());
+         };
+
+         console.log('writing blob to file..');
+
+         var blob = new Blob(['yeh this is a test!'], {type: 'text/plain'});
+         fw.write(blob);
+
+         }, onErrorInFS);
+
+         }, onErrorInFS);
+
+         }, onErrorInFS);
+         */
     }
 
     toggle(event) {
@@ -147,16 +206,30 @@ export class RecorderView extends Backbone.View {
         this.model.set('recordingTime', timeStr);
     }
 
+    onCountdownTick() {
+        if (--this.timerStart > 0) {
+            this.model.set('recordingTime', this.timerStart);
+        } else {
+            console.log("countdown hit zero. begin recording.");
+            clearInterval(this.timerId);
+            this.model.set('recordingTime', this.IntToTime(0));
+            this.onMicRecording();
+        }
+    }
+
     startRecording() {
         console.log("starting recording");
-        this.audioCapture.start(() => this.onRecordingStarted());
+        this.audioCapture.start(() => this.onMicReady());
     }
 
     /**
      * Microphone is ready to record. Do a count-down, then signal for input-signal to begin recording
      */
-    onRecordingStarted() {
+    onMicReady() {
         console.log("mic ready to record. do countdown.");
+        this.timerStart = 3;
+        // run countdown
+        //this.timerId = setInterval(this.onCountdownTick.bind(this), 1000);
 
         // or launch capture immediately
         this.model.set('recordingTime', this.IntToTime(0));
@@ -178,7 +251,7 @@ export class RecorderView extends Backbone.View {
         // 1) figure out how much audio was already captured, and cut it out
         // 2) use a fade-in to cover up that split-second of audio
         // 3) allow the user to edit post-record and clip as they wish (better but more complex option!)
-        setTimeout(() => this.audioCapture.toggleMicrophoneRecording(true), 200);
+        setTimeout(() => this.audioCapture.toggleMicrophoneRecording(true), 500);
     }
 
     stopRecording() {
@@ -186,16 +259,16 @@ export class RecorderView extends Backbone.View {
         clearInterval(this.timerId);
 
         // play sound immediately to bypass mobile chrome's "user initiated media" requirement
-        this.audioPlayer.src = "/assets/sounds/beep_short_off.ogg";
+        this.audioPlayer.src = "/assets/sounds/beep_short_on.ogg";
         this.audioPlayer.play();
 
-        // request recording stop
-        // wait for sync to complete
-        // and then callback transition to next screen
         this.audioCapture.stop((blob) => this.onRecordingCompleted(blob));
 
         $(".recording-time").removeClass("is-visible");
         $(".m-recording-screen").removeClass("is-recording");
+
+        // TODO: animate recorder out
+        // TODO: animate uploader in
     }
 
     onRecordingCompleted(blob) {
@@ -205,8 +278,10 @@ export class RecorderView extends Backbone.View {
     }
 
     playPreview() {
-        // at this point a playable audio blob should already be loaded in audioPlayer
-        // so just play it again
+        console.log("playing preview..");
+        console.log("audio blob", this.audioBlob);
+        console.log("audio blob url", this.audioBlobUrl);
+        this.audioPlayer.src = this.audioBlobUrl;
         this.audioPlayer.play();
     }
 
@@ -215,21 +290,9 @@ export class RecorderView extends Backbone.View {
         this.audioBlobUrl = window.URL.createObjectURL(this.audioBlob);
         $(".m-recording-container").addClass("flipped");
 
-        this.makeAudioBlobUrlPlayable(this.audioBlobUrl, (playableAudioBlobUrl) => {
-            this.audioPlayer.src = playableAudioBlobUrl;
-            this.audioPlayer.play();
-        });
-    }
-
-    /**
-     * HACK: route blob through xhr to let Android Chrome play blobs via <audio>
-     * @param audioBlobUrl representing potentially non-disk-backed blob url
-     * @param callback function accepts a disk-backed blob url
-     */
-    makeAudioBlobUrlPlayable(audioBlobUrl, callback) {
-        // this request happens over loopback
+        // HACK: route blob through xhr to let Android Chrome play blobs via <audio>
         var xhr = new XMLHttpRequest();
-        xhr.open('GET', audioBlobUrl, true);
+        xhr.open('GET', this.audioBlobUrl, true);
         xhr.responseType = 'blob';
         xhr.overrideMimeType('audio/ogg');
 
@@ -237,10 +300,11 @@ export class RecorderView extends Backbone.View {
             if (xhr.readyState === 4 && xhr.status == 200) {
                 var xhrBlobUrl = window.URL.createObjectURL(xhr.response);
 
-                console.log("Loaded blob from cache url: " + audioBlobUrl);
+                console.log("Loaded blob from cache url: " + this.audioBlobUrl);
                 console.log("Routed into blob url: " + xhrBlobUrl);
 
-                callback(xhrBlobUrl);
+                this.audioPlayer.src = xhrBlobUrl;
+                this.audioPlayer.play();
             }
         };
         xhr.send();

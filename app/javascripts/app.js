@@ -4,6 +4,7 @@ import { ListenState, ListenStateCollection } from './models/ListenState'
 import { CurrentUserModel } from './models/CurrentUser'
 import { AudioPlayerView } from './audio-player'
 import Router from './router'
+import Polyfill from './polyfill.js'
 
 $ = require('jquery');
 
@@ -14,6 +15,8 @@ class Application {
 
     initialize() {
         var router = new Router();
+
+        Polyfill.install();
 
         Backbone.$ = $;
         Backbone.history.start({pushState: true, hashChange: false});

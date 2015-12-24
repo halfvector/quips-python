@@ -1,8 +1,7 @@
 import _ from 'underscore'
-import Polyfill from './polyfill.js'
 
 class AudioCapture {
-    constructor() {
+    constructor(microphoneMediaStream) {
         // spawn background worker
         this._encodingWorker = new Worker("/assets/js/worker-encoder.min.js");
 
@@ -16,7 +15,7 @@ class AudioCapture {
         this._onCaptureCompleteCallback = null;
         this._audioAnalyzer = null;
         this._audioGain = null;
-        this._cachedMediaStream = null;
+        this._cachedMediaStream = microphoneMediaStream;
 
         this._audioEncoder = null;
         this._latestAudioBuffer = [];
@@ -27,36 +26,8 @@ class AudioCapture {
         this._fftSmoothing = 0.8;
         this._totalNumSamples = 0;
 
-        Polyfill.install();
+
     }
-
-    // TODO: firefox's built-in ogg-creation route
-    // Firefox 27's manual recording doesn't work. something funny with their sampling rates or buffer sizes
-    // the data is fairly garbled, like they are serving 22khz as 44khz or something like that
-    startAutomaticEncoding(mediaStream) {
-        this._audioEncoder = new MediaRecorder(mediaStream);
-
-        this._audioEncoder.ondataavailable = function (e) {
-            console.log("AudioCapture::startAutomaticEncoding(); MediaRecorder.ondataavailable(); new blob: size=" + e.data.size + " type=" + e.data.type);
-            this._latestAudioBuffer.push(e.data);
-        };
-
-        this._audioEncoder.onstop = function () {
-            console.log("AudioCapture::startAutomaticEncoding(); MediaRecorder.onstop(); hit");
-
-            // send the last captured audio buffer
-            var encoded_blob = new Blob(this._latestAudioBuffer, {type: 'audio/ogg'});
-
-            console.log("AudioCapture::startAutomaticEncoding(); MediaRecorder.onstop(); got encoded blob: size=" + encoded_blob.size + " type=" + encoded_blob.type);
-
-            if (this._onCaptureCompleteCallback)
-                this._onCaptureCompleteCallback(encoded_blob);
-        };
-
-        console.log("AudioCapture::startAutomaticEncoding(); MediaRecorder.start()");
-        this._audioEncoder.start(0);
-    }
-
     createAudioContext(mediaStream) {
         // build capture graph
         this._audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -186,28 +157,6 @@ class AudioCapture {
         this._isRecording = captureAudioSamples;
     }
 
-    // called when user allows us use of their microphone
-    onMicrophoneProvided(mediaStream) {
-
-        this._cachedMediaStream = mediaStream;
-
-        // we could check if the browser can perform its own encoding and use that
-        // Firefox can provide us ogg+speex or ogg+opus? files, but unfortunately that codec isn't supported widely enough
-        // so instead we perform manual encoding everywhere right now to get us ogg+vorbis
-        // though one day, i want ogg+opus! opus has a wonderful range of quality settings perfect for this project
-
-        if (false && typeof(MediaRecorder) !== "undefined") {
-            this.startAutomaticEncoding(mediaStream);
-        } else {
-            // no media recorder available, do it manually
-            this.startManualEncoding(mediaStream);
-        }
-
-        // TODO: might be a good time to start a spectral analyzer
-        if (this._onStartedCallback)
-            this._onStartedCallback();
-    }
-
     setGain(gain) {
         if (this._audioGain)
             this._audioGain.gain.value = gain;
@@ -216,38 +165,14 @@ class AudioCapture {
         this._cachedGainValue = gain;
     }
 
-    preloadMediaStream() {
-        if (this._cachedMediaStream)
-            return;
-
-        navigator.mediaDevice
-            .getUserMedia({audio: true})
-            .then((ms) => {
-                this._cachedMediaStream = ms;
-            })
-            .catch((err) => {
-                console.log("AudioCapture::start(); could not grab microphone. perhaps user didn't give us permission?");
-                console.warn(err);
-            })
-    };
-
-
-
     start(onStartedCallback) {
-        this._onStartedCallback = onStartedCallback;
+        console.log("this._cachedMediaStream", this._cachedMediaStream);
+        this.startManualEncoding(this._cachedMediaStream);
 
-        if (this._cachedMediaStream)
-            return this.onMicrophoneProvided(this._cachedMediaStream);
+        // TODO: might be a good time to start a spectral analyzer
 
-        navigator.mediaDevice
-            .getUserMedia({audio: true})
-            .then((ms) => this.onMicrophoneProvided(ms))
-            .catch((err) => {
-                console.log("AudioCapture::start(); could not grab microphone. perhaps user didn't give us permission?");
-                console.warn(err);
-            })
-
-        return true;
+        if (onStartedCallback)
+            onStartedCallback();
     }
 
     stop(captureCompleteCallback) {

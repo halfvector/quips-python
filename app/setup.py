@@ -1,7 +1,7 @@
 from app.auth import load_current_user
 from flask import request, send_from_directory
 # import all views
-from views import homepage, recordings, auth, user, changelog
+from views import homepage, recordings, auth, user, changelog, spa_api
 
 # import all api resourcs
 from resources import *
@@ -15,6 +15,7 @@ app.register_blueprint(recordings.bp)
 app.register_blueprint(auth.bp)
 app.register_blueprint(user.bp)
 app.register_blueprint(changelog.bp)
+# app.register_blueprint(spa_api.bp)
 
 # register restful api endpoints
 api.add_resource(UserResource, '/users/<string:user_id>')
@@ -25,6 +26,7 @@ api.add_resource(QuipListResource, '/quips')
 api.add_resource(UserQuipListResource, '/api/u/<string:user_id>/quips')
 api.add_resource(ListenResource, '/listen/<string:user_id>/<string:recording_id>')
 api.add_resource(ListenListResource, '/listen')
+api.add_resource(CreateRecording, '/api/create_recording')
 
 
 # static file paths (when running without nginx)

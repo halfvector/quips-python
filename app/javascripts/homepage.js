@@ -3,7 +3,7 @@ import { QuipView, } from './quip-control.js'
 import { AudioPlayer, AudioPlayerView } from './audio-player'
 import { QuipModel, MyQuipCollection } from './models/Quip'
 
-export default class HomepageView extends Backbone.View {
+class HomepageView extends Backbone.View {
     initialize() {
         new MyQuipCollection().fetch().then(quips => this.onQuipsLoaded(quips))
     }
@@ -31,3 +31,4 @@ export default class HomepageView extends Backbone.View {
     }
 };
 
+export { HomepageView }
