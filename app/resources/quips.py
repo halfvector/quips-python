@@ -1,3 +1,4 @@
+from bson import ObjectId
 from flask import g, url_for
 from flask.ext.restful import reqparse
 from flask_restful import Resource
@@ -28,7 +29,7 @@ class QuipMapper:
             'id': entity.id,
             'url': '/recordings/' + str(entity.id) + '.ogg',
             'tinyId': tiny_id,
-            'publicUrl': url_for('user.one_recording', recordingId=tiny_id),
+            'publicUrl': url_for('spa_web.single_recording', recordingId=tiny_id),
             'progress': progress,
             'position': position,
             'duration': duration,
@@ -36,9 +37,14 @@ class QuipMapper:
 
 
 class QuipResource(Resource):
-    def get(self, user_id):
-        recordings = Recording.objects.get_or_404(Q(isPublic=True) & Q(user=user_id))
-        return map(QuipMapper.to_web_dto, recordings)
+    def get(self, quip_id):
+        tiny_id = ObjectId(tinyurl.decode(quip_id))
+
+        record = Recording.objects.get_or_404(Q(id=tiny_id))
+        if not record or not record.isPublic or record.user.id != g.user['id']:
+            return {}, 404
+
+        return QuipMapper.to_web_dto(record)
 
     def put(self, quip_id):
         parser = reqparse.RequestParser()

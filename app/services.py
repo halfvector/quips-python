@@ -67,4 +67,4 @@ def serialize_resource_mongo_objs(obj, status, headers=None):
 
 
 # hookup error handling
-sentry = Sentry(app, dsn=config.SENTRY_DSN)
+#sentry = Sentry(app, dsn=config.SENTRY_DSN)

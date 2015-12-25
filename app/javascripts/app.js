@@ -10,18 +10,27 @@ $ = require('jquery');
 
 class Application {
     constructor() {
-
+        this.router = null;
     }
 
     initialize() {
-        var router = new Router();
-
         Polyfill.install();
-
         Backbone.$ = $;
-        Backbone.history.start({pushState: true, hashChange: false});
         //if (!Backbone.history.start({pushState: true, hashChange: false})) router.navigate('404', {trigger: true});
 
+        this.router = new Router();
+        this.redirectUrlClicksToRouter();
+
+        var audioPlayer = new AudioPlayerView({el: '#audio-player'});
+
+        // load user
+        new CurrentUserModel().fetch()
+            .then(model => this.onUserAuthenticated(model), response => this.onUserAuthFail(response));
+
+        //new ListenStateCollection().fetch().then((state) => console.log("got listen states", state));
+    }
+
+    redirectUrlClicksToRouter() {
         // Use delegation to avoid initial DOM selection and allow all matching elements to bubble
         $(document).delegate("a", "click", function (evt) {
             // Get the anchor href and protcol
@@ -29,6 +38,13 @@ class Application {
             var protocol = this.protocol + "//";
 
             var openLinkInTab = false;
+
+            console.log("href", href);
+
+            // special cases that we want to hit the server
+            if(href == "/auth") {
+                return;
+            }
 
             // Ensure the protocol is not part of URL, meaning its relative.
             // Stop the event bubbling to ensure the link will not cause a page refresh.
@@ -41,19 +57,25 @@ class Application {
                 Backbone.history.navigate(href, true);
             }
         });
-
-        var audioPlayer = new AudioPlayerView({el: '#audio-player'});
-
-        // load user
-        var model = new CurrentUserModel();
-        model.fetch().then(() => this.onModelLoaded(model));
-
-        //new ListenStateCollection().fetch().then((state) => console.log("got listen states", state));
     }
 
-    onModelLoaded(user) {
-        console.log("Loaded current user", user.attributes);
-        this.currentUser = user;
+    onUserAuthFail(response) {
+        // user not authenticated
+        if (response.status == 401) {
+        }
+
+        this.router.setUser(null);
+        this.startRouterNavigation();
+    }
+
+    onUserAuthenticated(user) {
+        console.log("Loaded current user", user);
+        this.router.setUser(user);
+        this.startRouterNavigation();
+    }
+
+    startRouterNavigation() {
+        Backbone.history.start({pushState: true, hashChange: false});
     }
 }
 

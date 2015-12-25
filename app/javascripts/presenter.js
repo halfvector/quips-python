@@ -1,4 +1,8 @@
 class Presenter {
+    showHeaderNav(view) {
+        $("body > header").append(view.el);
+    }
+
     switchView(newView) {
         if(this.view) {
             var oldView = this.view;

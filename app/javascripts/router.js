@@ -6,7 +6,10 @@ import { RecorderView, Recorder } from './recording-control'
 import { GetMicrophoneView } from './get-mic-view'
 import { UserPodCollectionView } from './user-pod-collection'
 import { CreateRecordingModel } from './models/CreateRecordingModel'
+import { ChangelogView } from './changelog-view'
 import { RootPresenter } from './presenter'
+import { HeaderNavView } from './header-nav-view'
+import { UserPodView } from './user-pod'
 
 class MicrophonePermissions {
     constructor() {
@@ -68,15 +71,41 @@ class UserController {
     }
 }
 
+class ChangelogController {
+    constructor() {
+        RootPresenter.switchView(new ChangelogView());
+    }
+}
+
+class SinglePodController {
+    constructor(id) {
+        RootPresenter.switchView(new UserPodView(id));
+    }
+}
+
 class Router extends Backbone.Router {
     constructor() {
         super({
             routes: {
                 '': 'home',
                 'record': 'record',
-                'u/:username': 'user'
+                'u/:username': 'user',
+                'changelog': 'changelog',
+                'q/:quipid': 'single_item'
             }
         });
+    }
+
+    initialize() {
+    }
+
+    setUser(user) {
+        RootPresenter.showHeaderNav(new HeaderNavView(user))
+    }
+
+    single_item(id) {
+        console.log('Router#single_item called');
+        new SinglePodController(id);
     }
 
     home() {
@@ -87,6 +116,10 @@ class Router extends Backbone.Router {
     user(username) {
         console.log('Router#user called for username = ' + username);
         new UserController(username);
+    }
+
+    changelog() {
+        new ChangelogController();
     }
 
     record() {

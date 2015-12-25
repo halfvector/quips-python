@@ -22,7 +22,7 @@ def auth_logout():
     destroy_session()
 
     # TODO: is there a better way to unset cookies in Flask?
-    response = app.make_response(redirect(url_for('homepage.index')))
+    response = app.make_response(redirect(url_for('spa_web.index')))
     # response.set_cookie('aid', '', expires=0)
     return response
 
@@ -68,7 +68,7 @@ def download_user_profile_image(twitter, user):
 
 @bp.route('/auth-response')
 def auth_authorized():
-    next_url = request.args.get('next') or url_for('homepage.index')
+    next_url = request.args.get('next') or url_for('spa_web.index')
 
     # use temporarily oauth-tokens from session to finish authentication
     try:

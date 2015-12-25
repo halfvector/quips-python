@@ -3,7 +3,7 @@ import Backbone from 'backbone'
 import _ from 'underscore'
 import { AudioPlayer } from './audio-player.js'
 import { QuipModel } from './models/Quip'
-
+import template from '../templates/recording_item.hbs'
 
 //class AudioPlayerEvents extends Backbone.Events {
 //
@@ -54,8 +54,6 @@ class QuipView extends Backbone.View {
     }
 
     initialize() {
-        this.template = _.template($('#quip-template').html());
-
         var id = this.model.get("id");
 
         AudioPlayer.on("/" + id + "/paused", () => this.onPause(), this);
@@ -109,7 +107,7 @@ class QuipView extends Backbone.View {
         var viewModel = this.model.toJSON();
         viewModel.vagueTime = vagueTime.get({from: new Date(), to: new Date(this.model.get("timestamp"))});
 
-        this.$el.html(this.template(viewModel));
+        this.$el.html(template(viewModel));
         return this;
     }
 }

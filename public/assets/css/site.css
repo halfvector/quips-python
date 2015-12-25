@@ -887,6 +887,9 @@ body { padding: 0; margin: 0; width: 100%; height: 100%; position: relative; }
 .header-nav .nav-left .wordmark { font-family: "Josefin Sans", "Helvetica Neue", Helvetica, Arial, sans-serif; color: #fff; font-size: 20px; font-weight: 300; letter-spacing: 2px; text-decoration: none; text-transform: uppercase; }
 .header-nav .nav-left .wordmark strong { font-weight: 600; }
 .header-nav .nav-right .btn:not(:first-child) { margin-left: 40px; }
+.header-nav .btn-sign-in { display: inline-block; border-radius: 4px; padding: 8px 14px; white-space: nowrap; background: #4F9FEB; color: #fff; font-size: 16px; cursor: pointer; text-decoration: none; text-align: center; }
+.header-nav .btn-sign-in i.fa { margin-right: 5px; }
+.header-nav .btn-sign-in:hover { background: #62d0a8; }
 .header-nav .btn { width: 40px; height: 40px; border-radius: 50%; -webkit-transition: -webkit-transform 0.06s ease-in-out; transition: transform 0.06s ease-in-out; font-size: 20px; cursor: pointer; text-decoration: none; text-align: center; vertical-align: middle; overflow: hidden; padding: 0; margin: 0; -webkit-box-align: center; -webkit-align-items: center; -ms-flex-align: center; align-items: center; position: relative; display: -webkit-box; display: -webkit-flex; display: -ms-flexbox; display: flex; }
 .header-nav .btn.btn-square { border-radius: 0; }
 .header-nav .btn:hover, .header-nav .btn.activated { -webkit-transform: scale(1.2); -ms-transform: scale(1.2); transform: scale(1.2); }

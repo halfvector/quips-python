@@ -1,36 +1,49 @@
-from flask import Blueprint, g
-from flask_restful import Resource
+from flask import g
 from mongoengine import Q
 
-from ..jsonify import *
 from ..models import *
+from ..protected_resource import AuthenticatedResource
 
-class UserResource(Resource):
+
+class UserMapper:
+    @staticmethod
+    def to_web_dto(entity):
+        return {
+            'createdAt': entity.createdAt.isoformat(),
+            'id': entity.id,
+            'oauthToken': entity.oauthToken,
+            'profileImage': entity.profileImage,
+            'username': entity.username
+        }
+
+
+class UserResource(AuthenticatedResource):
     def get(self, user_id):
         try:
             user = User.objects.get(Q(username=user_id))
-            return mongo_doc_to_json_response(user, 200)
+            return UserMapper.to_web_dto(user), 200
         except User.DoesNotExist:
-            return mongo_doc_to_json_response('User not found', 404)
+            return {}, 404
 
     def put(self):
         return {}
 
-class UserListResource(Resource):
+
+class UserListResource(AuthenticatedResource):
     def get(self):
-        return mongo_doc_to_json_response(User.objects, 200)
+        return map(UserMapper.to_web_dto, User.objects), 200
 
     def post(self):
         return {}
 
 
-class CurrentUserResource(Resource):
+class CurrentUserResource(AuthenticatedResource):
     def get(self):
         try:
             user = User.objects.get(id=g.user['id'])
-            return mongo_doc_to_json_response(user, 200)
+            return UserMapper.to_web_dto(user), 200
         except User.DoesNotExist:
-            return mongo_doc_to_json_response('User not found', 404)
+            return {}, 404
 
     def put(self):
         pass

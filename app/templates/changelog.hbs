@@ -1,0 +1,64 @@
+<div class="changelog">
+    <h2>Changelog</h2>
+
+    <h3>2015-12-05</h3>
+
+    <p>Dark-theme with unsplash.com bg - because I often work on this late at night.</p>
+
+    <p>More mobile friendly design.</p>
+
+    <p>
+        Stopped trying to get audio-recording to work well on Android 4.x after burneing many weekends and nights.
+        The audio glitches even when recording pure PCM, a problem at the Web Audio level, nothing I can do about it.
+    </p>
+
+    <p>
+        Found a fun workaround mobile chrome's inability to play Web Audio recorded wave files:
+        run the generated blobs through an ajax request, making the blob disk-backed locally, now the local blob
+        can be passed into an &lt;audio&gt; player.
+    </p>
+
+    <p>Focusing on making the mobile listening experience great.</p>
+
+    <h3>2015-10-04</h3>
+
+    <p>Slight facelift, using a new flat style. Added a few animations and this public changelog! :)</p>
+
+    <h3>2015-09-26</h3>
+
+    <p>Designed a logo and created a pretty landing-page with twitter-login.</p>
+
+    <p>Added Sentry for Javascript error collection and Heap Analytics for creating ad-hoc analytics.</p>
+
+    <h3>2015-09-20</h3>
+
+    <p>Setup two new servers on Digital Oceans with Route 53 routing and an SSL certificate for production.
+        Having an SSL certificate means the site can be accessed via HTTPS which allows browsers
+        to cache the Microphone Access permissions, which means you don't have to click "allow" every time
+        you want to make a recording!</p>
+
+    <p>Fixed up Python Fabric deployment script to work in new staging + production environments.
+        And added MongoDB backup/restore support.</p>
+
+    <p>Updated Python dependencies, they were over a year old, and fixed code that broke as a result.
+        Mostly around changes to MongoEngine Python lib.</p>
+
+    <h3>2015-09-05</h3>
+
+    <p>Fixed project to work on OSX and without the NGINX dependency. I can now run it all in python,
+        including the static file hosting. The production servers use NGINX for better performance.</p>
+
+    <h3>2014-03-29</h3>
+
+    <p>Request Media Streaming permission from browser on recording-page load. This makes the microphone
+        available the instant you hit the record button. No need to hit record button and then deal with browser's
+        security popups asking for permission to access microphone.</p>
+
+    <p>Removed countdown clock untill recording begins, the "3-2-1 go" wasn't that helpful.</p>
+
+    <h3>2014-03-27</h3>
+
+    <p>Fixed bug in tracking where you paused in the playback of a recording. Now you should be able to
+        resume playback exactly where you left off. :)</p>
+
+</div>
