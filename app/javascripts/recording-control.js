@@ -42,7 +42,7 @@ export class RecorderView extends Backbone.View {
             "click .recording-toggle": "toggle",
             "click #cancel-recording": "cancelRecording",
             "click #upload-recording": "uploadRecording",
-            "click #helper-btn": "playPreview"
+            "click #preview-btn": "playPreview"
         }
     }
 
@@ -52,6 +52,8 @@ export class RecorderView extends Backbone.View {
 
     build(model) {
         this.model = model;
+
+        console.log("model", model);
 
         this.render();
 
@@ -116,7 +118,7 @@ export class RecorderView extends Backbone.View {
 
         // TODO: get a replacement ajax library (maybe patch reqwest to support binary?)
         var xhr = new XMLHttpRequest();
-        xhr.open('post', '/recording/create', true);
+        xhr.open('post', '/api/quips', true);
         xhr.setRequestHeader('Accept', 'application/json');
         xhr.upload.onprogress = function (e) {
             var percent = ((e.loaded / e.total) * 100).toFixed(0) + '%';

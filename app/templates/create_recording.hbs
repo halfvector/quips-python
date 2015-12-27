@@ -1,7 +1,7 @@
 <audio id="recorded-preview" controls="controls"></audio>
 
 <div class="m-quips-sample-listing">
-    {{#if recording_count}}
+    {{#if num_recordings}}
     {{^}}
         <div class="m-recording-motivation">
             <h1>Record your first podcast.</h1>
@@ -30,7 +30,8 @@
             </div>
         </div>
 
-        <div id="recorder-done" class="m-recording-upload face back">
+        <div id="recorder-done" class="m-recording-preview face back">
+            <h1>Post New Recording</h1>
             <div class="stats">
                 <i class="fa fa-play-circle"></i>
                 <span class="duration"></span>
@@ -41,9 +42,9 @@
             </div>
 
             <div class="controls">
-                <a href="" class="btn btn-success" id="upload-recording">Upload</a>
-                <a class="btn btn-success" id="helper-btn">very nice</a>
-                <a href="" class="btn btn-link" id="cancel-recording">Delete and Try Again</a>
+                <a class="square-btn btn-primary" id="upload-recording">Upload</a>
+                <a class="square-btn btn-default" id="preview-btn">Preview</a>
+                <a class="square-btn btn-link" id="cancel-recording">Delete and Try Again</a>
             </div>
 
         </div>

@@ -1,8 +1,11 @@
+import os
+
 from bson import ObjectId
-from flask import g, url_for
+from flask import g, url_for, current_app
 from flask.ext.restful import reqparse
 from flask_restful import Resource
 from mongoengine import Q
+from werkzeug.datastructures import FileStorage
 
 from app import tinyurl
 from ..models import *
@@ -63,6 +66,18 @@ class QuipResource(Resource):
 
         return {}, 200
 
+    def delete(self, quip_id):
+        # tiny_id = ObjectId(tinyurl.decode(quip_id))
+
+        record = Recording.objects.get_or_404(Q(id=quip_id))
+        if not record or not record.isPublic or record.user.id != g.user['id']:
+            return {}, 404
+
+        record.delete()
+
+        return {}, 204
+
+
 
 class QuipListResource(Resource):
     def get(self):
@@ -70,7 +85,35 @@ class QuipListResource(Resource):
         return map(QuipMapper.to_web_dto, entities)
 
     def post(self):
-        return {}
+        parser = reqparse.RequestParser()
+        parser.add_argument('audio-blob', type=FileStorage, location='files')
+        parser.add_argument('description')
+        form = parser.parse_args()
+
+        file = form['audio-blob']
+        current_app.logger.debug("file: '%s' type: '%s'" % (file.filename, file.content_type))
+
+        if file and file.content_type == 'audio/ogg':
+            user = User.objects.get(id=g.user['id'])
+
+            recording = Recording()
+            recording.description = form['description']
+            recording.isPublic = True
+            recording.user = user
+            recording.save()
+
+            recording_id = str(recording.id)
+            recording_path = os.path.join(current_app.config['RECORDINGS_PATH'], recording_id + '.ogg')
+            current_app.logger.debug('saving recording to: ' + recording_path)
+            file.save(recording_path)
+
+            tiny_id = tinyurl.encode(str(recording_id))
+
+            url = url_for('spa_web.single_recording', recordingId=tiny_id)
+            return {'status': 'success', 'url': url}
+
+        # else file upload failed, show an error page
+        return {'status': 'failed'}
 
 
 
@@ -80,6 +123,3 @@ class UserQuipListResource(Resource):
 
         entities = Recording.objects(Q(isPublic=True) & Q(user=dbref_user_id))[:50].order_by('-postedAt')
         return map(QuipMapper.to_web_dto, entities)
-
-    def post(self):
-        return {}

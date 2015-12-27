@@ -4,6 +4,7 @@ import _ from 'underscore'
 import { AudioPlayer } from './audio-player.js'
 import { QuipModel } from './models/Quip'
 import template from '../templates/recording_item.hbs'
+import app from './app'
 
 //class AudioPlayerEvents extends Backbone.Events {
 //
@@ -20,12 +21,18 @@ class QuipView extends Backbone.View {
     get events() {
         return {
             "click .quip-actions .lock-indicator": "togglePublic",
+            "click .quip-actions a[action=delete]": "delete",
             "click .quip-player": "togglePlayback"
         }
     }
 
     get tagName() {
         return 'div';
+    }
+
+    delete() {
+        this.model.destroy()
+            .then(() => window.app.router.home() , () => console.log("Delete failed"));
     }
 
     onPause() {

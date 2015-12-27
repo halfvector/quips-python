@@ -1,6 +1,12 @@
 import Backbone from 'backbone'
 import _ from 'underscore'
 
+/**
+ * Recording
+ * get: recording metadata + calling user's listening status
+ * post: create new recording
+ * put: update recording metadata
+ */
 class QuipModel extends Backbone.Model {
     defaults() {
         return {

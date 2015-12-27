@@ -39,7 +39,10 @@ class Application {
 
             var openLinkInTab = false;
 
-            console.log("href", href);
+            if(href == null) {
+                // no url specified, don't do anything.
+                return;
+            }
 
             // special cases that we want to hit the server
             if(href == "/auth") {
@@ -88,6 +91,7 @@ $(() => {
     //    whitelistUrls: ['staging.couchpod.com', 'couchpod.com'] // production only
     //}).install()
 
+    window.app = app;
     app.initialize();
 
     // for production, could wrap domReadyCallback and let raven handle any exceptions

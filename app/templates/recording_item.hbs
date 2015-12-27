@@ -28,5 +28,10 @@
             <i class="fa fa-lock"></i> <span class="caption">Make Public</span>
             {{/if}}
         </a>
+        {{#if isMine }}
+        <a class="button" action="delete" title="Delete">
+            <i class="fa fa-remove"></i> <span class="caption">Delete</span>
+        </a>
+        {{/if}}
     </div>
 </div>

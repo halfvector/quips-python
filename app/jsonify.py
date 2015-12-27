@@ -15,7 +15,6 @@ from mongoengine.base import BaseDocument
 
 class MongoJsonEncoder(MongoEngineJSONEncoder):
     def default(self, obj):
-        print "Tackling object", obj
 
         if isinstance(obj, BaseDocument):
             return obj._data
