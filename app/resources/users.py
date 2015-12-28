@@ -25,16 +25,10 @@ class UserResource(AuthenticatedResource):
         except User.DoesNotExist:
             return {}, 404
 
-    def put(self):
-        return {}
-
 
 class UserListResource(AuthenticatedResource):
     def get(self):
         return map(UserMapper.to_web_dto, User.objects), 200
-
-    def post(self):
-        return {}
 
 
 class CurrentUserResource(AuthenticatedResource):
@@ -44,6 +38,3 @@ class CurrentUserResource(AuthenticatedResource):
             return UserMapper.to_web_dto(user), 200
         except User.DoesNotExist:
             return {}, 404
-
-    def put(self):
-        pass

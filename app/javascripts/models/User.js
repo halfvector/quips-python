@@ -12,7 +12,7 @@ class UserModel extends Backbone.Model {
 
     constructor(props) {
         super(props);
-        this.urlRoot = "/users";
+        this.urlRoot = "/api/users";
         //this.idAttribute = "username";
     }
 }
@@ -21,7 +21,7 @@ class UserCollection extends Backbone.Collection {
     constructor(opts) {
         super(opts);
         this.model = UserModel;
-        this.url = "/users";
+        this.url = "/api/users";
     }
 }
 

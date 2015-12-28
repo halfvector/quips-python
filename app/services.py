@@ -1,20 +1,41 @@
 # instantiate all services
 import json
+from functools import wraps
 from logging import Formatter
 from os import path
 
 from flask import Flask, Response
-from flask.ext.debugtoolbar import DebugToolbarExtension
 from flask.ext.mongoengine import MongoEngineSessionInterface, MongoEngine
 from flask.ext.restful import Api
-from raven.contrib.flask import Sentry
 
 from app import config
 from jsonify import MongoJsonEncoder
 
 
+# force automatic jsonification of dictionary/list objects for plain flask views
+# thanks to http://derrickgilland.com/posts/automatic-json-serialization-in-flask-views/
+class ResponseJSON(Response):
+    """Extend flask.Response with support for list/dict conversion to JSON."""
+
+    def __init__(self, content=None, *args, **kargs):
+        if isinstance(content, (list, dict)):
+            kargs['mimetype'] = 'application/json'
+            content = json.dumps(content, cls=MongoJsonEncoder)
+
+        super(Response, self).__init__(content, *args, **kargs)
+
+    @classmethod
+    def force_type(cls, response, environ=None):
+        """Override with support for list/dict."""
+        if isinstance(response, (list, dict)):
+            return cls(response)
+        else:
+            return super(Response, cls).force_type(response, environ)
+
+
 def create_app():
     app = Flask(__name__, static_folder='../public/', static_url_path='/public')
+    app.response_class = ResponseJSON
     app.config.from_pyfile(config.FLASK_CONFIG_PATH)
 
     # change debug output formatter to a pretty one-liner
@@ -60,11 +81,21 @@ print "Instantiating services: Web App and Mongo DB"
 api = Api(app)
 
 
+def requires_auth(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        if g.user['id']:
+            return func(*args, **kwargs)
+
+        return {}, 401
+
+    return wrapper
+
+
 # configure api to use special mongo-compatible json serializer
 @api.representation('application/json')
 def serialize_resource_mongo_objs(obj, status, headers=None):
     return Response(json.dumps(obj, cls=MongoJsonEncoder), status=status, mimetype="application/json")
 
-
 # hookup error handling
-#sentry = Sentry(app, dsn=config.SENTRY_DSN)
+# sentry = Sentry(app, dsn=config.SENTRY_DSN)

@@ -1,12 +1,13 @@
+import os
 import urllib
 
-from app.services import app
 from flask import redirect, url_for, request, flash, session, Blueprint
 from mongoengine import DoesNotExist
 from twython import Twython
-from ..models import User
+
+from app.services import app
 from ..config import TWITTER_KEY, TWITTER_SECRET
-import os
+from ..models import User
 
 bp = Blueprint('auth', __name__, template_folder='templates')
 

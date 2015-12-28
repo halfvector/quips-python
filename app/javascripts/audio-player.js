@@ -22,6 +22,8 @@ class AudioPlayerView extends Backbone.View {
         this.audioPlayer = document.getElementById("audio-player");
         AudioPlayer.on("toggle", (quip) => this.onToggle(quip), this);
         AudioPlayer.on("pause", (quip) => this.pause(quip), this);
+
+        this.audioPlayer.onpause = () => this.onAudioPaused();
     }
 
     close() {
@@ -74,7 +76,12 @@ class AudioPlayerView extends Backbone.View {
     }
 
     play(quipModel) {
-        this.audioPlayer.currentTime = Math.floor(quipModel.position);
+        // if at the end of file (200ms fudge), rewind
+        if(parseFloat(quipModel.position) > (parseFloat(quipModel.duration) - 0.2)) {
+            console.log("Rewinding audio clip; quipModel.position=" + quipModel.position + " quipModel.duration=" + quipModel.duration);
+            quipModel.position = 0;
+        }
+        this.audioPlayer.currentTime = quipModel.position;
         this.audioPlayer.play();
 
         AudioPlayer.trigger("/" + quipModel.id + "/playing");
@@ -82,11 +89,8 @@ class AudioPlayerView extends Backbone.View {
     }
 
     pause(quipModel) {
+        // request pause
         this.audioPlayer.pause();
-        if(quipModel != null) {
-            AudioPlayer.trigger("/" + quipModel.id + "/paused");
-        }
-        this.stopPeriodicTimer();
     }
 
     trackIsLoaded(url) {
@@ -97,6 +101,15 @@ class AudioPlayerView extends Backbone.View {
         console.log("Loading audio: " + url);
         this.audioPlayer.src = url;
         this.audioPlayer.load();
+    }
+
+    /* Audio element reports pause triggered, treating as end of file */
+    onAudioPaused() {
+        this.checkProgress();
+        if(this.quipModel != null) {
+            AudioPlayer.trigger("/" + this.quipModel.id + "/paused");
+        }
+        this.stopPeriodicTimer();
     }
 }
 

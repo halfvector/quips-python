@@ -69,11 +69,13 @@ class QuipView extends Backbone.View {
 
         this.render();
 
-        $(this.el).find(".progress-bar").css("width", this.model.get('progress') + "%");
-
         // update visuals to indicate playback progress
         this.model.on('change:progress', (model, progress) => {
             $(this.el).find(".progress-bar").css("width", progress + "%");
+        });
+
+        this.model.on('change:isPublic', (model) => {
+            this.render();
         });
     }
 
@@ -82,28 +84,10 @@ class QuipView extends Backbone.View {
         this.model.off();
     }
 
-    loadModel() {
-        var progress = localStorage.getItem("quip:" + this.quipId + ":progress");
-        var position = localStorage.getItem("quip:" + this.quipId + ":position");
-
-        this.model.set({
-            'id': this.quipId,
-            'progress': progress,
-            'position': position,
-            'isPublic': this.$el.data("isPublic") == 'True',
-            'isMine': this.$el.data("isMine") == 'True'
-        });
-    }
-
     togglePublic(ev) {
         var newState = !this.model.get('isPublic');
         this.model.set({'isPublic': newState});
-
-        console.log("toggling new published state: " + newState);
-
         this.model.save();
-
-        return false;
     }
 
     togglePlayback(event) {
@@ -115,6 +99,9 @@ class QuipView extends Backbone.View {
         viewModel.vagueTime = vagueTime.get({from: new Date(), to: new Date(this.model.get("timestamp"))});
 
         this.$el.html(template(viewModel));
+
+        this.$el.find(".progress-bar").css("width", this.model.get('progress') + "%");
+
         return this;
     }
 }

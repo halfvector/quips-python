@@ -12,7 +12,7 @@ class CurrentUserModel extends Backbone.Model {
 
     constructor(props) {
         super(props);
-        this.url = "/current_user";
+        this.url = "/api/current_user";
     }
 }
 

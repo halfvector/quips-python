@@ -10,7 +10,7 @@ class ListenState extends Backbone.Model {
 
     constructor(props) {
         super(props);
-        this.urlRoot = '/listen';
+        this.urlRoot = '/api/listen';
     }
 }
 
@@ -18,7 +18,7 @@ class ListenStateCollection extends Backbone.Collection {
     constructor(opts) {
         super(opts);
         this.model = ListenState;
-        this.url = "/listen";
+        this.url = "/api/listen";
     }
 }
 
