@@ -8,7 +8,7 @@ from flask import Flask, Response
 from flask.ext.mongoengine import MongoEngineSessionInterface, MongoEngine
 from flask.ext.restful import Api
 
-from app import config
+import config
 from jsonify import MongoJsonEncoder
 
 
@@ -69,13 +69,8 @@ def create_app():
 
     # toolbar = DebugToolbarExtension(app)
 
-    app.logger.info("Recordings path: " + app.config['RECORDINGS_PATH'])
-    app.logger.info("User profile images path: " + app.config['PATH_USER_PROFILE_IMAGE'])
-
     return app, mongo
 
-
-print "Instantiating services: Web App and Mongo DB"
 (app, db) = create_app()
 
 api = Api(app)

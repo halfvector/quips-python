@@ -28,5 +28,4 @@ def load_configuration():
     return general_config_path, flask_config_path, twitter_key, twitter_secret, sentry_dsn
 
 
-print "Loading configuration"
 (GENERAL_CONFIG_PATH, FLASK_CONFIG_PATH, TWITTER_KEY, TWITTER_SECRET, SENTRY_DSN) = load_configuration()

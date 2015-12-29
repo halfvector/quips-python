@@ -78,7 +78,8 @@ class AudioPlayerView extends Backbone.View {
     play(quipModel) {
         // if at the end of file (200ms fudge), rewind
         if(parseFloat(quipModel.position) > (parseFloat(quipModel.duration) - 0.2)) {
-            console.log("Rewinding audio clip; quipModel.position=" + quipModel.position + " quipModel.duration=" + quipModel.duration);
+            console.log("Rewinding audio clip; quipModel.position=" + quipModel.position
+                + " quipModel.duration=" + quipModel.duration);
             quipModel.position = 0;
         }
         this.audioPlayer.currentTime = quipModel.position;

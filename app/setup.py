@@ -1,4 +1,4 @@
-from app.auth import load_current_user
+from auth import load_current_user
 from flask import request, send_from_directory
 # import all views
 from views import spa_web, auth, spa_api

@@ -1,9 +1,9 @@
 import hashlib
 import uuid
 
-from app.models import User
-from app.services import app
-from app.views import auth
+import views
+from models import User
+from services import app
 from bson import ObjectId
 from flask import session, current_app, request, url_for, redirect, g
 from mongoengine import DoesNotExist
@@ -38,7 +38,7 @@ def load_current_user():
 
         if user is None:
             # user not found, clear out session, possibly destroy cookie (user was deleted? user guessing ids?)
-            auth.destroy_session()
+            views.auth.destroy_session()
 
     # create user-data that can be seen by any module/page on the site
     if user is not None:
