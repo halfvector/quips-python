@@ -5,8 +5,8 @@ from flask import redirect, url_for, request, flash, session, Blueprint, current
 from mongoengine import DoesNotExist
 from twython import Twython
 
-from app.config import TWITTER_KEY, TWITTER_SECRET
-from app.models import User
+from config import TWITTER_KEY, TWITTER_SECRET
+from models import User
 
 bp = Blueprint('auth', __name__, template_folder='templates')
 

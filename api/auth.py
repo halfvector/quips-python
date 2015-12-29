@@ -1,7 +1,7 @@
 import hashlib
 import uuid
 
-import views
+from api import auth_api
 from models import User
 from services import app
 from bson import ObjectId
@@ -38,7 +38,7 @@ def load_current_user():
 
         if user is None:
             # user not found, clear out session, possibly destroy cookie (user was deleted? user guessing ids?)
-            views.auth.destroy_session()
+            auth_api.destroy_session()
 
     # create user-data that can be seen by any module/page on the site
     if user is not None:

@@ -6,10 +6,10 @@ from flask.ext.restful import reqparse
 from mongoengine import Q
 from werkzeug.datastructures import FileStorage
 
-from app import tinyurl
-from ..services import requires_auth
-from ..mappers import QuipMapper, UserMapper
-from ..models import User, Recording, Listen
+from api import tinyurl
+from services import requires_auth
+from mappers import QuipMapper, UserMapper
+from models import User, Recording, Listen
 
 bp = Blueprint('spa', __name__, template_folder='templates')
 

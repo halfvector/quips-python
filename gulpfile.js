@@ -42,15 +42,15 @@ var continueOnError = function (stream) {
         });
 };
 
-var jsDir = 'app/javascripts/';
+var jsDir = 'spa/javascripts/';
 
 var config = {
     livereload_port: "35729",
 
-    src_html: "app/templates/*.html",
+    src_html: "spa/templates/*.html",
 
-    src_sass_all: "app/stylesheets/**/*.sass",
-    src_sass: "app/stylesheets/site.sass",
+    src_sass_all: "spa/stylesheets/**/*.sass",
+    src_sass: "spa/stylesheets/site.sass",
     dest_css: "public/assets/css",
 
     // ready-libraries
@@ -139,7 +139,7 @@ gulp.task('main-scripts', function () {
 
 gulp.task('templates', function () {
     "use strict";
-    gulp.src("app/templates/**/*.hbs")
+    gulp.src("spa/templates/**/*.hbs")
         .pipe(template())
         .pipe(define('hybrid', {require: {'_': 'underscore'}}))
         .pipe(declare({
@@ -148,7 +148,6 @@ gulp.task('templates', function () {
             root: 'window'
         }))
         .pipe(concat('templates.js'))
-        //.pipe(gulp.dest('app/javascripts/'))
         .pipe(gulp.dest(config.dest_js))
     ;
 });
@@ -179,7 +178,7 @@ gulp.task('watch', ['build'], function (completed) {
     gulp.watch(config.external_src_js, ['external-scripts']);
     gulp.watch(config.workers_src_js, ['worker-scripts']);
     gulp.watch(config.all_src_js, ['main-scripts']);
-    gulp.watch('app/templates/**/*.hbs', ['main-scripts']);
+    gulp.watch('spa/templates/**/*.hbs', ['main-scripts']);
 
     // live reload when asset is changed
     gulp.watch(config.src_html, livereload.changed);

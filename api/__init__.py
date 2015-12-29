@@ -7,5 +7,4 @@ import services
 import auth
 import models
 import mappers
-import protected_resource
-from setup import app, api
+from setup import app

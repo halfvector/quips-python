@@ -1,7 +1,7 @@
 from flask import g, url_for
 from mongoengine import Q
 
-from app import tinyurl
+from api import tinyurl
 from ..models import Listen
 
 
