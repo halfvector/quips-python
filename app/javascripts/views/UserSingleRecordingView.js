@@ -1,7 +1,7 @@
 import Backbone from 'backbone'
-import { QuipView, } from './quip-control.js'
-import { AudioPlayer, AudioPlayerView } from './audio-player'
-import { QuipModel, MyQuipCollection } from './models/Quip'
+import { QuipView } from './QuipView'
+import { AudioPlayer, AudioPlayerView } from '../audio-player'
+import { QuipModel, MyQuipCollection } from '../models/Quip'
 
 class UserPodView extends Backbone.View {
     initialize(quipId) {

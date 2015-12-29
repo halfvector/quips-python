@@ -1,15 +1,15 @@
 import Backbone from 'backbone'
 import _ from 'underscore'
-import "babel-polyfill"
-import { HomepageView } from './homepage'
-import { RecorderView, Recorder } from './recording-control'
-import { GetMicrophoneView } from './get-mic-view'
-import { UserPodCollectionView } from './user-pod-collection'
+import 'babel-polyfill'
+import { HomepageView } from './views/HomepageView'
+import { RecorderView } from './views/RecorderView'
+import { GetMicrophoneView } from './views/GetMicrophoneView'
+import { UserPodCollectionView } from './views/UserAllRecordingsView'
 import { CreateRecordingModel } from './models/CreateRecordingModel'
-import { ChangelogView } from './changelog-view'
+import { ChangelogView } from './views/ChangelogView'
 import { RootPresenter } from './presenter'
-import { HeaderNavView } from './header-nav-view'
-import { UserPodView } from './user-pod'
+import { HeaderNavView } from './views/HeaderNavView'
+import { UserPodView } from './views/UserSingleRecordingView'
 
 class MicrophonePermissions {
     constructor() {

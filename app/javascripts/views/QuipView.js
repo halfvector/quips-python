@@ -1,14 +1,10 @@
 import vagueTime from 'vague-time'
 import Backbone from 'backbone'
 import _ from 'underscore'
-import { AudioPlayer } from './audio-player.js'
-import { QuipModel } from './models/Quip'
-import template from '../templates/recording_item.hbs'
-import app from './app'
-
-//class AudioPlayerEvents extends Backbone.Events {
-//
-//}
+import { AudioPlayer } from '../audio-player.js'
+import { QuipModel } from '../models/Quip'
+import template from '../../templates/recording_item.hbs'
+import app from '../app'
 
 class QuipView extends Backbone.View {
     get defaults() {
@@ -106,13 +102,4 @@ class QuipView extends Backbone.View {
     }
 }
 
-class QuipList extends Backbone.Collection {
-    constructor(options) {
-        super(options);
-        this.model = QuipModel;
-    }
-}
-
-var Quips = new QuipList();
-
-export { QuipModel, QuipView, QuipList, Quips };
+export { QuipModel, QuipView };

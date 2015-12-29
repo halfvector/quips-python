@@ -2,7 +2,7 @@ import Backbone from 'backbone'
 import _ from 'underscore'
 import Handlebars from 'handlebars'
 
-import template from '../templates/changelog.hbs'
+import template from '../../templates/changelog.hbs'
 
 export class ChangelogView extends Backbone.View {
     initialize() {
