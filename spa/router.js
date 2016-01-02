@@ -1,58 +1,9 @@
 import Backbone from 'backbone'
-
-import ChangelogView from './pages/Changelog/ChangelogView'
-import HomepageView from './pages/Homepage/HomepageView'
-import RecorderView from './pages/Recorder/RecorderView'
-import GetMicrophoneView from './pages/GetMicrophone/GetMicrophoneView'
-import UserPodView from './pages/User/UserSingleRecordingView'
+import * as Controllers from './pages/Controllers'
 import HeaderNavView from './partials/HeaderNavView'
-import QuipView from './partials/QuipView'
-import { UserPodCollectionView } from './pages/User/UserAllRecordingsView'
-import MicrophonePermissions from './pages/GetMicrophone/MicrophonePermissions'
-
 import { RootPresenter } from './presenter'
 
-class RecorderController {
-    constructor(presenter) {
-        this.presenter = presenter;
-        new MicrophonePermissions()
-            .grabMicrophone(this.onMicrophoneAcquired, this.onMicrophoneDenied);
-    }
-
-    onMicrophoneAcquired(microphoneMediaStream) {
-        this.presenter.switchView(new RecorderView(microphoneMediaStream));
-    }
-
-    onMicrophoneDenied() {
-        this.presenter.switchView(new GetMicrophoneView());
-    }
-}
-
-class HomeController {
-    constructor(presenter) {
-        presenter.switchView(new HomepageView());
-    }
-}
-
-class UserController {
-    constructor(presenter, username) {
-        presenter.switchView(new UserPodCollectionView(username));
-    }
-}
-
-class ChangelogController {
-    constructor(presenter) {
-        presenter.switchView(new ChangelogView());
-    }
-}
-
-class SinglePodController {
-    constructor(presenter, id) {
-        presenter.switchView(new UserPodView(id));
-    }
-}
-
-class Router extends Backbone.Router {
+export default class Router extends Backbone.Router {
     constructor() {
         super({
             routes: {
@@ -60,12 +11,10 @@ class Router extends Backbone.Router {
                 'record': 'record',
                 'u/:username': 'user',
                 'changelog': 'changelog',
-                'q/:quipid': 'single_item'
+                'q/:quipid': 'single_item',
+                'streams': 'show_streams'
             }
         });
-    }
-
-    initialize() {
     }
 
     setUser(user) {
@@ -73,26 +22,27 @@ class Router extends Backbone.Router {
     }
 
     single_item(id) {
-        new SinglePodController(RootPresenter, id);
+        new Controllers.SinglePodController(RootPresenter, id);
     }
 
     home() {
-        new HomeController(RootPresenter);
+        new Controllers.HomeController(RootPresenter);
     }
 
     user(username) {
-        new UserController(RootPresenter, username);
+        new Controllers.UserController(RootPresenter, username);
     }
 
     changelog() {
-        new ChangelogController(RootPresenter);
+        new Controllers.ChangelogController(RootPresenter);
     }
 
     record() {
-        new RecorderController(RootPresenter);
+        new Controllers.RecorderController(RootPresenter);
     }
 
-
+    show_streams() {
+        var controller = new Controllers.StreamController(RootPresenter);
+        controller.create();
+    }
 }
-
-export default Router;

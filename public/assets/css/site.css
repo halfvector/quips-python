@@ -1036,3 +1036,7 @@ body { padding: 0; margin: 0; width: 100%; height: 100%; position: relative; }
 .square-btn i.fa { padding-right: 7px; }
 .square-btn.btn-link { text-decoration: none; color: #ddd; }
 .square-btn.btn-link:hover { text-decoration: underline; color: #fff; }
+
+.m-create-stream { background: #444; padding: 20px; max-width: 400px; margin: 0 auto; }
+.m-create-stream .field { width: 100%; font-size: 1rem; padding: 10px 15px; margin-bottom: 20px; border: 1px solid #333; background-color: #ccc; border-radius: 5px; }
+.m-create-stream button { display: block; width: 90%; border: none; font-size: 1rem; margin: 0 auto; }

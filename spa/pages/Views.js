@@ -7,3 +7,8 @@ import HeaderNavView from '../partials/HeaderNavView'
 import QuipView from '../partials/QuipView'
 import { UserPodCollection, UserPodCollectionView } from './User/UserAllRecordingsView'
 import { SoundPlayer, AudioPlayerView, AudioPlayerEvents } from '../partials/AudioPlayerView'
+
+export {
+    ChangelogView, HomepageView, RecorderView, GetMicrophoneView, UserPodView, HeaderNavView,
+    QuipView, UserPodCollectionView, AudioPlayerView
+}

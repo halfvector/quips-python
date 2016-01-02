@@ -1,6 +1,5 @@
 import Backbone from 'backbone'
 import jQuery from 'jquery'
-import { ListenState, ListenStateCollection } from './models/ListenState'
 import { CurrentUserModel } from './models/CurrentUser'
 import { AudioPlayerView } from './partials/AudioPlayerView'
 import Router from './router'
@@ -8,7 +7,7 @@ import Polyfill from './polyfill.js'
 
 $ = require('jquery');
 
-class Application {
+export default class Application {
     constructor() {
         this.router = null;
     }
@@ -16,7 +15,6 @@ class Application {
     initialize() {
         Polyfill.install();
         Backbone.$ = $;
-        //if (!Backbone.history.start({pushState: true, hashChange: false})) router.navigate('404', {trigger: true});
 
         this.router = new Router();
         this.redirectUrlClicksToRouter();
@@ -26,8 +24,6 @@ class Application {
         // load user
         new CurrentUserModel().fetch()
             .then(model => this.onUserAuthenticated(model), response => this.onUserAuthFail(response));
-
-        //new ListenStateCollection().fetch().then((state) => console.log("got listen states", state));
     }
 
     redirectUrlClicksToRouter() {
@@ -79,6 +75,7 @@ class Application {
 
     startRouterNavigation() {
         Backbone.history.start({pushState: true, hashChange: false});
+        //if (!Backbone.history.start({pushState: true, hashChange: false})) router.navigate('404', {trigger: true});
     }
 }
 
@@ -106,5 +103,3 @@ $(() => {
      }
      */
 })
-
-export default {Application}

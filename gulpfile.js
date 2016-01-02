@@ -178,7 +178,7 @@ gulp.task('watch', ['build'], function (completed) {
     gulp.watch(config.external_src_js, ['external-scripts']);
     gulp.watch(config.workers_src_js, ['worker-scripts']);
     gulp.watch(config.all_src_js, ['main-scripts']);
-    gulp.watch('spa/templates/**/*.hbs', ['main-scripts']);
+    gulp.watch('spa/**/*.hbs', ['main-scripts']);
 
     // live reload when asset is changed
     gulp.watch(config.src_html, livereload.changed);
