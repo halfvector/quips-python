@@ -73,8 +73,6 @@ def create_app():
 
 (app, db) = create_app()
 
-api = Api(app)
-
 
 def requires_auth(func):
     @wraps(func)
@@ -88,9 +86,9 @@ def requires_auth(func):
 
 
 # configure api to use special mongo-compatible json serializer
-@api.representation('application/json')
-def serialize_resource_mongo_objs(obj, status, headers=None):
-    return Response(json.dumps(obj, cls=MongoJsonEncoder), status=status, mimetype="application/json")
+# @api.representation('application/json')
+# def serialize_resource_mongo_objs(obj, status, headers=None):
+#     return Response(json.dumps(obj, cls=MongoJsonEncoder), status=status, mimetype="application/json")
 
 # hookup error handling
 # sentry = Sentry(app, dsn=config.SENTRY_DSN)

@@ -1,0 +1,24 @@
+<nav class="header-nav">
+    <div class="nav-left">
+        <a class="wordmark" href="/changelog">
+            <strong>Couch</strong>pod
+        </a>
+    </div>
+    <a class="btn btn-square" href="/">
+        <img class="btn-logo" src="/assets/img/couchpod-3-tiny.png"/>
+    </a>
+    {{#if username}}
+        <div class="nav-right">
+            <a class="btn btn-success" href="/record">
+                <i class="fa fa-microphone"></i>
+            </a>
+            <a class="btn btn-default" href="/u/{{ username }}">
+                <img class="profile-pic" src="/profile_images{{ profileImage }}"/>
+            </a>
+        </div>
+    {{^}}
+        <a class="btn-sign-in" href="/auth">
+            <i class="fa fa-sign-in"></i> Login with Twitter
+        </a>
+    {{/if}}
+</nav>

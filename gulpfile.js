@@ -42,7 +42,7 @@ var continueOnError = function (stream) {
         });
 };
 
-var jsDir = 'spa/javascripts/';
+var jsDir = 'spa/';
 
 var config = {
     livereload_port: "35729",

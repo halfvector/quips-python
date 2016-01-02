@@ -1,0 +1,54 @@
+<audio id="recorded-preview" controls="controls"></audio>
+
+<div class="m-quips-sample-listing">
+    {{#if num_recordings}}
+    {{^}}
+        <div class="m-recording-motivation">
+            <h1>Record your first podcast.</h1>
+
+            <p>Takes only 30 seconds.</p>
+        </div>
+    {{/if}}
+</div>
+
+<div class="m-recording-container">
+
+    <div class="card">
+
+        <div id="recorder-full" class="m-recording-screen face">
+            <div title="toggle recording" class="recording-toggle"><i class="fa fa-microphone"></i></div>
+            <div class="recording-time">3</div>
+        </div>
+
+        <div id="recorder-uploader" class="m-recording-uploading face disabled">
+            <div class="upload-progress">
+                <h4>Uploading</h4>
+
+                <div class="progress-bar">
+                    <div class="bar"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="recorder-done" class="m-recording-preview face back">
+            <h1>Post New Recording</h1>
+            <div class="stats">
+                <i class="fa fa-play-circle"></i>
+                <span class="duration"></span>
+            </div>
+
+            <div class="description">
+                <textarea name="description" placeholder="optional description"></textarea>
+            </div>
+
+            <div class="controls">
+                <a class="square-btn btn-primary" id="upload-recording">Upload</a>
+                <a class="square-btn btn-default" id="preview-btn">Preview</a>
+                <a class="square-btn btn-link" id="cancel-recording">Delete and Try Again</a>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
