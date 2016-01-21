@@ -835,8 +835,8 @@ a:hover { text-decoration: underline; color: #fff; }
 .secondary-header { background: #fff; box-shadow: 0px 3px 6px #eee; z-index: 100; width: 100%; max-width: 1200px; }
 .secondary-header:after { display: block; }
 
-.page { z-index: 20; min-height: 100%; position: relative; margin: 0 auto; display: -webkit-box; display: -webkit-flex; display: -ms-flexbox; display: flex; }
-.page .bg { background: url("/assets/img/bg-cityscape.jpeg") center no-repeat; background-attachment: fixed; min-height: 100%; width: 100%; position: absolute; z-index: 22; opacity: 0.1; }
+.page { z-index: 20; min-height: 100%; position: relative; margin: 0 auto; display: -webkit-box; display: -webkit-flex; display: -ms-flexbox; display: flex; -webkit-box-pack: center; -webkit-justify-content: center; -ms-flex-pack: center; justify-content: center; -webkit-box-orient: horizontal; -webkit-box-direction: normal; -webkit-flex-direction: row; -ms-flex-direction: row; flex-direction: row; }
+.page .bg { background: url("/assets/img/bg-cityscape.jpeg") center no-repeat; background-attachment: fixed; min-height: 100%; width: 100%; position: fixed; z-index: 22; opacity: 0.1; }
 .page .page-contents { position: relative; z-index: 30; width: 100%; max-width: 1200px; margin: 0 auto; padding-top: 100px; }
 
 .changelog { padding: 0 20px; }
