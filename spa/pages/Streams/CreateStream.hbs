@@ -1,6 +1,30 @@
 <div class="m-create-stream">
     <form>
-        <input class="field" type="text" name="streamName" placeholder="Stream Name" />
+        <input class="field" type="text" name="streamName" placeholder="Stream Name" value="{{streamName}}"/>
+
+        <h3>Privacy</h3>
+
+        <label for="privacy-public">
+            <input id="privacy-public" type="radio" name="privacy" value="public" checked/>
+            <b>Public</b> - Anyone can follow this stream
+        </label>
+        <br>
+        <label for="privacy-private">
+            <input id="privacy-private" type="radio" name="privacy" value="private"/>
+            <b>Private</b> - Only those you invite can follow this stream.
+        </label>
+        <br>
+        <br>
+
         <button class="square-btn btn-success" name="submit">Create</button>
     </form>
+</div>
+
+<div class="m-list-streams">
+    <h3>Streams</h3>
+    {{#each streams}}
+        <a href="/streams/{{id}}" class="stream">
+            {{name}}
+        </a>
+    {{/each}}
 </div>

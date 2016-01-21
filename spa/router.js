@@ -12,7 +12,8 @@ export default class Router extends Backbone.Router {
                 'u/:username': 'user',
                 'changelog': 'changelog',
                 'q/:quipid': 'single_item',
-                'streams': 'show_streams'
+                'streams': 'list_streams',
+                'streams/:id': 'stream_details'
             }
         });
     }
@@ -41,8 +42,13 @@ export default class Router extends Backbone.Router {
         new Controllers.RecorderController(RootPresenter);
     }
 
-    show_streams() {
+    list_streams() {
         var controller = new Controllers.StreamController(RootPresenter);
         controller.create();
+    }
+
+    stream_details(id) {
+        var controller = new Controllers.StreamController(RootPresenter);
+        controller.details(id);
     }
 }

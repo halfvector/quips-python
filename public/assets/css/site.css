@@ -826,6 +826,9 @@ html.dark-theme { background: #222222; color: #fff; }
 
 body { padding: 0; margin: 0; width: 100%; height: 100%; position: relative; }
 
+a { text-decoration: none; color: #ddd; }
+a:hover { text-decoration: underline; color: #fff; }
+
 .site-header { background: rgba(59, 59, 59, 0.8); color: #fff; width: 100%; position: fixed; z-index: 100; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1); }
 .site-header .header-nav { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
 
@@ -838,22 +841,22 @@ body { padding: 0; margin: 0; width: 100%; height: 100%; position: relative; }
 
 .changelog { padding: 0 20px; }
 
-#view-container { position: relative; -webkit-perspective: 300px; perspective: 300px; }
+#view-container { position: relative; -webkit-perspective: 600px; perspective: 600px; left: 0; right: 0; top: 0; bottom: 0; }
 
-.transitionable { position: relative; width: 100%; -webkit-perspective: 300px; perspective: 300px; -webkit-transform-style: preserve-3d; transform-style: preserve-3d; -webkit-transform-origin: 50% 50%; -ms-transform-origin: 50% 50%; transform-origin: 50% 50%; }
+.transitionable { position: absolute; width: 100%; -webkit-perspective: 600px; perspective: 600px; -webkit-transform-style: preserve-3d; transform-style: preserve-3d; -webkit-transform-origin: 50% 50%; -ms-transform-origin: 50% 50%; transform-origin: 50% 50%; }
 
 .transition-out { -webkit-animation: animate-out 0.2s 1 forwards; animation: animate-out 0.2s 1 forwards; }
 
 .transition-in { -webkit-animation: animate-in 0.4s 1 forwards; animation: animate-in 0.4s 1 forwards; }
 
 @-webkit-keyframes animate-out { 0% { opacity: 1; -webkit-transform: translate3d(0, 0, 0); transform: translate3d(0, 0, 0); }
-  100% { opacity: 0; -webkit-transform: translate3d(0, 50px, -50px); transform: translate3d(0, 50px, -50px); } }
+  100% { opacity: 0; -webkit-transform: translate3d(0, 100px, -30px); transform: translate3d(0, 100px, -30px); } }
 
 @keyframes animate-out { 0% { opacity: 1; -webkit-transform: translate3d(0, 0, 0); transform: translate3d(0, 0, 0); }
-  100% { opacity: 0; -webkit-transform: translate3d(0, 50px, -50px); transform: translate3d(0, 50px, -50px); } }
-@-webkit-keyframes animate-in { 0% { opacity: 0; -webkit-transform: translate3d(0px, -30px, 50px); transform: translate3d(0px, -30px, 50px); }
+  100% { opacity: 0; -webkit-transform: translate3d(0, 100px, -30px); transform: translate3d(0, 100px, -30px); } }
+@-webkit-keyframes animate-in { 0% { opacity: 0; -webkit-transform: translate3d(0px, -50px, 30px); transform: translate3d(0px, -50px, 30px); }
   100% { opacity: 1; -webkit-transform: translate3d(0, 0, 0); transform: translate3d(0, 0, 0); } }
-@keyframes animate-in { 0% { opacity: 0; -webkit-transform: translate3d(0px, -30px, 50px); transform: translate3d(0px, -30px, 50px); }
+@keyframes animate-in { 0% { opacity: 0; -webkit-transform: translate3d(0px, -50px, 30px); transform: translate3d(0px, -50px, 30px); }
   100% { opacity: 1; -webkit-transform: translate3d(0, 0, 0); transform: translate3d(0, 0, 0); } }
 .quips-list { padding-top: 20px; margin: auto; max-width: 750px; }
 
@@ -1037,6 +1040,17 @@ body { padding: 0; margin: 0; width: 100%; height: 100%; position: relative; }
 .square-btn.btn-link { text-decoration: none; color: #ddd; }
 .square-btn.btn-link:hover { text-decoration: underline; color: #fff; }
 
-.m-create-stream { background: #444; padding: 20px; max-width: 400px; margin: 0 auto; }
-.m-create-stream .field { width: 100%; font-size: 1rem; padding: 10px 15px; margin-bottom: 20px; border: 1px solid #333; background-color: #ccc; border-radius: 5px; }
+.m-create-stream { background: #444; padding: 20px; max-width: 500px; margin: 0 auto; }
+.m-create-stream label { vertical-align: middle; font-size: 90%; cursor: pointer; }
+.m-create-stream h3 { border-bottom: 1px solid #777; }
+.m-create-stream .field { width: 100%; font-size: 1rem; padding: 10px 15px; margin-bottom: 20px; border: 1px solid #333; background-color: #666; border-radius: 8px; color: #fff; }
+.m-create-stream .field:focus { outline: solid #5EA3E8; }
 .m-create-stream button { display: block; width: 90%; border: none; font-size: 1rem; margin: 0 auto; }
+
+.m-stream-details { background: #444; padding: 20px; max-width: 800px; margin: 0 auto; }
+.m-stream-details h3 { border-bottom: 1px solid #777; }
+
+.m-list-streams { background: #444; padding: 20px; max-width: 500px; margin: 0 auto; margin-top: 20px; }
+.m-list-streams h3 { border-bottom: 1px solid #777; margin-top: 0; }
+.m-list-streams .stream { cursor: pointer; padding: 10px; margin-bottom: 5px; margin-right: 10px; background-color: #4c4c4c; }
+.m-list-streams .stream:hover { background-color: #666; }

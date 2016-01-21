@@ -1,8 +1,16 @@
 .m-create-stream
     background: #444
     padding: 20px
-    max-width: 400px
+    max-width: 500px
     margin: 0 auto
+
+    label
+        vertical-align: middle
+        font-size: 90%
+        cursor: pointer
+
+    h3
+        border-bottom: 1px solid #777
 
     .field
         width: 100%
@@ -10,8 +18,12 @@
         padding: 10px 15px
         margin-bottom: 20px
         border: 1px solid #333
-        background-color: #ccc
-        border-radius: 5px
+        background-color: #666
+        border-radius: 8px
+        color: #fff
+
+        &:focus
+            outline: solid #5EA3E8
 
     button
         display: block
@@ -19,3 +31,32 @@
         border: none
         font-size: 1rem
         margin: 0 auto
+
+.m-stream-details
+    background: #444
+    padding: 20px
+    max-width: 800px
+    margin: 0 auto
+
+    h3
+        border-bottom: 1px solid #777
+
+.m-list-streams
+    background: #444
+    padding: 20px
+    max-width: 500px
+    margin: 0 auto
+    margin-top: 20px
+
+    h3
+        border-bottom: 1px solid #777
+        margin-top: 0
+
+    .stream
+        cursor: pointer
+        padding: 10px
+        margin-bottom: 5px
+        margin-right: 10px
+        background-color: #4c4c4c
+        &:hover
+            background-color: #666

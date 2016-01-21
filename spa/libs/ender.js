@@ -1,8 +1,8 @@
 /*!
   * =============================================================
   * Ender: open module JavaScript framework (https://enderjs.com)
-  * Build: ender build jquery vague-time backbone@1.2.3
-  * Packages: ender-core@2.0.0 ender-commonjs@1.0.8 jquery@2.1.4 vague-time@1.3.0 underscore@1.8.3 backbone@1.2.3
+  * Build: ender build jquery vague-time backbone@1.2.3 backbone.modelbinder backbone.epoxy
+  * Packages: ender-core@2.0.0 ender-commonjs@1.0.8 jquery@2.1.4 vague-time@1.3.0 underscore@1.8.3 backbone@1.2.3 backbone.modelbinder@1.1.0 backbone.epoxy@1.3.4
   * =============================================================
   */
 
@@ -13313,10 +13313,2338 @@
     }
   }, 'backbone');
 
+  Module.createPackage('backbone.modelbinder', {
+    'Backbone.ModelBinder': function (module, exports, require, global) {
+      // Backbone.ModelBinder v1.1.0      
+      // (c) 2015 Bart Wood      
+      // Distributed Under MIT License      
+            
+      (function (factory) {      
+          if (typeof define === 'function' && define.amd) {      
+              // AMD. Register as an anonymous module.      
+              define(['underscore', 'jquery', 'backbone'], factory);      
+          } else if(typeof module !== 'undefined' && module.exports) {      
+              // CommonJS      
+              module.exports = factory(      
+                  require('underscore'),      
+                  require('jquery'),      
+                  require('backbone')      
+              );      
+          } else {      
+              // Browser globals      
+              factory(_, jQuery, Backbone);      
+          }      
+      }(function(_, $, Backbone){      
+            
+          if(!Backbone){      
+              throw 'Please include Backbone.js before Backbone.ModelBinder.js';      
+          }      
+            
+          Backbone.ModelBinder = function(){      
+              _.bindAll.apply(_, [this].concat(_.functions(this)));      
+          };      
+            
+          // Static setter for class level options      
+          Backbone.ModelBinder.SetOptions = function(options){      
+              Backbone.ModelBinder.options = options;      
+          };      
+            
+          // Current version of the library.      
+          Backbone.ModelBinder.VERSION = '1.1.0';      
+          Backbone.ModelBinder.Constants = {};      
+          Backbone.ModelBinder.Constants.ModelToView = 'ModelToView';      
+          Backbone.ModelBinder.Constants.ViewToModel = 'ViewToModel';      
+            
+          _.extend(Backbone.ModelBinder.prototype, {      
+            
+              bind:function (model, rootEl, attributeBindings, options) {      
+                  this.unbind();      
+            
+                  this._model = model;      
+                  this._rootEl = rootEl;      
+                  this._setOptions(options);      
+            
+                  if (!this._model) this._throwException('model must be specified');      
+                  if (!this._rootEl) this._throwException('rootEl must be specified');      
+            
+                  if(attributeBindings){      
+                      // Create a deep clone of the attribute bindings      
+                      this._attributeBindings = $.extend(true, {}, attributeBindings);      
+            
+                      this._initializeAttributeBindings();      
+                      this._initializeElBindings();      
+                  }      
+                  else {      
+                      this._initializeDefaultBindings();      
+                  }      
+            
+                  this._bindModelToView();      
+                  this._bindViewToModel();      
+              },      
+            
+              bindCustomTriggers: function (model, rootEl, triggers, attributeBindings, modelSetOptions) {      
+                  this._triggers = triggers;      
+                  this.bind(model, rootEl, attributeBindings, modelSetOptions);      
+              },      
+            
+              unbind:function () {      
+                  this._unbindModelToView();      
+                  this._unbindViewToModel();      
+            
+                  if(this._attributeBindings){      
+                      delete this._attributeBindings;      
+                      this._attributeBindings = undefined;      
+                  }      
+              },      
+            
+              _setOptions: function(options){      
+                  this._options = _.extend({      
+                      boundAttribute: 'name'      
+                  }, Backbone.ModelBinder.options, options);      
+            
+                  // initialize default options      
+                  if(!this._options['modelSetOptions']){      
+                      this._options['modelSetOptions'] = {};      
+                  }      
+                  this._options['modelSetOptions'].changeSource = 'ModelBinder';      
+            
+                  if(!this._options['changeTriggers']){      
+                      this._options['changeTriggers'] = {'': 'change', '[contenteditable]': 'blur'};      
+                  }      
+            
+                  if(!this._options['initialCopyDirection']){      
+                      this._options['initialCopyDirection'] = Backbone.ModelBinder.Constants.ModelToView;      
+                  }      
+              },      
+            
+              // Converts the input bindings, which might just be empty or strings, to binding objects      
+              _initializeAttributeBindings:function () {      
+                  var attributeBindingKey, inputBinding, attributeBinding, elementBindingCount, elementBinding;      
+            
+                  for (attributeBindingKey in this._attributeBindings) {      
+                      inputBinding = this._attributeBindings[attributeBindingKey];      
+            
+                      if (_.isString(inputBinding)) {      
+                          attributeBinding = {elementBindings: [{selector: inputBinding}]};      
+                      }      
+                      else if (_.isArray(inputBinding)) {      
+                          attributeBinding = {elementBindings: inputBinding};      
+                      }      
+                      else if(_.isObject(inputBinding)){      
+                          attributeBinding = {elementBindings: [inputBinding]};      
+                      }      
+                      else {      
+                          this._throwException('Unsupported type passed to Model Binder ' + attributeBinding);      
+                      }      
+            
+                      // Add a linkage from the element binding back to the attribute binding      
+                      for(elementBindingCount = 0; elementBindingCount < attributeBinding.elementBindings.length; elementBindingCount++){      
+                          elementBinding = attributeBinding.elementBindings[elementBindingCount];      
+                          elementBinding.attributeBinding = attributeBinding;      
+                      }      
+            
+                      attributeBinding.attributeName = attributeBindingKey;      
+                      this._attributeBindings[attributeBindingKey] = attributeBinding;      
+                  }      
+              },      
+            
+              // If the bindings are not specified, the default binding is performed on the specified attribute, name by default      
+              _initializeDefaultBindings: function(){      
+                  var elCount, elsWithAttribute, matchedEl, name, attributeBinding;      
+            
+                  this._attributeBindings = {};      
+                  elsWithAttribute = $('[' + this._options['boundAttribute'] + ']', this._rootEl);      
+            
+                  for(elCount = 0; elCount < elsWithAttribute.length; elCount++){      
+                      matchedEl = elsWithAttribute[elCount];      
+                      name = $(matchedEl).attr(this._options['boundAttribute']);      
+            
+                      // For elements like radio buttons we only want a single attribute binding with possibly multiple element bindings      
+                      if(!this._attributeBindings[name]){      
+                          attributeBinding =  {attributeName: name};      
+                          attributeBinding.elementBindings = [{attributeBinding: attributeBinding, boundEls: [matchedEl]}];      
+                          this._attributeBindings[name] = attributeBinding;      
+                      }      
+                      else{      
+                          this._attributeBindings[name].elementBindings.push({attributeBinding: this._attributeBindings[name], boundEls: [matchedEl]});      
+                      }      
+                  }      
+              },      
+            
+              _initializeElBindings:function () {      
+                  var bindingKey, attributeBinding, bindingCount, elementBinding, foundEls, elCount, el;      
+                  for (bindingKey in this._attributeBindings) {      
+                      attributeBinding = this._attributeBindings[bindingKey];      
+            
+                      for (bindingCount = 0; bindingCount < attributeBinding.elementBindings.length; bindingCount++) {      
+                          elementBinding = attributeBinding.elementBindings[bindingCount];      
+                          if (elementBinding.selector === '') {      
+                              foundEls = $(this._rootEl);      
+                          }      
+                          else {      
+                              foundEls = $(elementBinding.selector, this._rootEl);      
+                          }      
+            
+                          if (foundEls.length === 0) {      
+                              this._throwException('Bad binding found. No elements returned for binding selector ' + elementBinding.selector);      
+                          }      
+                          else {      
+                              elementBinding.boundEls = [];      
+                              for (elCount = 0; elCount < foundEls.length; elCount++) {      
+                                  el = foundEls[elCount];      
+                                  elementBinding.boundEls.push(el);      
+                              }      
+                          }      
+                      }      
+                  }      
+              },      
+            
+              _bindModelToView: function () {      
+                  this._model.on('change', this._onModelChange, this);      
+            
+                  if(this._options['initialCopyDirection'] === Backbone.ModelBinder.Constants.ModelToView){      
+                      this.copyModelAttributesToView();      
+                  }      
+              },      
+            
+              // attributesToCopy is an optional parameter - if empty, all attributes      
+              // that are bound will be copied.  Otherwise, only attributeBindings specified      
+              // in the attributesToCopy are copied.      
+              copyModelAttributesToView: function(attributesToCopy){      
+                  var attributeName, attributeBinding;      
+            
+                  for (attributeName in this._attributeBindings) {      
+                      if(attributesToCopy === undefined || _.indexOf(attributesToCopy, attributeName) !== -1){      
+                          attributeBinding = this._attributeBindings[attributeName];      
+                          this._copyModelToView(attributeBinding);      
+                      }      
+                  }      
+              },      
+            
+              copyViewValuesToModel: function(){      
+                  var bindingKey, attributeBinding, bindingCount, elementBinding, elCount, el;      
+                  for (bindingKey in this._attributeBindings) {      
+                      attributeBinding = this._attributeBindings[bindingKey];      
+            
+                      for (bindingCount = 0; bindingCount < attributeBinding.elementBindings.length; bindingCount++) {      
+                          elementBinding = attributeBinding.elementBindings[bindingCount];      
+            
+                          if(this._isBindingUserEditable(elementBinding)){      
+                              if(this._isBindingRadioGroup(elementBinding)){      
+                                  el = this._getRadioButtonGroupCheckedEl(elementBinding);      
+                                  if(el){      
+                                      this._copyViewToModel(elementBinding, el);      
+                                  }      
+                              }      
+                              else {      
+                                  for(elCount = 0; elCount < elementBinding.boundEls.length; elCount++){      
+                                      el = $(elementBinding.boundEls[elCount]);      
+                                      if(this._isElUserEditable(el)){      
+                                          this._copyViewToModel(elementBinding, el);      
+                                      }      
+                                  }      
+                              }      
+                          }      
+                      }      
+                  }      
+              },      
+            
+              _unbindModelToView: function(){      
+                  if(this._model){      
+                      this._model.off('change', this._onModelChange);      
+                      this._model = undefined;      
+                  }      
+              },      
+            
+              _bindViewToModel: function () {      
+                  _.each(this._options['changeTriggers'], function (event, selector) {      
+                      $(this._rootEl).on(event, selector, this._onElChanged);      
+                  }, this);      
+            
+                  if(this._options['initialCopyDirection'] === Backbone.ModelBinder.Constants.ViewToModel){      
+                      this.copyViewValuesToModel();      
+                  }      
+              },      
+            
+              _unbindViewToModel: function () {      
+                  if(this._options && this._options['changeTriggers']){      
+                      _.each(this._options['changeTriggers'], function (event, selector) {      
+                          $(this._rootEl).off(event, selector, this._onElChanged);      
+                      }, this);      
+                  }      
+              },      
+            
+              _onElChanged:function (event) {      
+                  var el, elBindings, elBindingCount, elBinding;      
+            
+                  el = $(event.target)[0];      
+                  elBindings = this._getElBindings(el);      
+            
+                  for(elBindingCount = 0; elBindingCount < elBindings.length; elBindingCount++){      
+                      elBinding = elBindings[elBindingCount];      
+                      if (this._isBindingUserEditable(elBinding)) {      
+                          this._copyViewToModel(elBinding, el);      
+                      }      
+                  }      
+              },      
+            
+              _isBindingUserEditable: function(elBinding){      
+                  return elBinding.elAttribute === undefined ||      
+                      elBinding.elAttribute === 'text' ||      
+                      elBinding.elAttribute === 'html';      
+              },      
+            
+              _isElUserEditable: function(el){      
+                  var isContentEditable = el.attr('contenteditable');      
+                  return isContentEditable || el.is('input') || el.is('select') || el.is('textarea');      
+              },      
+            
+              _isBindingRadioGroup: function(elBinding){      
+                  var elCount, el;      
+                  var isAllRadioButtons = elBinding.boundEls.length > 0;      
+                  for(elCount = 0; elCount < elBinding.boundEls.length; elCount++){      
+                      el = $(elBinding.boundEls[elCount]);      
+                      if(el.attr('type') !== 'radio'){      
+                          isAllRadioButtons = false;      
+                          break;      
+                      }      
+                  }      
+            
+                  return isAllRadioButtons;      
+              },      
+            
+              _getRadioButtonGroupCheckedEl: function(elBinding){      
+                  var elCount, el;      
+                  for(elCount = 0; elCount < elBinding.boundEls.length; elCount++){      
+                      el = $(elBinding.boundEls[elCount]);      
+                      if(el.attr('type') === 'radio' && el.prop('checked')){      
+                          return el;      
+                      }      
+                  }      
+            
+                  return undefined;      
+              },      
+            
+              _getElBindings:function (findEl) {      
+                  var attributeName, attributeBinding, elementBindingCount, elementBinding, boundElCount, boundEl;      
+                  var elBindings = [];      
+            
+                  for (attributeName in this._attributeBindings) {      
+                      attributeBinding = this._attributeBindings[attributeName];      
+            
+                      for (elementBindingCount = 0; elementBindingCount < attributeBinding.elementBindings.length; elementBindingCount++) {      
+                          elementBinding = attributeBinding.elementBindings[elementBindingCount];      
+            
+                          for (boundElCount = 0; boundElCount < elementBinding.boundEls.length; boundElCount++) {      
+                              boundEl = elementBinding.boundEls[boundElCount];      
+            
+                              if (boundEl === findEl) {      
+                                  elBindings.push(elementBinding);      
+                              }      
+                          }      
+                      }      
+                  }      
+            
+                  return elBindings;      
+              },      
+            
+              _onModelChange:function () {      
+                  var changedAttribute, attributeBinding;      
+            
+                  for (changedAttribute in this._model.changedAttributes()) {      
+                      attributeBinding = this._attributeBindings[changedAttribute];      
+            
+                      if (attributeBinding) {      
+                          this._copyModelToView(attributeBinding);      
+                      }      
+                  }      
+              },      
+            
+              _copyModelToView:function (attributeBinding) {      
+                  var elementBindingCount, elementBinding, boundElCount, boundEl, value, convertedValue;      
+            
+                  value = this._model.get(attributeBinding.attributeName);      
+            
+                  for (elementBindingCount = 0; elementBindingCount < attributeBinding.elementBindings.length; elementBindingCount++) {      
+                      elementBinding = attributeBinding.elementBindings[elementBindingCount];      
+            
+                      for (boundElCount = 0; boundElCount < elementBinding.boundEls.length; boundElCount++) {      
+                          boundEl = elementBinding.boundEls[boundElCount];      
+            
+                          if(!boundEl._isSetting){      
+                              convertedValue = this._getConvertedValue(Backbone.ModelBinder.Constants.ModelToView, elementBinding, value);      
+                              this._setEl($(boundEl), elementBinding, convertedValue);      
+                          }      
+                      }      
+                  }      
+              },      
+            
+              _setEl: function (el, elementBinding, convertedValue) {      
+                  if (elementBinding.elAttribute) {      
+                      this._setElAttribute(el, elementBinding, convertedValue);      
+                  }      
+                  else {      
+                      this._setElValue(el, convertedValue);      
+                  }      
+              },      
+            
+              _setElAttribute:function (el, elementBinding, convertedValue) {      
+                  switch (elementBinding.elAttribute) {      
+                      case 'html':      
+                          el.html(convertedValue);      
+                          break;      
+                      case 'text':      
+                          el.text(convertedValue);      
+                          break;      
+                      case 'enabled':      
+                          el.prop('disabled', !convertedValue);      
+                          break;      
+                      case 'displayed':      
+                          el[convertedValue ? 'show' : 'hide']();      
+                          break;      
+                      case 'hidden':      
+                          el[convertedValue ? 'hide' : 'show']();      
+                          break;      
+                      case 'css':      
+                          el.css(elementBinding.cssAttribute, convertedValue);      
+                          break;      
+                      case 'class':      
+                          var previousValue = this._model.previous(elementBinding.attributeBinding.attributeName);      
+                          var currentValue = this._model.get(elementBinding.attributeBinding.attributeName);      
+                          // is current value is now defined then remove the class the may have been set for the undefined value      
+                          if(!_.isUndefined(previousValue) || !_.isUndefined(currentValue)){      
+                              previousValue = this._getConvertedValue(Backbone.ModelBinder.Constants.ModelToView, elementBinding, previousValue);      
+                              el.removeClass(previousValue);      
+                          }      
+            
+                          if(convertedValue){      
+                              el.addClass(convertedValue);      
+                          }      
+                          break;      
+                      default:      
+                          el.attr(elementBinding.elAttribute, convertedValue);      
+                  }      
+              },      
+            
+              _setElValue:function (el, convertedValue) {      
+                  if(el.attr('type')){      
+                      switch (el.attr('type')) {      
+                          case 'radio':      
+                              el.prop('checked', el.val() === convertedValue);      
+                              break;      
+                          case 'checkbox':      
+                               el.prop('checked', !!convertedValue);      
+                              break;      
+                          case 'file':      
+                              break;      
+                          default:      
+                              el.val(convertedValue);      
+                      }      
+                  }      
+                  else if(el.is('input') || el.is('select') || el.is('textarea')){      
+                      el.val(convertedValue || (convertedValue === 0 ? '0' : ''));      
+                  }      
+                  else {      
+                      el.text(convertedValue || (convertedValue === 0 ? '0' : ''));      
+                  }      
+              },      
+            
+              _copyViewToModel: function (elementBinding, el) {      
+                  var result, value, convertedValue;      
+            
+                  if (!el._isSetting) {      
+            
+                      el._isSetting = true;      
+                      result = this._setModel(elementBinding, $(el));      
+                      el._isSetting = false;      
+            
+                      if(result && elementBinding.converter){      
+                          value = this._model.get(elementBinding.attributeBinding.attributeName);      
+                          convertedValue = this._getConvertedValue(Backbone.ModelBinder.Constants.ModelToView, elementBinding, value);      
+                          this._setEl($(el), elementBinding, convertedValue);      
+                      }      
+                  }      
+              },      
+            
+              _getElValue: function(elementBinding, el){      
+                  switch (el.attr('type')) {      
+                      case 'checkbox':      
+                          return el.prop('checked') ? true : false;      
+                      default:      
+                          if(el.attr('contenteditable') !== undefined){      
+                              return el.html();      
+                          }      
+                          else {      
+                              return el.val();      
+                          }      
+                  }      
+              },      
+            
+              _setModel: function (elementBinding, el) {      
+                  var data = {};      
+                  var elVal = this._getElValue(elementBinding, el);      
+                  elVal = this._getConvertedValue(Backbone.ModelBinder.Constants.ViewToModel, elementBinding, elVal);      
+                  data[elementBinding.attributeBinding.attributeName] = elVal;      
+                  return this._model.set(data,  this._options['modelSetOptions']);      
+              },      
+            
+              _getConvertedValue: function (direction, elementBinding, value) {      
+            
+                  if (elementBinding.converter) {      
+                      value = elementBinding.converter(direction, value, elementBinding.attributeBinding.attributeName, this._model, elementBinding.boundEls);      
+                  }      
+                  else if(this._options['converter']){      
+                      value = this._options['converter'](direction, value, elementBinding.attributeBinding.attributeName, this._model, elementBinding.boundEls);      
+                  }      
+            
+                  return value;      
+              },      
+            
+              _throwException: function(message){      
+                  if(this._options.suppressThrows){      
+                      if(typeof(console) !== 'undefined' && console.error){      
+                          console.error(message);      
+                      }      
+                  }      
+                  else {      
+                      throw message;      
+                  }      
+              }      
+          });      
+            
+          Backbone.ModelBinder.CollectionConverter = function(collection){      
+              this._collection = collection;      
+            
+              if(!this._collection){      
+                  throw 'Collection must be defined';      
+              }      
+              _.bindAll(this, 'convert');      
+          };      
+            
+          _.extend(Backbone.ModelBinder.CollectionConverter.prototype, {      
+              convert: function(direction, value){      
+                  if (direction === Backbone.ModelBinder.Constants.ModelToView) {      
+                      return value ? value.id : undefined;      
+                  }      
+                  else {      
+                      return this._collection.get(value);      
+                  }      
+              }      
+          });      
+            
+          // A static helper function to create a default set of bindings that you can customize before calling the bind() function      
+          // rootEl - where to find all of the bound elements      
+          // attributeType - probably 'name' or 'id' in most cases      
+          // converter(optional) - the default converter you want applied to all your bindings      
+          // elAttribute(optional) - the default elAttribute you want applied to all your bindings      
+          Backbone.ModelBinder.createDefaultBindings = function(rootEl, attributeType, converter, elAttribute){      
+              var foundEls, elCount, foundEl, attributeName;      
+              var bindings = {};      
+            
+              foundEls = $('[' + attributeType + ']', rootEl);      
+            
+              for(elCount = 0; elCount < foundEls.length; elCount++){      
+                  foundEl = foundEls[elCount];      
+                  attributeName = $(foundEl).attr(attributeType);      
+            
+                  if(!bindings[attributeName]){      
+                      var attributeBinding =  {selector: '[' + attributeType + '="' + attributeName + '"]'};      
+                      bindings[attributeName] = attributeBinding;      
+            
+                      if(converter){      
+                          bindings[attributeName].converter = converter;      
+                      }      
+            
+                      if(elAttribute){      
+                          bindings[attributeName].elAttribute = elAttribute;      
+                      }      
+                  }      
+              }      
+            
+              return bindings;      
+          };      
+            
+          // Helps you to combine 2 sets of bindings      
+          Backbone.ModelBinder.combineBindings = function(destination, source){      
+              _.each(source, function(value, key){      
+                  var elementBinding = {selector: value.selector};      
+            
+                  if(value.converter){      
+                      elementBinding.converter = value.converter;      
+                  }      
+            
+                  if(value.elAttribute){      
+                      elementBinding.elAttribute = value.elAttribute;      
+                  }      
+            
+                  if(!destination[key]){      
+                      destination[key] = elementBinding;      
+                  }      
+                  else {      
+                      destination[key] = [destination[key], elementBinding];      
+                  }      
+              });      
+            
+              return destination;      
+          };      
+            
+            
+          return Backbone.ModelBinder;      
+            
+      }));      
+      
+    },
+    'Backbone.CollectionBinder': function (module, exports, require, global) {
+      // Backbone.CollectionBinder v1.1.0      
+      // (c) 2015 Bart Wood      
+      // Distributed Under MIT License      
+            
+      (function (factory) {      
+          if (typeof define === 'function' && define.amd) {      
+              // AMD. Register as an anonymous module.      
+              define(['underscore', 'jquery', 'backbone', 'Backbone.ModelBinder'], factory);      
+          }      
+          else if(typeof module !== 'undefined' && module.exports) {      
+              // CommonJS      
+              module.exports = factory(      
+                  require('underscore'),      
+                  require('jquery'),      
+                  require('backbone')      
+              );      
+          }      
+          else {      
+              // Browser globals      
+              factory(_, $, Backbone);      
+          }      
+      }      
+      (function(_, $, Backbone){      
+            
+          if(!Backbone){      
+              throw 'Please include Backbone.js before Backbone.ModelBinder.js';      
+          }      
+            
+          if(!Backbone.ModelBinder){      
+              throw 'Please include Backbone.ModelBinder.js before Backbone.CollectionBinder.js';      
+          }      
+            
+          Backbone.CollectionBinder = function(elManagerFactory, options){      
+              _.bindAll.apply(_, [this].concat(_.functions(this)));      
+              this._elManagers = {};      
+            
+              this._elManagerFactory = elManagerFactory;      
+              if(!this._elManagerFactory) throw 'elManagerFactory must be defined.';      
+            
+              // Let the factory just use the trigger function on the view binder      
+              this._elManagerFactory.trigger = this.trigger;      
+            
+              this._options = _.extend({}, Backbone.CollectionBinder.options, options);      
+          };      
+            
+          // Static setter for class level options      
+          Backbone.CollectionBinder.SetOptions = function(options){      
+              Backbone.CollectionBinder.options = options;      
+          };      
+            
+          Backbone.CollectionBinder.VERSION = '1.1.0';      
+            
+          _.extend(Backbone.CollectionBinder.prototype, Backbone.Events, {      
+              bind: function(collection, parentEl){      
+                  this.unbind();      
+            
+                  if(!collection) throw 'collection must be defined';      
+                  if(!parentEl) throw 'parentEl must be defined';      
+            
+                  this._collection = collection;      
+                  this._elManagerFactory._setParentEl(parentEl);      
+            
+                  this._onCollectionReset();      
+            
+                  this._collection.on('add', this._onCollectionAdd, this);      
+                  this._collection.on('remove', this._onCollectionRemove, this);      
+                  this._collection.on('reset', this._onCollectionReset, this);      
+                  this._collection.on('sort', this._onCollectionSort, this);      
+              },      
+            
+              unbind: function(){      
+                  if(this._collection !== undefined){      
+                      this._collection.off('add', this._onCollectionAdd);      
+                      this._collection.off('remove', this._onCollectionRemove);      
+                      this._collection.off('reset', this._onCollectionReset);      
+                      this._collection.off('sort', this._onCollectionSort);      
+                  }      
+            
+                  this._removeAllElManagers();      
+              },      
+            
+              getManagerForEl: function(el){      
+                  var i, elManager, elManagers = _.values(this._elManagers);      
+            
+                  for(i = 0; i < elManagers.length; i++){      
+                      elManager = elManagers[i];      
+            
+                      if(elManager.isElContained(el)){      
+                          return elManager;      
+                      }      
+                  }      
+            
+                  return undefined;      
+              },      
+            
+              getManagerForModel: function(model){      
+                 return this._elManagers[_.isObject(model)? model.cid : model];      
+              },      
+            
+              _onCollectionAdd: function(model, collection, options){      
+                  var manager = this._elManagers[model.cid] = this._elManagerFactory.makeElManager(model);      
+                  manager.createEl();      
+            
+                  var position = options && options.at;      
+            
+                  if (this._options['autoSort'] && position != null && position < this._collection.length - 1) {      
+                      this._moveElToPosition(manager.getEl(), position);      
+                  }      
+              },      
+            
+              _onCollectionRemove: function(model){      
+                  this._removeElManager(model);      
+              },      
+            
+              _onCollectionReset: function(){      
+                  this._removeAllElManagers();      
+            
+                  this._collection.each(function(model){      
+                      this._onCollectionAdd(model);      
+                  }, this);      
+            
+                  this.trigger('elsReset', this._collection);      
+              },      
+            
+              _onCollectionSort: function() {      
+                  if(this._options['autoSort']){      
+                      this.sortRootEls();      
+                  }      
+              },      
+            
+              _removeAllElManagers: function(){      
+                  _.each(this._elManagers, function(elManager){      
+                      elManager.removeEl();      
+                      delete this._elManagers[elManager._model.cid];      
+                  }, this);      
+            
+                  delete this._elManagers;      
+                  this._elManagers = {};      
+              },      
+            
+              _removeElManager: function(model){      
+                  if(this._elManagers[model.cid] !== undefined){      
+                      this._elManagers[model.cid].removeEl();      
+                      delete this._elManagers[model.cid];      
+                  }      
+              },      
+            
+              _moveElToPosition: function (modelEl, position) {      
+                  var nextModel = this._collection.at(position + 1);      
+                  if (!nextModel) return;      
+            
+                  var nextManager = this.getManagerForModel(nextModel);      
+                  if (!nextManager) return;      
+            
+                  var nextEl = nextManager.getEl();      
+                  if (!nextEl) return;      
+            
+                  modelEl.detach();      
+                  modelEl.insertBefore(nextEl);      
+              },      
+            
+              sortRootEls: function(){      
+                  this._collection.each(function(model, modelIndex){      
+                      var modelElManager = this.getManagerForModel(model);      
+                      if(modelElManager){      
+                          var modelEl = modelElManager.getEl();      
+                          var currentRootEls = $(this._elManagerFactory._getParentEl()).children();      
+            
+                          if(currentRootEls[modelIndex] !== modelEl[0]){      
+                              modelEl.detach();      
+                              modelEl.insertBefore(currentRootEls[modelIndex]);      
+                          }      
+                      }      
+                  }, this);      
+              }      
+          });      
+            
+          // The ElManagerFactory is used for els that are just html templates      
+          // elHtml - how the model's html will be rendered.  Must have a single root element (div,span).      
+          // bindings (optional) - either a string which is the binding attribute (name, id, data-name, etc.) or a normal bindings hash      
+          Backbone.CollectionBinder.ElManagerFactory = function(elHtml, bindings){      
+              _.bindAll.apply(_, [this].concat(_.functions(this)));      
+            
+              this._elHtml = elHtml;      
+              this._bindings = bindings;      
+            
+              if(!_.isFunction(this._elHtml) && ! _.isString(this._elHtml)) throw 'elHtml must be a compliled template or an html string';      
+          };      
+            
+          _.extend(Backbone.CollectionBinder.ElManagerFactory.prototype, {      
+              _setParentEl: function(parentEl){      
+                  this._parentEl = parentEl;      
+              },      
+            
+              _getParentEl: function(){      
+                  return this._parentEl;      
+              },      
+            
+              makeElManager: function(model){      
+            
+                  var elManager = {      
+                      _model: model,      
+            
+                      createEl: function(){      
+                          this._el = _.isFunction(this._elHtml) ? $(this._elHtml({model: this._model.toJSON()})) : $(this._elHtml);      
+                          $(this._parentEl).append(this._el);      
+            
+                          if(this._bindings){      
+                              if(_.isString(this._bindings)){      
+                                  this._modelBinder = new Backbone.ModelBinder();      
+                                  this._modelBinder.bind(this._model, this._el, Backbone.ModelBinder.createDefaultBindings(this._el, this._bindings));      
+                              }      
+                              else if(_.isObject(this._bindings)){      
+                                  this._modelBinder = new Backbone.ModelBinder();      
+                                  this._modelBinder.bind(this._model, this._el, this._bindings);      
+                              }      
+                              else {      
+                                  throw 'Unsupported bindings type, please use a boolean or a bindings hash';      
+                              }      
+                          }      
+            
+                          this.trigger('elCreated', this._model, this._el);      
+                      },      
+            
+                      removeEl: function(){      
+                          if(this._modelBinder !== undefined){      
+                              this._modelBinder.unbind();      
+                          }      
+            
+                          this._el.remove();      
+                          this.trigger('elRemoved', this._model, this._el);      
+                      },      
+            
+                      isElContained: function(findEl){      
+                          return this._el === findEl || $(this._el).has(findEl).length > 0;      
+                      },      
+            
+                      getModel: function(){      
+                          return this._model;      
+                      },      
+            
+                      getEl: function(){      
+                          return this._el;      
+                      }      
+                  };      
+            
+                  _.extend(elManager, this);      
+                  return elManager;      
+              }      
+          });      
+            
+            
+          // The ViewManagerFactory is used for els that are created and owned by backbone views.      
+          // There is no bindings option because the view made by the viewCreator should take care of any binding      
+          // viewCreator - a callback that will create backbone view instances for a model passed to the callback      
+          Backbone.CollectionBinder.ViewManagerFactory = function(viewCreator){      
+              _.bindAll.apply(_, [this].concat(_.functions(this)));      
+              this._viewCreator = viewCreator;      
+            
+              if(!_.isFunction(this._viewCreator)) throw 'viewCreator must be a valid function that accepts a model and returns a backbone view';      
+          };      
+            
+          _.extend(Backbone.CollectionBinder.ViewManagerFactory.prototype, {      
+              _setParentEl: function(parentEl){      
+                  this._parentEl = parentEl;      
+              },      
+            
+              _getParentEl: function(){      
+                  return this._parentEl;      
+              },      
+            
+              makeElManager: function(model){      
+                  var elManager = {      
+            
+                      _model: model,      
+            
+                      createEl: function(){      
+                          this._view = this._viewCreator(model);      
+                          this._view.render(this._model);      
+                          $(this._parentEl).append(this._view.el);      
+            
+                          this.trigger('elCreated', this._model, this._view);      
+                      },      
+            
+                      removeEl: function(){      
+                          if(this._view.close !== undefined){      
+                              this._view.close();      
+                          }      
+                          else {      
+                              this._view.$el.remove();      
+                              console && console.log && console.log('warning, you should implement a close() function for your view, you might end up with zombies');      
+                          }      
+            
+                          this.trigger('elRemoved', this._model, this._view);      
+                      },      
+            
+                      isElContained: function(findEl){      
+                          return this._view.el === findEl || this._view.$el.has(findEl).length > 0;      
+                      },      
+            
+                      getModel: function(){      
+                          return this._model;      
+                      },      
+            
+                      getView: function(){      
+                          return this._view;      
+                      },      
+            
+                      getEl: function(){      
+                          return this._view.$el;      
+                      }      
+                  };      
+            
+                  _.extend(elManager, this);      
+            
+                  return elManager;      
+              }      
+          });      
+            
+      }));      
+      
+    }
+  }, 'Backbone.ModelBinder');
+
+  Module.createPackage('backbone.epoxy', {
+    'backbone.epoxy': function (module, exports, require, global) {
+      // Backbone.Epoxy
+      
+      // (c) 2015 Greg MacWilliam
+      // Freely distributed under the MIT license
+      // For usage and documentation:
+      // http://epoxyjs.org
+      
+      (function(root, factory) {
+      
+        if (typeof exports !== 'undefined') {
+          // Define as CommonJS export:
+          module.exports = factory(require("underscore"), require("backbone"));
+        } else if (typeof define === 'function' && define.amd) {
+          // Define as AMD:
+          define(["underscore", "backbone"], factory);
+        } else {
+          // Just run it:
+          factory(root._, root.Backbone);
+        }
+      
+      }(this, function(_, Backbone) {
+      
+        // Epoxy namespace:
+        var Epoxy = Backbone.Epoxy = {};
+      
+        // Object-type utils:
+        var array = Array.prototype;
+        var isUndefined = _.isUndefined;
+        var isFunction = _.isFunction;
+        var isObject = _.isObject;
+        var isArray = _.isArray;
+        var isModel = function(obj) { return obj instanceof Backbone.Model; };
+        var isCollection = function(obj) { return obj instanceof Backbone.Collection; };
+        var blankMethod = function() {};
+      
+        // Static mixins API:
+        // added as a static member to Epoxy class objects (Model & View);
+        // generates a set of class attributes for mixin with other objects.
+        var mixins = {
+          mixin: function(extend) {
+            extend = extend || {};
+      
+            for (var i in this.prototype) {
+              // Skip override on pre-defined binding declarations:
+              if (i === 'bindings' && extend.bindings) continue;
+      
+              // Assimilate non-constructor Epoxy prototype properties onto extended object:
+              if (this.prototype.hasOwnProperty(i) && i !== 'constructor') {
+                extend[i] = this.prototype[i];
+              }
+            }
+            return extend;
+          }
+        };
+      
+        // Calls method implementations of a super-class object:
+        function _super(instance, method, args) {
+          return instance._super.prototype[method].apply(instance, args);
+        }
+      
+        // Epoxy.Model
+        // -----------
+        var modelMap;
+        var modelProps = ['computeds'];
+      
+        Epoxy.Model = Backbone.Model.extend({
+          _super: Backbone.Model,
+      
+          // Backbone.Model constructor override:
+          // configures computed model attributes around the underlying native Backbone model.
+          constructor: function(attributes, options) {
+            _.extend(this, _.pick(options||{}, modelProps));
+            _super(this, 'constructor', arguments);
+            this.initComputeds(this.attributes, options);
+          },
+      
+          // Gets a copy of a model attribute value:
+          // Array and Object values will return a shallow copy,
+          // primitive values will be returned directly.
+          getCopy: function(attribute) {
+            return _.clone(this.get(attribute));
+          },
+      
+          // Backbone.Model.get() override:
+          // provides access to computed attributes,
+          // and maps computed dependency references while establishing bindings.
+          get: function(attribute) {
+      
+            // Automatically register bindings while building out computed dependency graphs:
+            modelMap && modelMap.push(['change:'+attribute, this]);
+      
+            // Return a computed property value, if available:
+            if (this.hasComputed(attribute)) {
+              return this.c()[ attribute ].get();
+            }
+      
+            // Default to native Backbone.Model get operation:
+            return _super(this, 'get', arguments);
+          },
+      
+          // Backbone.Model.set() override:
+          // will process any computed attribute setters,
+          // and then pass along all results to the underlying model.
+          set: function(key, value, options) {
+            var params = key;
+      
+            // Convert key/value arguments into {key:value} format:
+            if (params && !isObject(params)) {
+              params = {};
+              params[ key ] = value;
+            } else {
+              options = value;
+            }
+      
+            // Default options definition:
+            options = options || {};
+      
+            // Create store for capturing computed change events:
+            var computedEvents = this._setting = [];
+      
+            // Attempt to set computed attributes while not unsetting:
+            if (!options.unset) {
+              // All param properties are tested against computed setters,
+              // properties set to computeds will be removed from the params table.
+              // Optionally, an computed setter may return key/value pairs to be merged into the set.
+              params = deepModelSet(this, params, {}, []);
+            }
+      
+            // Remove computed change events store:
+            delete this._setting;
+      
+            // Pass all resulting set params along to the underlying Backbone Model.
+            var result = _super(this, 'set', [params, options]);
+      
+            // Dispatch all outstanding computed events:
+            if (!options.silent) {
+              // Make sure computeds get a "change" event:
+              if (!this.hasChanged() && computedEvents.length) {
+                this.trigger('change', this);
+              }
+      
+              // Trigger each individual computed attribute change:
+              // NOTE: computeds now officially fire AFTER basic "change"...
+              // We can't really fire them earlier without duplicating the Backbone "set" method here.
+              _.each(computedEvents, function(evt) {
+                this.trigger.apply(this, evt);
+              }, this);
+            }
+            return result;
+          },
+      
+          // Backbone.Model.toJSON() override:
+          // adds a 'computed' option, specifying to include computed attributes.
+          toJSON: function(options) {
+            var json = _super(this, 'toJSON', arguments);
+      
+            if (options && options.computed) {
+              _.each(this.c(), function(computed, attribute) {
+                json[ attribute ] = computed.value;
+              });
+            }
+      
+            return json;
+          },
+      
+          // Backbone.Model.destroy() override:
+          // clears all computed attributes before destroying.
+          destroy: function() {
+            this.clearComputeds();
+            return _super(this, 'destroy', arguments);
+          },
+      
+          // Computed namespace manager:
+          // Allows the model to operate as a mixin.
+          c: function() {
+            return this._c || (this._c = {});
+          },
+      
+          // Initializes the Epoxy model:
+          // called automatically by the native constructor,
+          // or may be called manually when adding Epoxy as a mixin.
+          initComputeds: function(attributes, options) {
+            this.clearComputeds();
+      
+            // Resolve computeds hash, and extend it with any preset attribute keys:
+            // TODO: write test.
+            var computeds = _.result(this, 'computeds')||{};
+            computeds = _.extend(computeds, _.pick(attributes||{}, _.keys(computeds)));
+      
+            // Add all computed attributes:
+            _.each(computeds, function(params, attribute) {
+              params._init = 1;
+              this.addComputed(attribute, params);
+            }, this);
+      
+            // Initialize all computed attributes:
+            // all presets have been constructed and may reference each other now.
+            _.invoke(this.c(), 'init');
+          },
+      
+          // Adds a computed attribute to the model:
+          // computed attribute will assemble and return customized values.
+          // @param attribute (string)
+          // @param getter (function) OR params (object)
+          // @param [setter (function)]
+          // @param [dependencies ...]
+          addComputed: function(attribute, getter, setter) {
+            this.removeComputed(attribute);
+      
+            var params = getter;
+            var delayInit = params._init;
+      
+            // Test if getter and/or setter are provided:
+            if (isFunction(getter)) {
+              var depsIndex = 2;
+      
+              // Add getter param:
+              params = {};
+              params._get = getter;
+      
+              // Test for setter param:
+              if (isFunction(setter)) {
+                params._set = setter;
+                depsIndex++;
+              }
+      
+              // Collect all additional arguments as dependency definitions:
+              params.deps = array.slice.call(arguments, depsIndex);
+            }
+      
+            // Create a new computed attribute:
+            this.c()[ attribute ] = new EpoxyComputedModel(this, attribute, params, delayInit);
+            return this;
+          },
+      
+          // Tests the model for a computed attribute definition:
+          hasComputed: function(attribute) {
+            return this.c().hasOwnProperty(attribute);
+          },
+      
+          // Removes an computed attribute from the model:
+          removeComputed: function(attribute) {
+            if (this.hasComputed(attribute)) {
+              this.c()[ attribute ].dispose();
+              delete this.c()[ attribute ];
+            }
+            return this;
+          },
+      
+          // Removes all computed attributes:
+          clearComputeds: function() {
+            for (var attribute in this.c()) {
+              this.removeComputed(attribute);
+            }
+            return this;
+          },
+      
+          // Internal array value modifier:
+          // performs array ops on a stored array value, then fires change.
+          // No action is taken if the specified attribute value is not an array.
+          modifyArray: function(attribute, method, options) {
+            var obj = this.get(attribute);
+      
+            if (isArray(obj) && isFunction(array[method])) {
+              var args = array.slice.call(arguments, 2);
+              var result = array[ method ].apply(obj, args);
+              options = options || {};
+      
+              if (!options.silent) {
+                this.trigger('change:'+attribute+' change', this, array, options);
+              }
+              return result;
+            }
+            return null;
+          },
+      
+          // Internal object value modifier:
+          // sets new property values on a stored object value, then fires change.
+          // No action is taken if the specified attribute value is not an object.
+          modifyObject: function(attribute, property, value, options) {
+            var obj = this.get(attribute);
+            var change = false;
+      
+            // If property is Object:
+            if (isObject(obj)) {
+      
+              options = options || {};
+      
+              // Delete existing property in response to undefined values:
+              if (isUndefined(value) && obj.hasOwnProperty(property)) {
+                delete obj[property];
+                change = true;
+              }
+              // Set new and/or changed property values:
+              else if (obj[ property ] !== value) {
+                obj[ property ] = value;
+                change = true;
+              }
+      
+              // Trigger model change:
+              if (change && !options.silent) {
+                this.trigger('change:'+attribute+' change', this, obj, options);
+              }
+      
+              // Return the modified object:
+              return obj;
+            }
+            return null;
+          }
+        }, mixins);
+      
+        // Epoxy.Model -> Private
+        // ----------------------
+      
+        // Model deep-setter:
+        // Attempts to set a collection of key/value attribute pairs to computed attributes.
+        // Observable setters may digest values, and then return mutated key/value pairs for inclusion into the set operation.
+        // Values returned from computed setters will be recursively deep-set, allowing computeds to set other computeds.
+        // The final collection of resolved key/value pairs (after setting all computeds) will be returned to the native model.
+        // @param model: target Epoxy model on which to operate.
+        // @param toSet: an object of key/value pairs to attempt to set within the computed model.
+        // @param toReturn: resolved non-ovservable attribute values to be returned back to the native model.
+        // @param trace: property stack trace (prevents circular setter loops).
+        function deepModelSet(model, toSet, toReturn, stack) {
+      
+          // Loop through all setter properties:
+          for (var attribute in toSet) {
+            if (toSet.hasOwnProperty(attribute)) {
+      
+              // Pull each setter value:
+              var value = toSet[ attribute ];
+      
+              if (model.hasComputed(attribute)) {
+      
+                // Has a computed attribute:
+                // comfirm attribute does not already exist within the stack trace.
+                if (!stack.length || !_.contains(stack, attribute)) {
+      
+                  // Non-recursive:
+                  // set and collect value from computed attribute.
+                  value = model.c()[attribute].set(value);
+      
+                  // Recursively set new values for a returned params object:
+                  // creates a new copy of the stack trace for each new search branch.
+                  if (value && isObject(value)) {
+                    toReturn = deepModelSet(model, value, toReturn, stack.concat(attribute));
+                  }
+      
+                } else {
+                  // Recursive:
+                  // Throw circular reference error.
+                  throw('Recursive setter: '+stack.join(' > '));
+                }
+      
+              } else {
+                // No computed attribute:
+                // set the value to the keeper values.
+                toReturn[ attribute ] = value;
+              }
+            }
+          }
+      
+          return toReturn;
+        }
+      
+      
+        // Epoxy.Model -> Computed
+        // -----------------------
+        // Computed objects store model values independently from the model's attributes table.
+        // Computeds define custom getter/setter functions to manage their value.
+      
+        function EpoxyComputedModel(model, name, params, delayInit) {
+          params = params || {};
+      
+          // Rewrite getter param:
+          if (params.get && isFunction(params.get)) {
+            params._get = params.get;
+          }
+      
+          // Rewrite setter param:
+          if (params.set && isFunction(params.set)) {
+            params._set = params.set;
+          }
+      
+          // Prohibit override of 'get()' and 'set()', then extend:
+          delete params.get;
+          delete params.set;
+          _.extend(this, params);
+      
+          // Set model, name, and default dependencies array:
+          this.model = model;
+          this.name = name;
+          this.deps = this.deps || [];
+      
+          // Skip init while parent model is initializing:
+          // Model will initialize in two passes...
+          // the first pass sets up all computed attributes,
+          // then the second pass initializes all bindings.
+          if (!delayInit) this.init();
+        }
+      
+        _.extend(EpoxyComputedModel.prototype, Backbone.Events, {
+      
+          // Initializes the computed's value and bindings:
+          // this method is called independently from the object constructor,
+          // allowing computeds to build and initialize in two passes by the parent model.
+          init: function() {
+      
+            // Configure dependency map, then update the computed's value:
+            // All Epoxy.Model attributes accessed while getting the initial value
+            // will automatically register themselves within the model bindings map.
+            var bindings = {};
+            var deps = modelMap = [];
+            this.get(true);
+            modelMap = null;
+      
+            // If the computed has dependencies, then proceed to binding it:
+            if (deps.length) {
+      
+              // Compile normalized bindings table:
+              // Ultimately, we want a table of event types, each with an array of their associated targets:
+              // {'change:name':[<model1>], 'change:status':[<model1>,<model2>]}
+      
+              // Compile normalized bindings map:
+              _.each(deps, function(value) {
+                var attribute = value[0];
+                var target = value[1];
+      
+                // Populate event target arrays:
+                if (!bindings[attribute]) {
+                  bindings[attribute] = [ target ];
+      
+                } else if (!_.contains(bindings[attribute], target)) {
+                  bindings[attribute].push(target);
+                }
+              });
+      
+              // Bind all event declarations to their respective targets:
+              _.each(bindings, function(targets, binding) {
+                for (var i=0, len=targets.length; i < len; i++) {
+                  this.listenTo(targets[i], binding, _.bind(this.get, this, true));
+                }
+              }, this);
+            }
+          },
+      
+          // Gets an attribute value from the parent model.
+          val: function(attribute) {
+            return this.model.get(attribute);
+          },
+      
+          // Gets the computed's current value:
+          // Computed values flagged as dirty will need to regenerate themselves.
+          // Note: 'update' is strongly checked as TRUE to prevent unintended arguments (handler events, etc) from qualifying.
+          get: function(update) {
+            if (update === true && this._get) {
+              var val = this._get.apply(this.model, _.map(this.deps, this.val, this));
+              this.change(val);
+            }
+            return this.value;
+          },
+      
+          // Sets the computed's current value:
+          // computed values (have a custom getter method) require a custom setter.
+          // Custom setters should return an object of key/values pairs;
+          // key/value pairs returned to the parent model will be merged into its main .set() operation.
+          set: function(val) {
+            if (this._get) {
+              if (this._set) return this._set.apply(this.model, arguments);
+              else throw('Cannot set read-only computed attribute.');
+            }
+            this.change(val);
+            return null;
+          },
+      
+          // Changes the computed's value:
+          // new values are cached, then fire an update event.
+          change: function(value) {
+            if (!_.isEqual(value, this.value)) {
+              this.value = value;
+              var evt = ['change:'+this.name, this.model, value];
+      
+              if (this.model._setting) {
+                this.model._setting.push(evt);
+              } else {
+                evt[0] += ' change';
+                this.model.trigger.apply(this.model, evt);
+              }
+            }
+          },
+      
+          // Disposal:
+          // cleans up events and releases references.
+          dispose: function() {
+            this.stopListening();
+            this.off();
+            this.model = this.value = null;
+          }
+        });
+      
+      
+        // Epoxy.binding -> Binding API
+        // ----------------------------
+      
+        var bindingSettings = {
+          optionText: 'label',
+          optionValue: 'value'
+        };
+      
+      
+        // Cache for storing binding parser functions:
+        // Cuts down on redundancy when building repetitive binding views.
+        var bindingCache = {};
+      
+      
+        // Reads value from an accessor:
+        // Accessors come in three potential forms:
+        // => A function to call for the requested value.
+        // => An object with a collection of attribute accessors.
+        // => A primitive (string, number, boolean, etc).
+        // This function unpacks an accessor and returns its underlying value(s).
+      
+        function readAccessor(accessor) {
+      
+          if (isFunction(accessor)) {
+            // Accessor is function: return invoked value.
+            return accessor();
+          }
+          else if (isObject(accessor)) {
+            // Accessor is object/array: return copy with all attributes read.
+            accessor = _.clone(accessor);
+      
+            _.each(accessor, function(value, key) {
+              accessor[ key ] = readAccessor(value);
+            });
+          }
+          // return formatted value, or pass through primitives:
+          return accessor;
+        }
+      
+      
+        // Binding Handlers
+        // ----------------
+        // Handlers define set/get methods for exchanging data with the DOM.
+      
+        // Formatting function for defining new handler objects:
+        function makeHandler(handler) {
+          return isFunction(handler) ? {set: handler} : handler;
+        }
+      
+        var bindingHandlers = {
+          // Attribute: write-only. Sets element attributes.
+          attr: makeHandler(function($element, value) {
+            $element.attr(value);
+          }),
+      
+          // Checked: read-write. Toggles the checked status of a form element.
+          checked: makeHandler({
+            get: function($element, currentValue, evt) {
+              if ($element.length > 1) {
+                $element = $element.filter(evt.target);
+              }
+      
+              var checked = !!$element.prop('checked');
+              var value = $element.val();
+      
+              if (this.isRadio($element)) {
+                // Radio button: return value directly.
+                return value;
+      
+              } else if (isArray(currentValue)) {
+                // Checkbox array: add/remove value from list.
+                currentValue = currentValue.slice();
+                var index = _.indexOf(currentValue, value);
+      
+                if (checked && index < 0) {
+                  currentValue.push(value);
+                } else if (!checked && index > -1) {
+                  currentValue.splice(index, 1);
+                }
+                return currentValue;
+              }
+              // Checkbox: return boolean toggle.
+              return checked;
+            },
+            set: function($element, value) {
+              if ($element.length > 1) {
+                $element = $element.filter('[value="'+ value +'"]');
+              }
+              
+              // Default as loosely-typed boolean:
+              var checked = !!value;
+      
+              if (this.isRadio($element)) {
+                // Radio button: match checked state to radio value.
+                checked = (value == $element.val());
+      
+              } else if (isArray(value)) {
+                // Checkbox array: match checked state to checkbox value in array contents.
+                checked = _.contains(value, $element.val());
+              }
+      
+              // Set checked property to element:
+              $element.prop('checked', checked);
+            },
+            // Is radio button: avoids '.is(":radio");' check for basic Zepto compatibility.
+            isRadio: function($element) {
+              return $element.attr('type').toLowerCase() === 'radio';
+            }
+          }),
+      
+          // Class Name: write-only. Toggles a collection of class name definitions.
+          classes: makeHandler(function($element, value) {
+            _.each(value, function(enabled, className) {
+              $element.toggleClass(className, !!enabled);
+            });
+          }),
+      
+          // Collection: write-only. Manages a list of views bound to a Backbone.Collection.
+          collection: makeHandler({
+            init: function($element, collection, context, bindings) {
+              this.i = bindings.itemView ? this.view[bindings.itemView] : this.view.itemView;
+              if (!isCollection(collection)) throw('Binding "collection" requires a Collection.');
+              if (!isFunction(this.i)) throw('Binding "collection" requires an itemView.');
+              this.v = {};
+            },
+            set: function($element, collection, target) {
+      
+              var view;
+              var views = this.v;
+              var ItemView = this.i;
+              var models = collection.models;
+      
+              // Cache and reset the current dependency graph state:
+              // sub-views may be created (each with their own dependency graph),
+              // therefore we need to suspend the working graph map here before making children...
+              var mapCache = viewMap;
+              viewMap = null;
+      
+              // Default target to the bound collection object:
+              // during init (or failure), the binding will reset.
+              target = target || collection;
+      
+              if (isModel(target)) {
+      
+                // ADD/REMOVE Event (from a Model):
+                // test if view exists within the binding...
+                if (!views.hasOwnProperty(target.cid)) {
+      
+                  // Add new view:
+                  views[ target.cid ] = view = new ItemView({model: target, collectionView: this.view});
+                  var index = _.indexOf(models, target);
+                  var $children = $element.children();
+      
+                  // Attempt to add at proper index,
+                  // otherwise just append into the element.
+                  if (index < $children.length) {
+                    $children.eq(index).before(view.$el);
+                  } else {
+                    $element.append(view.$el);
+                  }
+      
+                } else {
+      
+                  // Remove existing view:
+                  views[ target.cid ].remove();
+                  delete views[ target.cid ];
+                }
+      
+              } else if (isCollection(target)) {
+      
+                // SORT/RESET Event (from a Collection):
+                // First test if we're sorting...
+                // (number of models has not changed and all their views are present)
+                var sort = models.length === _.size(views) && collection.every(function(model) {
+                  return views.hasOwnProperty(model.cid);
+                });
+      
+                // Hide element before manipulating:
+                $element.children().detach();
+                var frag = document.createDocumentFragment();
+      
+                if (sort) {
+                  // Sort existing views:
+                  collection.each(function(model) {
+                    frag.appendChild(views[model.cid].el);
+                  });
+      
+                } else {
+                  // Reset with new views:
+                  this.clean();
+                  collection.each(function(model) {
+                    views[ model.cid ] = view = new ItemView({model: model, collectionView: this.view});
+                    frag.appendChild(view.el);
+                  }, this);
+                }
+      
+                $element.append(frag);
+              }
+      
+              // Restore cached dependency graph configuration:
+              viewMap = mapCache;
+            },
+            clean: function() {
+              for (var id in this.v) {
+                if (this.v.hasOwnProperty(id)) {
+                  this.v[ id ].remove();
+                  delete this.v[ id ];
+                }
+              }
+            }
+          }),
+      
+          // CSS: write-only. Sets a collection of CSS styles to an element.
+          css: makeHandler(function($element, value) {
+            $element.css(value);
+          }),
+      
+          // Disabled: write-only. Sets the 'disabled' status of a form element (true :: disabled).
+          disabled: makeHandler(function($element, value) {
+            $element.prop('disabled', !!value);
+          }),
+      
+          // Enabled: write-only. Sets the 'disabled' status of a form element (true :: !disabled).
+          enabled: makeHandler(function($element, value) {
+            $element.prop('disabled', !value);
+          }),
+      
+          // HTML: write-only. Sets the inner HTML value of an element.
+          html: makeHandler(function($element, value) {
+            $element.html(value);
+          }),
+      
+          // Options: write-only. Sets option items to a <select> element, then updates the value.
+          options: makeHandler({
+            init: function($element, value, context, bindings) {
+              this.e = bindings.optionsEmpty;
+              this.d = bindings.optionsDefault;
+              this.v = bindings.value;
+            },
+            set: function($element, value) {
+      
+              // Pre-compile empty and default option values:
+              // both values MUST be accessed, for two reasons:
+              // 1) we need to need to guarentee that both values are reached for mapping purposes.
+              // 2) we'll need their values anyway to determine their defined/undefined status.
+              var self = this;
+              var optionsEmpty = readAccessor(self.e);
+              var optionsDefault = readAccessor(self.d);
+              var currentValue = readAccessor(self.v);
+              var options = isCollection(value) ? value.models : value;
+              var numOptions = options.length;
+              var enabled = true;
+              var html = '';
+      
+              // No options or default, and has an empty options placeholder:
+              // display placeholder and disable select menu.
+              if (!numOptions && !optionsDefault && optionsEmpty) {
+      
+                html += self.opt(optionsEmpty, numOptions);
+                enabled = false;
+      
+              } else {
+                // Try to populate default option and options list:
+      
+                // Configure list with a default first option, if defined:
+                if (optionsDefault) {
+                  options = [ optionsDefault ].concat(options);
+                }
+      
+                // Create all option items:
+                _.each(options, function(option, index) {
+                  html += self.opt(option, numOptions);
+                });
+              }
+              // Set new HTML to the element and toggle disabled status:
+              $element.html(html).prop('disabled', !enabled).val(currentValue);
+      
+              // Forcibly set default selection:
+              if ($element[0].selectedIndex < 0 && $element.children().length) {
+                $element[0].selectedIndex = 0;
+              }
+              
+              // Pull revised value with new options selection state:
+              var revisedValue = $element.val();
+      
+              // Test if the current value was successfully applied:
+              // if not, set the new selection state into the model.
+              if (self.v && !_.isEqual(currentValue, revisedValue)) {
+                self.v(revisedValue);
+              }
+            },
+            opt: function(option, numOptions) {
+              // Set both label and value as the raw option object by default:
+              var label = option;
+              var value = option;
+              var textAttr = bindingSettings.optionText;
+              var valueAttr = bindingSettings.optionValue;
+      
+              // Dig deeper into label/value settings for non-primitive values:
+              if (isObject(option)) {
+                // Extract a label and value from each object:
+                // a model's 'get' method is used to access potential computed values.
+                label = isModel(option) ? option.get(textAttr) : option[ textAttr ];
+                value = isModel(option) ? option.get(valueAttr) : option[ valueAttr ];
+              }
+      
+              return ['<option value="', value, '">', label, '</option>'].join('');
+            },
+            clean: function() {
+              this.d = this.e = this.v = 0;
+            }
+          }),
+      
+          // Template: write-only. Renders the bound element with an Underscore template.
+          template: makeHandler({
+            init: function($element, value, context) {
+              var raw = $element.find('script,template');
+              this.t = _.template(raw.length ? raw.html() : $element.html());
+      
+              // If an array of template attributes was provided,
+              // then replace array with a compiled hash of attribute accessors:
+              if (isArray(value)) {
+                return _.pick(context, value);
+              }
+            },
+            set: function($element, value) {
+              value = isModel(value) ? value.toJSON({computed:true}) : value;
+              $element.html(this.t(value));
+            },
+            clean: function() {
+              this.t = null;
+            }
+          }),
+      
+          // Text: read-write. Gets and sets the text value of an element.
+          text: makeHandler({
+            get: function($element) {
+              return $element.text();
+            },
+            set: function($element, value) {
+              $element.text(value);
+            }
+          }),
+      
+          // Toggle: write-only. Toggles the visibility of an element.
+          toggle: makeHandler(function($element, value) {
+            $element.toggle(!!value);
+          }),
+      
+          // Value: read-write. Gets and sets the value of a form element.
+          value: makeHandler({
+            get: function($element) {
+              return $element.val();
+            },
+            set: function($element, value) {
+              try {
+                if ($element.val() + '' != value + '') $element.val(value);
+              } catch (error) {
+                // Error setting value: IGNORE.
+                // This occurs in IE6 while attempting to set an undefined multi-select option.
+                // unfortuantely, jQuery doesn't gracefully handle this error for us.
+                // remove this try/catch block when IE6 is officially deprecated.
+              }
+            }
+          })
+        };
+      
+      
+        // Binding Filters
+        // ---------------
+        // Filters are special binding handlers that may be invoked while binding;
+        // they will return a wrapper function used to modify how accessors are read.
+      
+        // Partial application wrapper for creating binding filters:
+        function makeFilter(handler) {
+          return function() {
+            var params = arguments;
+            var read = isFunction(handler) ? handler : handler.get;
+            var write = handler.set;
+            return function(value) {
+              return isUndefined(value) ?
+                read.apply(this, _.map(params, readAccessor)) :
+                params[0]((write ? write : read).call(this, value));
+            };
+          };
+        }
+      
+        var bindingFilters = {
+          // Positive collection assessment [read-only]:
+          // Tests if all of the provided accessors are truthy (and).
+          all: makeFilter(function() {
+            var params = arguments;
+            for (var i=0, len=params.length; i < len; i++) {
+              if (!params[i]) return false;
+            }
+            return true;
+          }),
+      
+          // Partial collection assessment [read-only]:
+          // tests if any of the provided accessors are truthy (or).
+          any: makeFilter(function() {
+            var params = arguments;
+            for (var i=0, len=params.length; i < len; i++) {
+              if (params[i]) return true;
+            }
+            return false;
+          }),
+      
+          // Collection length accessor [read-only]:
+          // assumes accessor value to be an Array or Collection; defaults to 0.
+          length: makeFilter(function(value) {
+            return value.length || 0;
+          }),
+      
+          // Negative collection assessment [read-only]:
+          // tests if none of the provided accessors are truthy (and not).
+          none: makeFilter(function() {
+            var params = arguments;
+            for (var i=0, len=params.length; i < len; i++) {
+              if (params[i]) return false;
+            }
+            return true;
+          }),
+      
+          // Negation [read-only]:
+          not: makeFilter(function(value) {
+            return !value;
+          }),
+      
+          // Formats one or more accessors into a text string:
+          // ('$1 $2 did $3', firstName, lastName, action)
+          format: makeFilter(function(str) {
+            var params = arguments;
+      
+            for (var i=1, len=params.length; i < len; i++) {
+              // TODO: need to make something like this work: (?<!\\)\$1
+              str = str.replace(new RegExp('\\$'+i, 'g'), params[i]);
+            }
+            return str;
+          }),
+      
+          // Provides one of two values based on a ternary condition:
+          // uses first param (a) as condition, and returns either b (truthy) or c (falsey).
+          select: makeFilter(function(condition, truthy, falsey) {
+            return condition ? truthy : falsey;
+          }),
+      
+          // CSV array formatting [read-write]:
+          csv: makeFilter({
+            get: function(value) {
+              value = String(value);
+              return value ? value.split(',') : [];
+            },
+            set: function(value) {
+              return isArray(value) ? value.join(',') : value;
+            }
+          }),
+      
+          // Integer formatting [read-write]:
+          integer: makeFilter(function(value) {
+            return value ? parseInt(value, 10) : 0;
+          }),
+      
+          // Float formatting [read-write]:
+          decimal: makeFilter(function(value) {
+            return value ? parseFloat(value) : 0;
+          })
+        };
+      
+        // Define allowed binding parameters:
+        // These params may be included in binding handlers without throwing errors.
+        var allowedParams = {
+          events: 1,
+          itemView: 1,
+          optionsDefault: 1,
+          optionsEmpty: 1
+        };
+      
+        // Define binding API:
+        Epoxy.binding = {
+          allowedParams: allowedParams,
+          addHandler: function(name, handler) {
+            bindingHandlers[ name ] = makeHandler(handler);
+          },
+          addFilter: function(name, handler) {
+            bindingFilters[ name ] = makeFilter(handler);
+          },
+          config: function(settings) {
+            _.extend(bindingSettings, settings);
+          },
+          emptyCache: function() {
+            bindingCache = {};
+          }
+        };
+      
+      
+        // Epoxy.View
+        // ----------
+        var viewMap;
+        var viewProps = ['viewModel', 'bindings', 'bindingFilters', 'bindingHandlers', 'bindingSources', 'computeds'];
+      
+        Epoxy.View = Backbone.View.extend({
+          _super: Backbone.View,
+      
+          // Backbone.View constructor override:
+          // sets up binding controls around call to super.
+          constructor: function(options) {
+            _.extend(this, _.pick(options||{}, viewProps));
+            _super(this, 'constructor', arguments);
+            this.applyBindings();
+          },
+      
+          // Bindings list accessor:
+          b: function() {
+            return this._b || (this._b = []);
+          },
+      
+          // Bindings definition:
+          // this setting defines a DOM attribute name used to query for bindings.
+          // Alternatively, this be replaced with a hash table of key/value pairs,
+          // where 'key' is a DOM query and 'value' is its binding declaration.
+          bindings: 'data-bind',
+      
+          // Setter options:
+          // Defines an optional hashtable of options to be passed to setter operations.
+          // Accepts a custom option '{save:true}' that will write to the model via ".save()".
+          setterOptions: null,
+      
+          // Compiles a model context, then applies bindings to the view:
+          // All Model->View relationships will be baked at the time of applying bindings;
+          // changes in configuration to source attributes or view bindings will require a complete re-bind.
+          applyBindings: function() {
+            this.removeBindings();
+      
+            var self = this;
+            var sources = _.clone(_.result(self, 'bindingSources'));
+            var declarations = self.bindings;
+            var options = self.setterOptions;
+            var handlers = _.clone(bindingHandlers);
+            var filters = _.clone(bindingFilters);
+            var context = self._c = {};
+      
+            // Compile a complete set of binding handlers for the view:
+            // mixes all custom handlers into a copy of default handlers.
+            // Custom handlers defined as plain functions are registered as read-only setters.
+            _.each(_.result(self, 'bindingHandlers')||{}, function(handler, name) {
+                handlers[ name ] = makeHandler(handler);
+            });
+      
+            // Compile a complete set of binding filters for the view:
+            // mixes all custom filters into a copy of default filters.
+            _.each(_.result(self, 'bindingFilters')||{}, function(filter, name) {
+                filters[ name ] = makeFilter(filter);
+            });
+      
+            // Add native 'model' and 'collection' data sources:
+            self.model = addSourceToViewContext(self, context, options, 'model');
+            self.viewModel = addSourceToViewContext(self, context, options, 'viewModel');
+            self.collection = addSourceToViewContext(self, context, options, 'collection');
+      
+            // Support legacy "collection.view" API for rendering list items:
+            // **Deprecated: will be removed after next release*.*
+            if (self.collection && self.collection.view) {
+              self.itemView = self.collection.view;
+            }
+      
+            // Add all additional data sources:
+            if (sources) {
+              _.each(sources, function(source, sourceName) {
+                sources[ sourceName ] = addSourceToViewContext(sources, context, options, sourceName, sourceName);
+              });
+      
+              // Reapply resulting sources to view instance.
+              self.bindingSources = sources;
+            }
+      
+            // Add all computed view properties:
+            _.each(_.result(self, 'computeds')||{}, function(computed, name) {
+              var getter = isFunction(computed) ? computed : computed.get;
+              var setter = computed.set;
+              var deps = computed.deps;
+      
+              context[ name ] = function(value) {
+                return (!isUndefined(value) && setter) ?
+                  setter.call(self, value) :
+                  getter.apply(self, getDepsFromViewContext(self._c, deps));
+              };
+            });
+      
+            // Create all bindings:
+            // bindings are created from an object hash of query/binding declarations,
+            // OR based on queried DOM attributes.
+            if (isObject(declarations)) {
+      
+              // Object declaration method:
+              // {'span.my-element': 'text:attribute'}
+      
+              _.each(declarations, function(elementDecs, selector) {
+                // Get DOM jQuery reference:
+                var $element = queryViewForSelector(self, selector);
+      
+                // flattern object notated binding declaration
+                if (isObject(elementDecs)) {
+                  elementDecs = flattenBindingDeclaration(elementDecs);
+                }
+      
+                // Ignore empty DOM queries (without errors):
+                if ($element.length) {
+                  bindElementToView(self, $element, elementDecs, context, handlers, filters);
+                }
+              });
+      
+            } else {
+      
+              // DOM attributes declaration method:
+              // <span data-bind='text:attribute'></span>
+      
+              // Create bindings for each matched element:
+              queryViewForSelector(self, '['+declarations+']').each(function() {
+                var $element = Backbone.$(this);
+                bindElementToView(self, $element, $element.attr(declarations), context, handlers, filters);
+              });
+            }
+          },
+      
+          // Gets a value from the binding context:
+          getBinding: function(attribute) {
+            return accessViewContext(this._c, attribute);
+          },
+      
+          // Sets a value to the binding context:
+          setBinding: function(attribute, value) {
+            return accessViewContext(this._c, attribute, value);
+          },
+      
+          // Disposes of all view bindings:
+          removeBindings: function() {
+            this._c = null;
+      
+            if (this._b) {
+              while (this._b.length) {
+                this._b.pop().dispose();
+              }
+            }
+          },
+      
+          // Backbone.View.remove() override:
+          // unbinds the view before performing native removal tasks.
+          remove: function() {
+            this.removeBindings();
+            _super(this, 'remove', arguments);
+          }
+      
+        }, mixins);
+      
+        // Epoxy.View -> Private
+        // ---------------------
+      
+        // Adds a data source to a view:
+        // Data sources are Backbone.Model and Backbone.Collection instances.
+        // @param source: a source instance, or a function that returns a source.
+        // @param context: the working binding context. All bindings in a view share a context.
+        function addSourceToViewContext(source, context, options, name, prefix) {
+      
+          // Resolve source instance:
+          source = _.result(source, name);
+      
+          // Ignore missing sources, and invoke non-instances:
+          if (!source) return;
+      
+          // Add Backbone.Model source instance:
+          if (isModel(source)) {
+      
+            // Establish source prefix:
+            prefix = prefix ? prefix+'_' : '';
+      
+            // Create a read-only accessor for the model instance:
+            context['$'+name] = function() {
+              viewMap && viewMap.push([source, 'change']);
+              return source;
+            };
+      
+            // Compile all model attributes as accessors within the context:
+            var modelAttributes = _.extend({}, source.attributes, _.isFunction(source.c) ? source.c() : {});
+            _.each(modelAttributes, function(value, attribute) {
+      
+              // Create named accessor functions:
+              // -> Attributes from 'view.model' use their normal names.
+              // -> Attributes from additional sources are named as 'source_attribute'.
+              context[prefix+attribute] = function(value) {
+                return accessViewDataAttribute(source, attribute, value, options);
+              };
+            });
+          }
+          // Add Backbone.Collection source instance:
+          else if (isCollection(source)) {
+      
+            // Create a read-only accessor for the collection instance:
+            context['$'+name] = function() {
+              viewMap && viewMap.push([source, 'reset add remove sort update']);
+              return source;
+            };
+          }
+      
+          // Return original object, or newly constructed data source:
+          return source;
+        }
+      
+        // Attribute data accessor:
+        // exchanges individual attribute values with model sources.
+        // This function is separated out from the accessor creation process for performance.
+        // @param source: the model data source to interact with.
+        // @param attribute: the model attribute to read/write.
+        // @param value: the value to set, or 'undefined' to get the current value.
+        function accessViewDataAttribute(source, attribute, value, options) {
+          // Register the attribute to the bindings map, if enabled:
+          viewMap && viewMap.push([source, 'change:'+attribute]);
+      
+          // Set attribute value when accessor is invoked with an argument:
+          if (!isUndefined(value)) {
+      
+            // Set Object (non-null, non-array) hashtable value:
+            if (!isObject(value) || isArray(value) || _.isDate(value)) {
+              var val = value;
+              value = {};
+              value[attribute] = val;
+            }
+      
+            // Set value:
+            return options && options.save ? source.save(value, options) : source.set(value, options);
+          }
+      
+          // Get the attribute value by default:
+          return source.get(attribute);
+        }
+      
+        // Queries element selectors within a view:
+        // matches elements within the view, and the view's container element.
+        function queryViewForSelector(view, selector) {
+          if (selector === ':el' || selector === ':scope') return view.$el;
+          var $elements = view.$(selector);
+      
+          // Include top-level view in bindings search:
+          if (view.$el.is(selector)) {
+            $elements = $elements.add(view.$el);
+          }
+      
+          return $elements;
+        }
+      
+        // Binds an element into a view:
+        // The element's declarations are parsed, then a binding is created for each declared handler.
+        // @param view: the parent View to bind into.
+        // @param $element: the target element (as jQuery) to bind.
+        // @param declarations: the string of binding declarations provided for the element.
+        // @param context: a compiled binding context with all availabe view data.
+        // @param handlers: a compiled handlers table with all native/custom handlers.
+        function bindElementToView(view, $element, declarations, context, handlers, filters) {
+      
+          // Parse localized binding context:
+          // parsing function is invoked with 'filters' and 'context' properties made available,
+          // yeilds a native context object with element-specific bindings defined.
+          try {
+            var parserFunct = bindingCache[declarations] || (bindingCache[declarations] = new Function('$f','$c','with($f){with($c){return{'+ declarations +'}}}'));
+            var bindings = parserFunct(filters, context);
+          } catch (error) {
+            throw('Error parsing bindings: "'+declarations +'"\n>> '+error);
+          }
+      
+          // Format the 'events' option:
+          // include events from the binding declaration along with a default 'change' trigger,
+          // then format all event names with a '.epoxy' namespace.
+          var events = _.map(_.union(bindings.events || [], ['change']), function(name) {
+            return name+'.epoxy';
+          }).join(' ');
+      
+          // Apply bindings from native context:
+          _.each(bindings, function(accessor, handlerName) {
+      
+            // Validate that each defined handler method exists before binding:
+            if (handlers.hasOwnProperty(handlerName)) {
+              // Create and add binding to the view's list of handlers:
+              view.b().push(new EpoxyBinding(view, $element, handlers[handlerName], accessor, events, context, bindings));
+            } else if (!allowedParams.hasOwnProperty(handlerName)) {
+              throw('binding handler "'+ handlerName +'" is not defined.');
+            }
+          });
+        }
+      
+        // Gets and sets view context data attributes:
+        // used by the implementations of "getBinding" and "setBinding".
+        function accessViewContext(context, attribute, value) {
+          if (context && context.hasOwnProperty(attribute)) {
+            return isUndefined(value) ? readAccessor(context[attribute]) : context[attribute](value);
+          }
+        }
+      
+        // Accesses an array of dependency properties from a view context:
+        // used for mapping view dependencies by manual declaration.
+        function getDepsFromViewContext(context, attributes) {
+          var values = [];
+          if (attributes && context) {
+            for (var i=0, len=attributes.length; i < len; i++) {
+              values.push(attributes[i] in context ? context[ attributes[i] ]() : null);
+            }
+          }
+          return values;
+        }
+      
+        var identifierRegex = /^[a-z_$][a-z0-9_$]*$/i;
+        var quotedStringRegex = /^\s*(["']).*\1\s*$/;
+      
+        // Converts a binding declaration object into a flattened string.
+        // Input: {text: 'firstName', attr: {title: '"hello"'}}
+        // Output: 'text:firstName,attr:{title:"hello"}'
+        function flattenBindingDeclaration(declaration) {
+          var result = [];
+      
+          for (var key in declaration) {
+            var value = declaration[key];
+      
+            if (isObject(value)) {
+              value = '{'+ flattenBindingDeclaration(value) +'}';
+            }
+      
+            // non-identifier keys that aren't already quoted need to be quoted
+            if (!identifierRegex.test(key) && !quotedStringRegex.test(key)) {
+              key = '"' + key + '"';
+            }
+      
+            result.push(key +':'+ value);
+          }
+      
+          return result.join(',');
+        }
+      
+      
+        // Epoxy.View -> Binding
+        // ---------------------
+        // The binding object connects an element to a bound handler.
+        // @param view: the view object this binding is attached to.
+        // @param $element: the target element (as jQuery) to bind.
+        // @param handler: the handler object to apply (include all handler methods).
+        // @param accessor: an accessor method from the binding context that exchanges data with the model.
+        // @param events:
+        // @param context:
+        // @param bindings:
+        function EpoxyBinding(view, $element, handler, accessor, events, context, bindings) {
+      
+          var self = this;
+          var tag = ($element[0].tagName).toLowerCase();
+          var changable = (tag == 'input' || tag == 'select' || tag == 'textarea' || $element.prop('contenteditable') == 'true');
+          var triggers = [];
+          var reset = function(target) {
+            self.$el && self.set(self.$el, readAccessor(accessor), target);
+          };
+      
+          self.view = view;
+          self.$el = $element;
+          self.evt = events;
+          _.extend(self, handler);
+      
+          // Initialize the binding:
+          // allow the initializer to redefine/modify the attribute accessor if needed.
+          accessor = self.init(self.$el, readAccessor(accessor), context, bindings) || accessor;
+      
+          // Set default binding, then initialize & map bindings:
+          // each binding handler is invoked to populate its initial value.
+          // While running a handler, all accessed attributes will be added to the handler's dependency map.
+          viewMap = triggers;
+          reset();
+          viewMap = null;
+      
+          // Configure READ/GET-able binding. Requires:
+          // => Form element.
+          // => Binding handler has a getter method.
+          // => Value accessor is a function.
+          if (changable && handler.get && isFunction(accessor)) {
+            self.$el.on(events, function(evt) {
+              accessor(self.get(self.$el, readAccessor(accessor), evt));
+            });
+          }
+      
+          // Configure WRITE/SET-able binding. Requires:
+          // => One or more events triggers.
+          if (triggers.length) {
+            for (var i=0, len=triggers.length; i < len; i++) {
+              self.listenTo(triggers[i][0], triggers[i][1], reset);
+            }
+          }
+        }
+      
+        _.extend(EpoxyBinding.prototype, Backbone.Events, {
+      
+          // Pass-through binding methods:
+          // for override by actual implementations.
+          init: blankMethod,
+          get: blankMethod,
+          set: blankMethod,
+          clean: blankMethod,
+      
+          // Destroys the binding:
+          // all events and managed sub-views are killed.
+          dispose: function() {
+            this.clean();
+            this.stopListening();
+            this.$el.off(this.evt);
+            this.$el = this.view = null;
+          }
+        });
+      
+        return Epoxy;
+      }));
+      
+    }
+  }, 'backbone.epoxy');
+
   require('jquery');
   require('vague-time');
   require('underscore');
   require('backbone');
+  require('backbone.modelbinder');
+  require('backbone.epoxy');
 
 }.call(window));
 //# sourceMappingURL=ender.js.map

@@ -28,6 +28,14 @@ body
     height: 100%
     position: relative
 
+a
+    text-decoration: none
+    color: #ddd
+
+    &:hover
+        text-decoration: underline
+        color: #fff
+
 .site-header
     background: rgba(#3B3B3B, 0.8)
     color: #fff
@@ -85,12 +93,16 @@ body
 
 #view-container
     position: relative
-    perspective: 300px
+    perspective: 600px
+    left: 0
+    right: 0
+    top: 0
+    bottom: 0
 
 .transitionable
-    position: relative
+    position: absolute
     width: 100%
-    perspective: 300px
+    perspective: 600px
     transform-style: preserve-3d
     transform-origin: 50% 50%
 
@@ -106,13 +118,28 @@ body
         transform: translate3d(0, 0, 0)
     100%
         opacity: 0
-        transform: translate3d(0, 50px, -50px)
+        transform: translate3d(0, 100px, -30px)
 
 @keyframes animate-in
     0%
         opacity: 0
-        transform: translate3d(0px, -30px, 50px)
+        transform: translate3d(0px, -50px, 30px)
     100%
         opacity: 1
         transform: translate3d(0, 0, 0)
 
+//@keyframes animate-out
+//    0%
+//        opacity: 1
+//        transform: translate3d(0, 0, 0)
+//    100%
+//        opacity: 0
+//        transform: translate3d(-250px, 0px, -150px) rotate3d(0,1,0, 40deg)
+//
+//@keyframes animate-in
+//    0%
+//        opacity: 0
+//        transform: translate3d(150px, 0px, -150px)  rotate3d(0,1,0, -40deg)
+//    100%
+//        opacity: 1
+//        transform: translate3d(0, 0, 0)

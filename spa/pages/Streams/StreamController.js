@@ -1,4 +1,5 @@
 import CreateStreamView from './CreateStream'
+import StreamDetailsView from './StreamDetails'
 
 export default class StreamController {
     constructor(presenter) {
@@ -6,7 +7,10 @@ export default class StreamController {
     }
 
     create() {
-        console.log("Showing stream creation view");
         this.presenter.switchView(new CreateStreamView());
+    }
+
+    details(id) {
+        this.presenter.switchView(new StreamDetailsView(id));
     }
 }
