@@ -7,7 +7,6 @@ import QuipView from '../../partials/QuipView.js'
 
 export default class StreamDetailsView extends Backbone.Epoxy.View {
     initialize(id) {
-        //this.model = new StreamModel();
         this.render();
         this.$el.addClass("stream-details");
         new MyQuipCollection().fetch().then(quips => this.onQuipsLoaded(quips))
@@ -15,11 +14,12 @@ export default class StreamDetailsView extends Backbone.Epoxy.View {
 
     onQuipsLoaded(quips) {
         this.quipViews = [];
+        var list = this.$el.find('.g-quips-list');
 
         for (var quip of quips) {
             var quipView = new QuipView({model: new QuipModel(quip)});
             this.quipViews.push(quipView);
-            this.$el.append(quipView.el);
+            list.append(quipView.el);
         }
     }
 

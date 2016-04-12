@@ -1,6 +1,7 @@
 import Backbone from 'backbone'
 import * as Views from '../Views'
 import { QuipModel, MyQuipCollection } from '../../models/Quip'
+import template from './UserAllRecordings.hbs'
 
 class UserPodCollection extends Backbone.Collection {
     constructor(username) {
@@ -20,9 +21,14 @@ class UserPodCollectionView extends Backbone.View {
     }
 
     initialize(username) {
+        this.render();
         new UserPodCollection(username)
             .fetch()
             .then(quips => this.createChildViews(quips))
+    }
+
+    render() {
+        this.$el.html(template());
     }
 
     shutdown() {
@@ -32,11 +38,12 @@ class UserPodCollectionView extends Backbone.View {
 
     createChildViews(quips) {
         this.quipViews = [];
+        var list = this.$el.find('.g-quips-list');
 
         for (var quip of quips) {
             var quipView = new Views.QuipView({model: new QuipModel(quip)});
             this.quipViews.push(quipView);
-            this.$el.append(quipView.el);
+            list.append(quipView.el);
         }
     }
 
