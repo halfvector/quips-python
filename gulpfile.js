@@ -16,7 +16,7 @@ var hbsfy = require("hbsfy");
 
 var http = require('http'),
     runSequence = require('run-sequence'),
-    sass = require('gulp-ruby-sass'),
+    sass = require('gulp-sass'),
     jshint = require('gulp-jshint'),
     rename = require('gulp-rename'),
     uglify = require('gulp-uglify'),
@@ -26,9 +26,8 @@ var http = require('http'),
     cache = require('gulp-cache'),
     livereload = require('gulp-livereload'),
     autoprefixer = require('gulp-autoprefixer'),
-    lr = require('tiny-lr'),
-    server = lr()
-    ;
+    sassGlob = require('gulp-sass-glob')
+;
 
 var continueOnError = function (stream) {
     return stream
@@ -69,11 +68,14 @@ var config = {
 
 // sass task
 gulp.task('styles', function () {
-    return sass(config.src_sass, {
-        style: "compact", cacheLocation: "tmp/sass-cache",
-        stopOnError: true
-    })
-        .on('error', sass.logError)
+    //return sass(config.src_sass, {
+    //    style: "compact", cacheLocation: "tmp/sass-cache",
+    //    stopOnError: true
+    //})
+    //    .on('error', sass.logError)
+    return gulp.src(config.src_sass)
+        .pipe(sassGlob())
+        .pipe(sass())
         .pipe(autoprefixer({browsers: ['last 3 versions', 'android 4', 'ie 9', '> 5%']}))
         .pipe(gulp.dest(config.dest_css))
 });
@@ -157,12 +159,6 @@ function onError(err) {
     this.emit('end');
 }
 
-// watch html
-gulp.task('html', function () {
-    return gulp.src(config.src_html)
-        .pipe(livereload(server))
-});
-
 gulp.task('clean', function () {
     return gulp.src(['public/assets/css/site.css', 'public/assets/js'], {read: false})
         .pipe(clean());
@@ -173,8 +169,10 @@ gulp.task('build', function (completed) {
 });
 
 gulp.task('watch', ['build'], function (completed) {
+    livereload.listen();
+
     // rebuild asset when source is changed
-    gulp.watch(config.src_sass_all, ['styles']);
+    gulp.watch('spa/**/*.sass', ['styles']);
     gulp.watch(config.external_src_js, ['external-scripts']);
     gulp.watch(config.workers_src_js, ['worker-scripts']);
     gulp.watch(config.all_src_js, ['main-scripts']);
@@ -187,5 +185,5 @@ gulp.task('watch', ['build'], function (completed) {
 
 // default task -- run 'gulp' from cli
 gulp.task('default', ['watch'], function (callback) {
-    server.listen(config.livereload_port);
+
 });
