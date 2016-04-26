@@ -20,6 +20,17 @@ class Recording(db.Document):
     duration = db.IntField # duration in seconds
 
 
+class Stream(db.Document):
+    """ A User may have multiple Streams and
+    each Stream may contain multiple Recordings"""
+    meta = {'collection': 'streams'}
+    name = db.StringField(required=True)
+    description = db.StringField(required=True)
+    isPublic = db.BooleanField(required=True)
+    createdAt = db.DateTimeField(default=datetime.now, required=True)
+    user = db.ReferenceField(User, required=True, dbref=False)
+
+
 class Listen(db.Document):
     user = db.ReferenceField(User, required=True)
     recording = db.ReferenceField(Recording, required=True)

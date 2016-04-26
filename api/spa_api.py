@@ -1,17 +1,66 @@
 import os
 
 from bson import ObjectId
-from flask import Blueprint, g, current_app, url_for, request
+from flask import Blueprint, g, current_app, url_for, request, jsonify
 from flask.ext.restful import reqparse
 from mongoengine import Q
 from werkzeug.datastructures import FileStorage
 
 from api import tinyurl
+from api.mappers import StreamMapper
 from services import requires_auth
 from mappers import QuipMapper, UserMapper
-from models import User, Recording, Listen
+from models import User, Recording, Listen, Stream
 
 bp = Blueprint('spa', __name__, template_folder='templates')
+
+# Stream CRUD
+
+
+@bp.route('/api/streams', methods=['POST'])
+def create_user_stream():
+    try:
+        # parse arguments
+        parser = reqparse.RequestParser()
+        parser.add_argument('name')
+        parser.add_argument('description', default="Just a stream")
+        parser.add_argument('isPublic', default=True)
+        form = parser.parse_args()
+
+        # grab current user
+        user = User.objects.get(id=g.user['id'])
+
+        # create new stream
+        stream = Stream()
+        stream.name = form['name']
+        stream.description = form['description']
+        stream.isPublic = form['isPublic']
+        stream.user = user
+        stream.save()
+
+        tiny_id = tinyurl.encode(str(stream.id))
+
+        url = url_for('spa_web.single_stream', stream_id=tiny_id)
+        return {'status': 'success', 'url': url}, 200
+    except Exception as err:
+        print "Error while creating stream: " + repr(err)
+        return {'status': 'failed', 'error': repr(err)}, 500
+
+
+@bp.route('/api/streams', methods=['GET'])
+def get_user_streams():
+    streams = Stream.objects(user=g.user['id'])
+    return {'streams': map(StreamMapper.to_web_dto, streams)}, 200
+
+
+@bp.route('/api/streams/<string:stream_id>', methods=['DELETE'])
+def delete_user_stream(stream_id):
+    stream = Stream.objects.get_or_404(id=stream_id)
+    if not stream or not stream.isPublic or stream.user.id != g.user['id']:
+        return {}, 404
+
+    stream.delete()
+    return {}, 204
 
 
 @bp.route('/api/create_recording')

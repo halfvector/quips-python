@@ -43,3 +43,8 @@ def single_recording(recording_id):
 @bp.route('/u/<username>')
 def user_recordings(username):
     return send_from_directory(current_app.config['PATH_PUBLIC'], 'layout.html')
+
+
+@bp.route('/s/<stream_id>')
+def single_stream(stream_id):
+    return send_from_directory(current_app.config['PATH_PUBLIC'], 'layout.html')
