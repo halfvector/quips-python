@@ -22,6 +22,7 @@ class UserPodCollectionView extends Backbone.View {
 
     initialize(username) {
         this.render();
+
         new UserPodCollection(username)
             .fetch()
             .then(quips => this.createChildViews(quips))

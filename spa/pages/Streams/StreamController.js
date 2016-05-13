@@ -1,4 +1,4 @@
-import CreateStreamView from './CreateStream'
+import StreamList from './StreamList'
 import StreamDetailsView from './StreamDetails'
 
 export default class StreamController {
@@ -6,8 +6,8 @@ export default class StreamController {
         this.presenter = presenter;
     }
 
-    create() {
-        this.presenter.switchView(new CreateStreamView());
+    list_streams() {
+        this.presenter.switchView(new StreamList());
     }
 
     details(id) {

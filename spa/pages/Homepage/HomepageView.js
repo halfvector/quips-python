@@ -2,6 +2,7 @@ import Backbone from 'backbone'
 import QuipView from '../../partials/QuipView.js'
 import { AudioPlayer } from '../../partials/AudioPlayerView'
 import { QuipModel, MyQuipCollection } from '../../models/Quip'
+import template from './Homepage.hbs'
 
 export default class HomepageView extends Backbone.View {
     initialize() {
@@ -28,5 +29,9 @@ export default class HomepageView extends Backbone.View {
             this.quipViews.push(quipView);
             this.$el.append(quipView.el);
         }
+    }
+
+    render() {
+        this.$el.html(template());
     }
 }

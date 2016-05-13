@@ -46,7 +46,7 @@ def auth_login():
 
 def download_user_profile_image(twitter, user):
     user_info = twitter.show_user(screen_name=user.username)
-    app.logger.debug('user "%s" profile img: %s' % (user.username, user_info['profile_image_url']))
+    current_app.logger.debug('user "%s" profile img: %s' % (user.username, user_info['profile_image_url']))
 
     # figure out paths to store the image, using the filename and extension provided by twitter
     raw_id = str(user.id)
@@ -56,7 +56,8 @@ def download_user_profile_image(twitter, user):
 
     # ensure parent folder exists
     img_parent_dir = os.path.dirname(img_path_absolute)
-    if not os.path.isdir(img_parent_dir): os.makedirs(img_parent_dir)
+    if not os.path.isdir(img_parent_dir):
+        os.makedirs(img_parent_dir)
 
     # download image
     current_app.logger.debug('downloading profile image to %s' % img_path_absolute)

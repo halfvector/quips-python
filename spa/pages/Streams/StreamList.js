@@ -1,36 +1,31 @@
 import Backbone from 'backbone'
-import template from './CreateStream.hbs'
+import template from './StreamList.hbs'
 import 'backbone-bindings'
 import 'backbone.epoxy'
 
 class StreamModel extends Backbone.Model {
     defaults() {
         return {
-            streamName: "",
-            privacy: "public",
-            streams: [
-                {
-                    id: 1,
-                    name: "stream 1",
-                },
-                {
-                    id: 2,
-                    name: "stream 2",
-                }
-            ]
+            name: "",
+            description: "",
+            isPublic: true
         }
+    }
+
+    initialize() {
+        this.urlRoot = "/api/streams";
     }
 
     get computeds() {
         return {
             canSubmit: function() {
-                return this.get('streamName') != "";
+                return this.get('name') != "";
             }
         }
     }
 }
 
-export default class CreateStreamView extends Backbone.Epoxy.View {
+export default class StreamList extends Backbone.Epoxy.View {
     initialize() {
         this.model = new StreamModel();
         this.render();
@@ -39,8 +34,8 @@ export default class CreateStreamView extends Backbone.Epoxy.View {
 
     get bindings() {
         return {
-            "[name=streamName]": "value:streamName",
-            "[name=privacy]": "checked:privacy"
+            "[name=name]": "value:name",
+            "[name=isPublic]": "checked:isPublic"
         }
     }
 
@@ -57,6 +52,7 @@ export default class CreateStreamView extends Backbone.Epoxy.View {
         var privacy = this.model.get("privacy");
 
         console.log("Creating new stream named " + streamName + " with privacy = " + privacy);
+        this.model.save();
 
         return false;
     }

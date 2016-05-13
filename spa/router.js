@@ -44,7 +44,7 @@ export default class Router extends Backbone.Router {
 
     list_streams() {
         var controller = new Controllers.StreamController(RootPresenter);
-        controller.create();
+        controller.list_streams();
     }
 
     stream_details(id) {
